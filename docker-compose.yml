@@ -1,0 +1,24 @@
+services:
+  certwatch:
+    build: .
+    container_name: certwatch
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-8080}
+      BASE_URL: ${BASE_URL:-http://localhost:8080}
+      DATABASE_PATH: ${DATABASE_PATH:-/data/certwatch.sqlite}
+      SESSION_SECRET: ${SESSION_SECRET:-change-this-long-random-secret}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me-on-first-login}
+      TRUST_PROXY: ${TRUST_PROXY:-true}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      ALLOW_PRIVATE_TARGETS: ${ALLOW_PRIVATE_TARGETS:-false}
+      CHECK_CONCURRENCY: ${CHECK_CONCURRENCY:-4}
+    ports:
+      - "8080:8080"
+    volumes:
+      - certwatch-data:/data
+
+volumes:
+  certwatch-data:
