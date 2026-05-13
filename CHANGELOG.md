@@ -3,6 +3,7 @@
 ## 0.1.0 - 2026-05-12
 
 - Initial CertWatch implementation.
+- Added a Linux quickstart script that clones the repository into `/opt/certwatch`, creates `.env`, and starts Docker Compose.
 - Added Docker Compose deployment on port `8080`.
 - Added Express API, SQLite persistence, session authentication, CSRF header checks, and seeded admin user.
 - Added monitor CRUD, manual checks, scheduler, TLS and STARTTLS check engine, status classification, and historical check storage.

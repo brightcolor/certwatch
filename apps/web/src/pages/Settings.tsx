@@ -1,23 +1,129 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Bell, Mail, PlugZap, Trash2 } from "lucide-react";
 
-export function Settings({ channels, onSave, onTest }: any) {
-  const [form, setForm] = useState({ name: "", type: "webhook", enabled: true, configText: "{\n  \"url\": \"\"\n}" });
-  const save = () => onSave({ name: form.name, type: form.type, enabled: form.enabled, config: JSON.parse(form.configText || "{}") });
+const providerFields: Record<string, Array<{ key: string; label: string; type?: string; placeholder?: string }>> = {
+  email: [
+    { key: "to", label: "Recipients", placeholder: "ops@example.com, admin@example.com" },
+    { key: "from", label: "Sender override", placeholder: "certwatch@example.com" }
+  ],
+  webhook: [{ key: "url", label: "Webhook URL" }],
+  discord: [{ key: "url", label: "Discord webhook URL" }],
+  slack: [{ key: "url", label: "Slack webhook URL" }],
+  teams: [{ key: "url", label: "Microsoft Teams webhook URL" }],
+  mattermost: [{ key: "url", label: "Mattermost webhook URL" }],
+  pushover: [
+    { key: "userKey", label: "User key", type: "password" },
+    { key: "apiToken", label: "API token", type: "password" }
+  ],
+  telegram: [
+    { key: "botToken", label: "Bot token", type: "password" },
+    { key: "chatId", label: "Chat ID" }
+  ],
+  gotify: [{ key: "url", label: "Gotify message URL" }],
+  ntfy: [
+    { key: "url", label: "ntfy publish URL", placeholder: "https://ntfy.sh/my-topic" },
+    { key: "topic", label: "Topic", placeholder: "optional when URL contains topic" }
+  ],
+  matrix: [
+    { key: "baseUrl", label: "Homeserver URL", placeholder: "https://matrix.example.com" },
+    { key: "roomId", label: "Room ID" },
+    { key: "accessToken", label: "Access token", type: "password" }
+  ],
+  pagerduty: [{ key: "integrationKey", label: "Events API integration key", type: "password" }],
+  opsgenie: [{ key: "apiKey", label: "API key", type: "password" }]
+};
+
+export function Settings({ channels, alerting, smtp, onSaveChannel, onDeleteChannel, onTest, onSaveAlerting, onSaveSmtp }: any) {
+  const [channel, setChannel] = useState<any>({ name: "", type: "email", enabled: true, config: {} });
+  const [alertForm, setAlertForm] = useState(alerting);
+  const [smtpForm, setSmtpForm] = useState(smtp);
+  const fields = useMemo(() => providerFields[channel.type] ?? providerFields.webhook, [channel.type]);
+
+  useEffect(() => setAlertForm(alerting), [alerting]);
+  useEffect(() => setSmtpForm(smtp), [smtp]);
+
+  const saveChannel = () => {
+    onSaveChannel(channel);
+    setChannel({ name: "", type: channel.type, enabled: true, config: {} });
+  };
+  const setConfig = (key: string, value: string) => setChannel((current: any) => ({ ...current, config: { ...current.config, [key]: value } }));
+
   return (
     <section className="content">
       <div className="grid two">
         <div className="panel">
-          <h3>Create Channel</h3>
-          <label>Name<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
-          <label>Type<select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}><option value="email">Email SMTP</option><option value="pushover">Pushover</option><option value="webhook">Webhook</option><option value="discord">Discord</option><option value="slack">Slack</option><option value="telegram">Telegram</option><option value="gotify">Gotify</option><option value="ntfy">ntfy.sh</option></select></label>
-          <label>Config JSON<textarea value={form.configText} onChange={(e) => setForm({ ...form, configText: e.target.value })} /></label>
-          <button onClick={save}>Save channel</button>
+          <h3><Bell size={18} /> Alert policy</h3>
+          {alertForm && <>
+            <label>Repeat unresolved alerts after hours<input type="number" min="1" max="720" value={alertForm.resendAfterHours} onChange={(e) => setAlertForm({ ...alertForm, resendAfterHours: Number(e.target.value) })} /></label>
+            <div className="checks">
+              <label><input type="checkbox" checked={alertForm.recoveryEnabled} onChange={(e) => setAlertForm({ ...alertForm, recoveryEnabled: e.target.checked })} /> Send recovery alerts</label>
+              <label><input type="checkbox" checked={alertForm.quietHoursEnabled} onChange={(e) => setAlertForm({ ...alertForm, quietHoursEnabled: e.target.checked })} /> Enable quiet hours</label>
+              <label><input type="checkbox" checked={alertForm.quietSuppressCritical} onChange={(e) => setAlertForm({ ...alertForm, quietSuppressCritical: e.target.checked })} /> Also silence critical alerts</label>
+            </div>
+            <div className="grid two">
+              <label>Quiet start<input type="time" value={alertForm.quietStart} onChange={(e) => setAlertForm({ ...alertForm, quietStart: e.target.value })} /></label>
+              <label>Quiet end<input type="time" value={alertForm.quietEnd} onChange={(e) => setAlertForm({ ...alertForm, quietEnd: e.target.value })} /></label>
+            </div>
+            <button onClick={() => onSaveAlerting(alertForm)}>Save alert policy</button>
+          </>}
         </div>
         <div className="panel">
-          <h3>Configured Channels</h3>
-          {channels.map((channel: any) => <div className="channel" key={channel.id}><strong>{channel.name}</strong><span>{channel.type}</span><button onClick={() => onTest(channel.id)}>Test</button></div>)}
+          <h3><Mail size={18} /> Global SMTP</h3>
+          {smtpForm && <>
+            <div className="grid two">
+              <label>SMTP host<input value={smtpForm.host} onChange={(e) => setSmtpForm({ ...smtpForm, host: e.target.value })} /></label>
+              <label>Port<input type="number" min="1" max="65535" value={smtpForm.port} onChange={(e) => setSmtpForm({ ...smtpForm, port: Number(e.target.value) })} /></label>
+              <label>Username<input value={smtpForm.username} onChange={(e) => setSmtpForm({ ...smtpForm, username: e.target.value })} /></label>
+              <label>Password<input type="password" value={smtpForm.password} onChange={(e) => setSmtpForm({ ...smtpForm, password: e.target.value })} /></label>
+              <label>Default sender<input value={smtpForm.from} onChange={(e) => setSmtpForm({ ...smtpForm, from: e.target.value })} /></label>
+            </div>
+            <div className="checks">
+              <label><input type="checkbox" checked={smtpForm.starttls} onChange={(e) => setSmtpForm({ ...smtpForm, starttls: e.target.checked })} /> Require STARTTLS</label>
+              <label><input type="checkbox" checked={smtpForm.secure} onChange={(e) => setSmtpForm({ ...smtpForm, secure: e.target.checked })} /> Direct TLS</label>
+            </div>
+            <button onClick={() => onSaveSmtp(smtpForm)}>Save SMTP settings</button>
+          </>}
+        </div>
+      </div>
+      <div className="grid two">
+        <div className="panel">
+          <h3><PlugZap size={18} /> Add notification provider</h3>
+          <label>Name<input value={channel.name} onChange={(e) => setChannel({ ...channel, name: e.target.value })} /></label>
+          <label>Provider<select value={channel.type} onChange={(e) => setChannel({ name: channel.name, type: e.target.value, enabled: true, config: {} })}>
+            {Object.keys(providerFields).map((type) => <option value={type} key={type}>{labelFor(type)}</option>)}
+          </select></label>
+          {fields.map((field) => <label key={field.key}>{field.label}<input type={field.type ?? "text"} value={channel.config[field.key] ?? ""} placeholder={field.placeholder} onChange={(e) => setConfig(field.key, e.target.value)} /></label>)}
+          <label className="inline"><input type="checkbox" checked={channel.enabled} onChange={(e) => setChannel({ ...channel, enabled: e.target.checked })} /> Enabled</label>
+          <button onClick={saveChannel}>Save provider</button>
+        </div>
+        <div className="panel">
+          <h3>Configured providers</h3>
+          {channels.map((item: any) => (
+            <div className="channel" key={item.id}>
+              <strong>{item.name}</strong>
+              <span>{labelFor(item.type)} · {item.enabled ? "enabled" : "disabled"}</span>
+              <div className="actions end"><button onClick={() => onTest(item.id)}>Test</button><button className="icon" title="Delete provider" onClick={() => onDeleteChannel(item.id)}><Trash2 size={16} /></button></div>
+            </div>
+          ))}
+          {!channels.length && <span className="muted">No notification providers configured.</span>}
         </div>
       </div>
     </section>
   );
 }
+
+const labelFor = (type: string) => ({
+  email: "Email SMTP",
+  webhook: "Generic webhook",
+  discord: "Discord",
+  slack: "Slack",
+  teams: "Microsoft Teams",
+  mattermost: "Mattermost",
+  pushover: "Pushover",
+  telegram: "Telegram",
+  gotify: "Gotify",
+  ntfy: "ntfy.sh",
+  matrix: "Matrix",
+  pagerduty: "PagerDuty",
+  opsgenie: "Opsgenie"
+}[type] ?? type);

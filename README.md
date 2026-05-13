@@ -46,6 +46,22 @@ Screenshots are not committed yet. Start the app and open `http://localhost:8080
 
 ## Quick Start
 
+For a fresh Linux server with Docker already installed, run the installer script from a local checkout or an authenticated copy of the repository:
+
+```bash
+sudo bash scripts/quickstart.sh
+```
+
+The script clones the repository into `/opt/certwatch`, creates `/opt/certwatch/.env` with generated secrets, builds the image, and starts the stack with Docker Compose.
+
+Optional overrides:
+
+```bash
+sudo CERTWATCH_PORT=8080 CERTWATCH_ADMIN_EMAIL=admin@example.com bash scripts/quickstart.sh
+```
+
+Manual setup:
+
 1. Copy the environment file:
 
 ```bash

@@ -1,7 +1,7 @@
 import { db, rowToChannel, rowToMonitor, rowToResult, rowToUser } from "./db.js";
 import { id } from "../utils/id.js";
 import { addSecondsIso, nowIso } from "../utils/time.js";
-import type { CheckResult, Monitor, NotificationChannel, User } from "../types.js";
+import type { AlertingSettings, CheckResult, Monitor, NotificationChannel, SmtpSettings, User } from "../types.js";
 
 export const users = {
   findByEmail(email: string): User | null {
@@ -126,6 +126,9 @@ export const channels = {
       INSERT INTO notification_channels VALUES (@id, @name, @type, @enabled, @configJson, @createdAt, @updatedAt)
       ON CONFLICT(id) DO UPDATE SET name=@name, type=@type, enabled=@enabled, config_json=@configJson, updated_at=@updatedAt
     `).run({ ...channel, configJson: JSON.stringify(channel.config) });
+  },
+  delete(channelId: string) {
+    db.prepare("DELETE FROM notification_channels WHERE id = ?").run(channelId);
   }
 };
 
@@ -150,6 +153,45 @@ export const alerts = {
   },
   list(limit = 100) {
     return db.prepare("SELECT * FROM alert_history ORDER BY sent_at DESC LIMIT ?").all(limit);
+  }
+};
+
+export const appSettings = {
+  alerting(): AlertingSettings {
+    return this.get("alerting", {
+      resendAfterHours: 24,
+      recoveryEnabled: true,
+      quietHoursEnabled: false,
+      quietStart: "22:00",
+      quietEnd: "07:00",
+      quietSuppressCritical: false
+    });
+  },
+  smtp(): SmtpSettings {
+    return this.get("smtp", {
+      host: "",
+      port: 587,
+      username: "",
+      password: "",
+      from: "",
+      secure: false,
+      starttls: true
+    });
+  },
+  get<T>(key: string, fallback: T): T {
+    const row = db.prepare("SELECT value_json FROM settings WHERE key = ?").get(key) as { value_json?: string } | undefined;
+    if (!row?.value_json) return fallback;
+    try {
+      return { ...fallback, ...JSON.parse(row.value_json) };
+    } catch {
+      return fallback;
+    }
+  },
+  set<T>(key: string, value: T) {
+    db.prepare("INSERT INTO settings VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json").run(
+      key,
+      JSON.stringify(value)
+    );
   }
 };
 

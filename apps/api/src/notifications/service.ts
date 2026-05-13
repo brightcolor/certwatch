@@ -1,18 +1,22 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
-import type { CheckResult, Monitor, NotificationChannel, Severity } from "../types.js";
-import { alerts } from "../storage/repositories.js";
+import type { CheckResult, Monitor, NotificationChannel, Severity, SmtpSettings } from "../types.js";
+import { alerts, appSettings } from "../storage/repositories.js";
 import { alertFingerprint } from "../checks/status.js";
 
 export const dispatchAlerts = async (monitor: Monitor, result: CheckResult, configured: NotificationChannel[]) => {
+  const settings = appSettings.alerting();
   if (result.severity === "info" && result.status === "OK") {
-    if (monitor.lastStatus !== "OK" && monitor.lastStatus !== "UNKNOWN") {
+    if (settings.recoveryEnabled && monitor.lastStatus !== "OK" && monitor.lastStatus !== "UNKNOWN") {
       await sendToChannels(monitor, { ...result, severity: "recovery", message: "Monitor recovered." }, configured);
     }
     return;
   }
+  if (isQuietHour(settings.quietStart, settings.quietEnd) && settings.quietHoursEnabled && (settings.quietSuppressCritical || result.severity !== "critical")) {
+    return;
+  }
   const fingerprint = alertFingerprint(result);
-  if (!alerts.shouldSend(monitor.id, result.status, fingerprint)) return;
+  if (!alerts.shouldSend(monitor.id, result.status, fingerprint, settings.resendAfterHours)) return;
   await sendToChannels(monitor, result, configured);
 };
 
@@ -58,7 +62,10 @@ const sendChannel = async (channel: NotificationChannel, monitor: Monitor, resul
     const url = endpoint(channel, ["https://api", "telegram", `org/bot${String(channel.config.botToken ?? "")}/sendMessage`]);
     return postJson(url, { chat_id: channel.config.chatId, text: result.message });
   }
-  return postJson(endpoint(channel), buildPayload(monitor, result));
+  if (channel.type === "matrix") return postJson(matrixEndpoint(channel), { msgtype: "m.text", body: result.message });
+  if (channel.type === "pagerduty") return postJson(endpoint(channel, ["https://events", "pagerduty", "com/v2/enqueue"]), pagerDutyPayload(channel, monitor, result));
+  if (channel.type === "opsgenie") return postJson(endpoint(channel, ["https://api", "opsgenie", "com/v2/alerts"]), opsgeniePayload(monitor, result), { Authorization: `GenieKey ${String(channel.config.apiKey ?? "")}` });
+  return postJson(endpoint(channel), providerPayload(channel, monitor, result));
 };
 
 const endpoint = (channel: NotificationChannel, fallbackParts?: string[]) => {
@@ -69,15 +76,17 @@ const endpoint = (channel: NotificationChannel, fallbackParts?: string[]) => {
 };
 
 const sendEmail = async (channel: NotificationChannel, monitor: Monitor, result: CheckResult) => {
+  const globalSmtp = appSettings.smtp();
+  const smtp = mergeSmtp(globalSmtp, channel.config);
   const transport = nodemailer.createTransport({
-    host: String(channel.config.host ?? ""),
-    port: Number(channel.config.port ?? 587),
-    secure: Boolean(channel.config.secure),
-    auth: channel.config.username ? { user: String(channel.config.username), pass: String(channel.config.password ?? "") } : undefined,
-    requireTLS: Boolean(channel.config.starttls)
+    host: smtp.host,
+    port: smtp.port,
+    secure: smtp.secure,
+    auth: smtp.username ? { user: smtp.username, pass: smtp.password } : undefined,
+    requireTLS: smtp.starttls
   });
   await transport.sendMail({
-    from: String(channel.config.from ?? "certwatch@localhost"),
+    from: String(channel.config.from ?? smtp.from ?? "certwatch@localhost"),
     to: String(channel.config.to ?? channel.config.username ?? ""),
     subject: `[CertWatch] ${subjectFor(result.severity)}: ${monitor.name}`,
     text: emailBody(monitor, result)
@@ -125,14 +134,74 @@ const sampleResult = (): CheckResult => ({
   rawError: null
 });
 
-const postJson = async (url: string, payload: unknown) => {
-  const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+const postJson = async (url: string, payload: unknown, headers: Record<string, string> = {}) => {
+  const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(payload) });
   if (!response.ok) throw new Error(`Notification endpoint returned ${response.status}.`);
 };
 
 const postForm = async (url: string, values: Record<string, string>) => {
   const response = await fetch(url, { method: "POST", body: new URLSearchParams(values) });
   if (!response.ok) throw new Error(`Notification endpoint returned ${response.status}.`);
+};
+
+const mergeSmtp = (globalSmtp: SmtpSettings, config: Record<string, unknown>): SmtpSettings => ({
+  host: String(config.host || globalSmtp.host),
+  port: Number(config.port || globalSmtp.port || 587),
+  username: String(config.username || globalSmtp.username || ""),
+  password: String(config.password || globalSmtp.password || ""),
+  from: String(config.from || globalSmtp.from || ""),
+  secure: Boolean(config.secure ?? globalSmtp.secure),
+  starttls: Boolean(config.starttls ?? globalSmtp.starttls)
+});
+
+const providerPayload = (channel: NotificationChannel, monitor: Monitor, result: CheckResult) => {
+  const payload = buildPayload(monitor, result);
+  if (channel.type === "discord") return { content: `**${monitor.name}**: ${result.message}`, embeds: [{ title: monitor.name, description: result.problems.join("\n") || result.message, color: result.severity === "critical" ? 15_585_873 : 13_801_762 }] };
+  if (channel.type === "slack" || channel.type === "mattermost") return { text: `*${monitor.name}* ${result.status}: ${result.message}`, attachments: [{ color: result.severity === "critical" ? "danger" : "warning", text: result.problems.join("\n") }] };
+  if (channel.type === "teams") return { title: `CertWatch ${result.status}`, text: `${monitor.name}: ${result.message}` };
+  if (channel.type === "ntfy") return { topic: channel.config.topic, title: `CertWatch ${result.status}`, message: `${monitor.name}: ${result.message}`, priority: result.severity === "critical" ? 5 : 3, tags: ["warning"] };
+  if (channel.type === "gotify") return { title: `CertWatch ${result.status}`, message: `${monitor.name}: ${result.message}`, priority: result.severity === "critical" ? 8 : 4 };
+  return payload;
+};
+
+const matrixEndpoint = (channel: NotificationChannel) => {
+  const baseUrl = String(channel.config.baseUrl ?? "").replace(/\/$/, "");
+  const roomId = encodeURIComponent(String(channel.config.roomId ?? ""));
+  const token = encodeURIComponent(String(channel.config.accessToken ?? ""));
+  if (!baseUrl || !roomId || !token) return endpoint(channel);
+  return `${baseUrl}/_matrix/client/v3/rooms/${roomId}/send/m.room.message?access_token=${token}`;
+};
+
+const pagerDutyPayload = (channel: NotificationChannel, monitor: Monitor, result: CheckResult) => ({
+  routing_key: String(channel.config.integrationKey ?? ""),
+  event_action: result.severity === "recovery" ? "resolve" : "trigger",
+  dedup_key: monitor.id,
+  payload: {
+    summary: `${monitor.name}: ${result.message}`,
+    severity: result.severity === "critical" ? "critical" : "warning",
+    source: monitor.host,
+    custom_details: buildPayload(monitor, result)
+  }
+});
+
+const opsgeniePayload = (monitor: Monitor, result: CheckResult) => ({
+  message: `${monitor.name}: ${result.message}`,
+  alias: monitor.id,
+  priority: result.severity === "critical" ? "P1" : "P3",
+  details: buildPayload(monitor, result)
+});
+
+const isQuietHour = (start: string, end: string, date = new Date()) => {
+  const now = date.getHours() * 60 + date.getMinutes();
+  const startMinutes = parseClock(start);
+  const endMinutes = parseClock(end);
+  if (startMinutes === endMinutes) return false;
+  return startMinutes < endMinutes ? now >= startMinutes && now < endMinutes : now >= startMinutes || now < endMinutes;
+};
+
+const parseClock = (value: string) => {
+  const [hours, minutes] = value.split(":").map(Number);
+  return (Number.isFinite(hours) ? hours : 0) * 60 + (Number.isFinite(minutes) ? minutes : 0);
 };
 
 const priorityFor = (severity: Severity) => severity === "critical" ? 1 : severity === "recovery" ? 0 : -1;

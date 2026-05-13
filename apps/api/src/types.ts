@@ -1,7 +1,20 @@
 export type MonitorType = "https" | "tls" | "smtp_starttls" | "imap_starttls" | "pop3_starttls";
 export type MonitorStatus = "OK" | "WARNING" | "CRITICAL" | "DOWN" | "PAUSED" | "UNKNOWN";
 export type Severity = "info" | "warning" | "critical" | "recovery";
-export type ChannelType = "email" | "pushover" | "webhook" | "discord" | "slack" | "telegram" | "gotify" | "ntfy";
+export type ChannelType =
+  | "email"
+  | "pushover"
+  | "webhook"
+  | "discord"
+  | "slack"
+  | "telegram"
+  | "gotify"
+  | "ntfy"
+  | "teams"
+  | "mattermost"
+  | "matrix"
+  | "pagerduty"
+  | "opsgenie";
 
 export interface Monitor {
   id: string;
@@ -77,4 +90,23 @@ export interface User {
   passwordHash: string;
   role: "admin" | "viewer";
   createdAt: string;
+}
+
+export interface AlertingSettings {
+  resendAfterHours: number;
+  recoveryEnabled: boolean;
+  quietHoursEnabled: boolean;
+  quietStart: string;
+  quietEnd: string;
+  quietSuppressCritical: boolean;
+}
+
+export interface SmtpSettings {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  from: string;
+  secure: boolean;
+  starttls: boolean;
 }

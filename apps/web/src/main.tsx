@@ -14,6 +14,8 @@ function App() {
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   const [stats, setStats] = useState<any>({});
   const [channels, setChannels] = useState<any[]>([]);
+  const [alerting, setAlerting] = useState<any>(null);
+  const [smtp, setSmtp] = useState<any>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [results, setResults] = useState<CheckResult[]>([]);
   const [editing, setEditing] = useState<Monitor | null | "new">(null);
@@ -33,9 +35,12 @@ function App() {
       api.request<any>("/status"),
       api.request<any[]>("/notification-channels")
     ]);
+    const [alertingData, smtpData] = await Promise.all([api.request<any>("/settings/alerting"), api.request<any>("/settings/smtp")]);
     setMonitors(monitorData);
     setStats(statusData);
     setChannels(channelData);
+    setAlerting(alertingData);
+    setSmtp(smtpData);
   };
 
   const loadResults = async (id: string) => setResults(await api.request<CheckResult[]>(`/monitors/${id}/results`));
@@ -66,13 +71,22 @@ function App() {
     <Layout page={page} onPage={setPage} onNew={() => setEditing("new")} theme={theme} setTheme={setTheme}>
       {toast && <div className="toast" onAnimationEnd={() => setToast("")}>{toast}</div>}
       {page === "settings" ? (
-        <Settings channels={channels} onSave={async (channel: any) => { await api.request("/notification-channels", { method: "POST", body: JSON.stringify(channel) }); await refresh(); }} onTest={(id: string) => api.request("/notification-channels/test", { method: "POST", body: JSON.stringify({ id }) })} />
+        <Settings
+          channels={channels}
+          alerting={alerting}
+          smtp={smtp}
+          onSaveChannel={async (channel: any) => { await api.request("/notification-channels", { method: "POST", body: JSON.stringify(channel) }); await refresh(); }}
+          onDeleteChannel={async (id: string) => { await api.request(`/notification-channels/${id}`, { method: "DELETE" }); await refresh(); }}
+          onTest={(id: string) => api.request("/notification-channels/test", { method: "POST", body: JSON.stringify({ id }) })}
+          onSaveAlerting={async (data: any) => { await api.request("/settings/alerting", { method: "PUT", body: JSON.stringify(data) }); await refresh(); }}
+          onSaveSmtp={async (data: any) => { await api.request("/settings/smtp", { method: "PUT", body: JSON.stringify(data) }); await refresh(); }}
+        />
       ) : selectedMonitor ? (
         <MonitorDetail monitor={selectedMonitor} results={results} onBack={() => setSelected(null)} onEdit={() => setEditing(selectedMonitor)} onCheck={() => checkNow(selectedMonitor.id)} />
       ) : (
         <Dashboard monitors={monitors} stats={stats} query={query} setQuery={setQuery} onSelect={setSelected} onCheck={checkNow} />
       )}
-      {editing && <MonitorForm monitor={editing === "new" ? null : editing} onCancel={() => setEditing(null)} onSave={saveMonitor} onSaveAndCheck={saveAndCheck} />}
+      {editing && <MonitorForm channels={channels} monitor={editing === "new" ? null : editing} onCancel={() => setEditing(null)} onSave={saveMonitor} onSaveAndCheck={saveAndCheck} />}
     </Layout>
   );
 }

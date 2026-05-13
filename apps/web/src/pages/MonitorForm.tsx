@@ -21,10 +21,15 @@ const blank = {
   notificationChannelIds: []
 };
 
-export function MonitorForm({ monitor, onCancel, onSave, onSaveAndCheck }: { monitor?: Monitor | null; onCancel: () => void; onSave: (data: any) => void; onSaveAndCheck: (data: any) => void }) {
+export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAndCheck }: { monitor?: Monitor | null; channels?: any[]; onCancel: () => void; onSave: (data: any) => void; onSaveAndCheck: (data: any) => void }) {
   const [form, setForm] = useState<any>({ ...blank, ...monitor, tagsText: monitor?.tags?.join(", ") ?? "" });
   const data = () => ({ ...form, port: Number(form.port), intervalSeconds: Number(form.intervalSeconds), timeoutSeconds: Number(form.timeoutSeconds), warningDays: Number(form.warningDays), criticalDays: Number(form.criticalDays), tags: String(form.tagsText || "").split(",").map((tag) => tag.trim()).filter(Boolean), sniHost: form.sniHost || null });
   const set = (key: string, value: unknown) => setForm((current: any) => ({ ...current, [key]: value }));
+  const toggleChannel = (id: string) => {
+    const current = new Set(form.notificationChannelIds ?? []);
+    current.has(id) ? current.delete(id) : current.add(id);
+    set("notificationChannelIds", [...current]);
+  };
 
   return (
     <div className="modal">
@@ -41,6 +46,16 @@ export function MonitorForm({ monitor, onCancel, onSave, onSaveAndCheck }: { mon
           <label>Critical days<input type="number" min="0" value={form.criticalDays} onChange={(e) => set("criticalDays", e.target.value)} /></label>
           <label>SNI hostname<input value={form.sniHost ?? ""} onChange={(e) => set("sniHost", e.target.value)} /></label>
           <label>Tags<input value={form.tagsText} onChange={(e) => set("tagsText", e.target.value)} placeholder="prod, mail, customer-a" /></label>
+        </div>
+        <div className="panel compact">
+          <h3>Notification channels</h3>
+          <p className="muted">Leave all unchecked to use every enabled global channel.</p>
+          <div className="checks">
+            {channels.map((channel) => (
+              <label key={channel.id}><input type="checkbox" checked={(form.notificationChannelIds ?? []).includes(channel.id)} onChange={() => toggleChannel(channel.id)} /> {channel.name}</label>
+            ))}
+            {!channels.length && <span className="muted">No channels configured yet.</span>}
+          </div>
         </div>
         <div className="checks">
           <label><input type="checkbox" checked={form.enabled} onChange={(e) => set("enabled", e.target.checked)} /> Active</label>
