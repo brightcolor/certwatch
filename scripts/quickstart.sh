@@ -4,6 +4,7 @@ set -euo pipefail
 REPO_URL="${CERTWATCH_REPO_URL:-https://github.com/brightcolor/certwatch.git}"
 INSTALL_DIR="${CERTWATCH_INSTALL_DIR:-/opt/certwatch}"
 APP_PORT="${CERTWATCH_PORT:-8080}"
+CONTAINER_PORT="${CERTWATCH_CONTAINER_PORT:-8080}"
 ADMIN_EMAIL="${CERTWATCH_ADMIN_EMAIL:-admin@example.com}"
 
 if [[ "${EUID}" -ne 0 ]]; then
@@ -51,7 +52,8 @@ if [[ ! -f .env ]]; then
   SESSION_SECRET="${CERTWATCH_SESSION_SECRET:-$(random_secret)}"
   cat > .env <<ENV
 NODE_ENV=production
-PORT=${APP_PORT}
+PORT=${CONTAINER_PORT}
+HOST_PORT=${APP_PORT}
 BASE_URL=http://localhost:${APP_PORT}
 DATABASE_PATH=/data/certwatch.sqlite
 SESSION_SECRET=${SESSION_SECRET}

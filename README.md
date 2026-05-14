@@ -66,6 +66,14 @@ Optional overrides:
 curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo CERTWATCH_PORT=8080 CERTWATCH_ADMIN_EMAIL=admin@example.com bash
 ```
 
+To publish CertWatch on a different host port, set `CERTWATCH_PORT`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo CERTWATCH_PORT=8888 bash
+```
+
+For manual installs, use `HOST_PORT=8888` in `.env` and keep `PORT=8080` unless you intentionally want to change the internal application port too.
+
 Manual setup:
 
 1. Copy the environment file:
