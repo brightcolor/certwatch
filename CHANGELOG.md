@@ -6,6 +6,7 @@
 - Added a Linux quickstart script that clones the repository into `/opt/certwatch`, creates `.env`, and starts Docker Compose.
 - Added configurable Docker host port publishing through `HOST_PORT` and the quickstart `CERTWATCH_PORT` override.
 - Replaced environment-seeded admin credentials with a first-run web setup screen for creating the initial administrator.
+- Fixed STARTTLS negotiation by using protocol-aware multiline response parsing for SMTP, IMAP, and POP3.
 - Added Docker Compose deployment on port `8080`.
 - Added Express API, SQLite persistence, session authentication, CSRF header checks, and seeded admin user.
 - Added monitor CRUD, manual checks, scheduler, TLS and STARTTLS check engine, status classification, and historical check storage.
