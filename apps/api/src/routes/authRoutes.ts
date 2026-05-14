@@ -1,8 +1,29 @@
 import { Router } from "express";
+import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { clearSessionCookie, login, publicUser, requireAuth, setSessionCookie } from "../auth/auth.js";
+import { users } from "../storage/repositories.js";
 
 export const authRoutes = Router();
+
+authRoutes.get("/setup-status", (_req, res) => {
+  res.json({ setupRequired: users.count() === 0 });
+});
+
+authRoutes.post("/setup", async (req, res) => {
+  if (users.count() > 0) return res.status(409).json({ error: "Setup has already been completed." });
+  const body = z.object({
+    email: z.string().email(),
+    password: z.string().min(12, "Password must be at least 12 characters long.")
+  }).safeParse(req.body);
+  if (!body.success) return res.status(400).json({ error: body.error.issues[0]?.message ?? "Invalid setup payload." });
+  const passwordHash = await bcrypt.hash(body.data.password, 12);
+  const user = users.createAdmin(body.data.email, passwordHash);
+  const result = await login(user.email, body.data.password);
+  if (!result) return res.status(500).json({ error: "Admin user was created, but automatic login failed." });
+  setSessionCookie(res, result.token);
+  res.status(201).json({ user: result.user, csrfToken: result.csrfToken });
+});
 
 authRoutes.post("/login", async (req, res) => {
   const body = z.object({ email: z.string().email(), password: z.string().min(1) }).safeParse(req.body);

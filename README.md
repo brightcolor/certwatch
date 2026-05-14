@@ -63,7 +63,7 @@ curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://raw.githubusercont
 Optional overrides:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo CERTWATCH_PORT=8080 CERTWATCH_ADMIN_EMAIL=admin@example.com bash
+curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo CERTWATCH_PORT=8080 bash
 ```
 
 To publish CertWatch on a different host port, set `CERTWATCH_PORT`:
@@ -86,8 +86,7 @@ cp .env.example .env
 
 ```bash
 SESSION_SECRET=use-a-long-random-secret
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=change-this-password
+BASE_URL=http://localhost:8080
 ```
 
 3. Start CertWatch:
@@ -102,7 +101,7 @@ docker compose up -d
 http://localhost:8080
 ```
 
-The first user is created automatically from `ADMIN_EMAIL` and `ADMIN_PASSWORD` if the database is empty.
+On first launch, CertWatch shows a setup screen where the first user creates the administrator account.
 
 ## Example Monitors
 
@@ -203,7 +202,7 @@ The schema migration currently creates missing tables only. Back up the database
 
 ## Troubleshooting
 
-- Login fails: verify `ADMIN_EMAIL` and `ADMIN_PASSWORD` were set before the first database initialization.
+- Login fails on a fresh install: open the setup screen and create the first admin user. For an existing install, reset the password in the SQLite database or recreate the data volume if no data must be kept.
 - Checks fail for private hosts: set `ALLOW_PRIVATE_TARGETS=true` if the instance is intentionally allowed to monitor internal networks.
 - Cookies fail behind HTTPS: set `COOKIE_SECURE=true` and ensure `X-Forwarded-Proto` is passed by the proxy.
 - STARTTLS fails: verify the service advertises STARTTLS and that firewalls allow the configured port.

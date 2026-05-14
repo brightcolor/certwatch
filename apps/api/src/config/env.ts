@@ -17,8 +17,6 @@ export const env = {
   baseUrl: process.env.BASE_URL ?? "http://localhost:8080",
   databasePath: process.env.DATABASE_PATH ?? path.resolve("data/certwatch.sqlite"),
   sessionSecret: process.env.SESSION_SECRET ?? "dev-only-change-me",
-  adminEmail: process.env.ADMIN_EMAIL ?? "admin@example.com",
-  adminPassword: process.env.ADMIN_PASSWORD ?? "admin123456",
   trustProxy: boolFromEnv("TRUST_PROXY", true),
   cookieSecure: boolFromEnv("COOKIE_SECURE", false),
   allowPrivateTargets: boolFromEnv("ALLOW_PRIVATE_TARGETS", false),

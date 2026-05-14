@@ -11,6 +11,8 @@ import "./styles/app.css";
 
 function App() {
   const [user, setUser] = useState<any>(null);
+  const [setupRequired, setSetupRequired] = useState(false);
+  const [booted, setBooted] = useState(false);
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   const [stats, setStats] = useState<any>({});
   const [channels, setChannels] = useState<any[]>([]);
@@ -25,7 +27,16 @@ function App() {
   const [toast, setToast] = useState("");
 
   useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem("theme", theme); }, [theme]);
-  useEffect(() => { api.request<any>("/auth/me").then((r) => { api.setCsrf(r.csrfToken); setUser(r.user); }).catch(() => setUser(null)); }, []);
+  useEffect(() => {
+    api.request<any>("/auth/setup-status")
+      .then((status) => {
+        setSetupRequired(status.setupRequired);
+        if (status.setupRequired) return null;
+        return api.request<any>("/auth/me").then((r) => { api.setCsrf(r.csrfToken); setUser(r.user); });
+      })
+      .catch(() => setUser(null))
+      .finally(() => setBooted(true));
+  }, []);
   useEffect(() => { if (user) void refresh(); }, [user]);
   useEffect(() => { if (selected) void loadResults(selected); }, [selected]);
 
@@ -64,7 +75,8 @@ function App() {
     setToast("Check completed");
   };
 
-  if (!user) return <Login onLogin={setUser} />;
+  if (!booted) return <main className="login"><div className="login-panel"><span className="eyebrow">CertWatch</span><h1>Loading</h1></div></main>;
+  if (!user) return <Login setupRequired={setupRequired} onLogin={(nextUser) => { setUser(nextUser); setSetupRequired(false); }} />;
   const selectedMonitor = monitors.find((monitor) => monitor.id === selected);
 
   return (

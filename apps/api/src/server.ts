@@ -6,12 +6,11 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { env } from "./config/env.js";
 import { attachSession } from "./auth/auth.js";
-import { migrate, seedAdmin } from "./storage/db.js";
+import { migrate } from "./storage/db.js";
 import { apiRoutes } from "./routes/index.js";
 import { startScheduler } from "./scheduler/scheduler.js";
 
 migrate();
-seedAdmin();
 
 const app = express();
 if (env.trustProxy) app.set("trust proxy", 1);

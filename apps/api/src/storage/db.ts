@@ -1,10 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import bcrypt from "bcryptjs";
 import initSqlJs, { Database as SqlJsDatabase, SqlValue } from "sql.js";
 import { env } from "../config/env.js";
-import { id } from "../utils/id.js";
-import { nowIso } from "../utils/time.js";
 import type { CheckResult, Monitor, NotificationChannel, User } from "../types.js";
 
 fs.mkdirSync(path.dirname(env.databasePath), { recursive: true });
@@ -178,19 +175,6 @@ export const migrate = () => {
       created_at TEXT NOT NULL
     );
   `);
-};
-
-export const seedAdmin = () => {
-  const existing = db.prepare("SELECT id FROM users LIMIT 1").get();
-  if (existing) return;
-  const passwordHash = bcrypt.hashSync(env.adminPassword, 12);
-  db.prepare("INSERT INTO users VALUES (?, ?, ?, ?, ?)").run(
-    id(),
-    env.adminEmail.toLowerCase(),
-    passwordHash,
-    "admin",
-    nowIso()
-  );
 };
 
 const parse = <T>(value: string | null | undefined, fallback: T): T => {

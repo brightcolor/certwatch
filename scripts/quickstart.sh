@@ -5,7 +5,6 @@ REPO_URL="${CERTWATCH_REPO_URL:-https://github.com/brightcolor/certwatch.git}"
 INSTALL_DIR="${CERTWATCH_INSTALL_DIR:-/opt/certwatch}"
 APP_PORT="${CERTWATCH_PORT:-8080}"
 CONTAINER_PORT="${CERTWATCH_CONTAINER_PORT:-8080}"
-ADMIN_EMAIL="${CERTWATCH_ADMIN_EMAIL:-admin@example.com}"
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "Please run this script as root, for example: sudo bash scripts/quickstart.sh"
@@ -48,7 +47,6 @@ fi
 cd "${INSTALL_DIR}"
 
 if [[ ! -f .env ]]; then
-  ADMIN_PASSWORD="${CERTWATCH_ADMIN_PASSWORD:-$(random_secret)}"
   SESSION_SECRET="${CERTWATCH_SESSION_SECRET:-$(random_secret)}"
   cat > .env <<ENV
 NODE_ENV=production
@@ -57,8 +55,6 @@ HOST_PORT=${APP_PORT}
 BASE_URL=http://localhost:${APP_PORT}
 DATABASE_PATH=/data/certwatch.sqlite
 SESSION_SECRET=${SESSION_SECRET}
-ADMIN_EMAIL=${ADMIN_EMAIL}
-ADMIN_PASSWORD=${ADMIN_PASSWORD}
 TRUST_PROXY=true
 COOKIE_SECURE=false
 ALLOW_PRIVATE_TARGETS=false
@@ -69,8 +65,7 @@ DEFAULT_CRITICAL_DAYS=7
 ENV
   chmod 600 .env
   echo "Created ${INSTALL_DIR}/.env"
-  echo "Initial admin email: ${ADMIN_EMAIL}"
-  echo "Initial admin password: ${ADMIN_PASSWORD}"
+  echo "Create the first admin account in the web setup screen."
 else
   echo "Using existing ${INSTALL_DIR}/.env"
 fi
@@ -80,6 +75,7 @@ docker compose up -d --build
 echo
 echo "CertWatch is starting."
 echo "Open: http://localhost:${APP_PORT}"
+echo "First run: create the admin account in the browser."
 echo "Data volume: certwatch_certwatch-data"
 echo
 echo "Useful commands:"

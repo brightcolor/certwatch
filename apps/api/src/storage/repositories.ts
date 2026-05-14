@@ -4,6 +4,10 @@ import { addSecondsIso, nowIso } from "../utils/time.js";
 import type { AlertingSettings, CheckResult, Monitor, NotificationChannel, SmtpSettings, User } from "../types.js";
 
 export const users = {
+  count(): number {
+    const row = db.prepare("SELECT COUNT(*) AS count FROM users").get() as { count?: number } | undefined;
+    return Number(row?.count ?? 0);
+  },
   findByEmail(email: string): User | null {
     const row = db.prepare("SELECT * FROM users WHERE email = ?").get(email.toLowerCase());
     return row ? rowToUser(row) : null;
@@ -11,6 +15,12 @@ export const users = {
   findById(userId: string): User | null {
     const row = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
     return row ? rowToUser(row) : null;
+  },
+  createAdmin(email: string, passwordHash: string): User {
+    const createdAt = nowIso();
+    const user = { id: id(), email: email.toLowerCase(), passwordHash, role: "admin" as const, createdAt };
+    db.prepare("INSERT INTO users VALUES (?, ?, ?, ?, ?)").run(user.id, user.email, user.passwordHash, user.role, user.createdAt);
+    return user;
   }
 };
 

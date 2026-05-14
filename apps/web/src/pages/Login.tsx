@@ -1,16 +1,21 @@
 import { useState } from "react";
 import { api } from "../api/client";
 
-export function Login({ onLogin }: { onLogin: (user: any) => void }) {
+export function Login({ setupRequired, onLogin }: { setupRequired: boolean; onLogin: (user: any) => void }) {
   const [email, setEmail] = useState("admin@example.com");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
+    if (setupRequired && password !== confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
     try {
-      const result = await api.request<any>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
+      const result = await api.request<any>(setupRequired ? "/auth/setup" : "/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
       api.setCsrf(result.csrfToken);
       onLogin(result.user);
     } catch (err) {
@@ -22,11 +27,13 @@ export function Login({ onLogin }: { onLogin: (user: any) => void }) {
     <main className="login">
       <form onSubmit={submit} className="login-panel">
         <span className="eyebrow">CertWatch</span>
-        <h1>Sign in</h1>
+        <h1>{setupRequired ? "Create admin" : "Sign in"}</h1>
+        {setupRequired && <p className="muted">Create the first administrator account for this CertWatch instance.</p>}
         <label>Email<input value={email} onChange={(e) => setEmail(e.target.value)} /></label>
         <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
+        {setupRequired && <label>Confirm password<input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} /></label>}
         {error && <p className="error">{error}</p>}
-        <button type="submit">Sign in</button>
+        <button type="submit">{setupRequired ? "Create admin" : "Sign in"}</button>
       </form>
     </main>
   );
