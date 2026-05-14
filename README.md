@@ -46,18 +46,24 @@ Screenshots are not committed yet. Start the app and open `http://localhost:8080
 
 ## Quick Start
 
-For a fresh Linux server with Docker already installed, run the installer script from a local checkout or an authenticated copy of the repository:
+For a fresh Linux server with Docker already installed, run:
 
 ```bash
-sudo bash scripts/quickstart.sh
+curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo bash
 ```
 
 The script clones the repository into `/opt/certwatch`, creates `/opt/certwatch/.env` with generated secrets, builds the image, and starts the stack with Docker Compose.
 
+If the repository is private, use a GitHub token that can read the repository:
+
+```bash
+curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo bash
+```
+
 Optional overrides:
 
 ```bash
-sudo CERTWATCH_PORT=8080 CERTWATCH_ADMIN_EMAIL=admin@example.com bash scripts/quickstart.sh
+curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo CERTWATCH_PORT=8080 CERTWATCH_ADMIN_EMAIL=admin@example.com bash
 ```
 
 Manual setup:
