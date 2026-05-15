@@ -1,4 +1,15 @@
-export type MonitorType = "https" | "tls" | "smtp_starttls" | "imap_starttls" | "pop3_starttls";
+export type MonitorType =
+  | "https"
+  | "tls"
+  | "smtps"
+  | "imaps"
+  | "pop3s"
+  | "ldaps"
+  | "ftps"
+  | "xmpps"
+  | "smtp_starttls"
+  | "imap_starttls"
+  | "pop3_starttls";
 export type MonitorStatus = "OK" | "WARNING" | "CRITICAL" | "DOWN" | "PAUSED" | "UNKNOWN";
 export type Severity = "info" | "warning" | "critical" | "recovery";
 export type ChannelType =

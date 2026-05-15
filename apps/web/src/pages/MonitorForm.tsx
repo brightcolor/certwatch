@@ -21,10 +21,32 @@ const blank = {
   notificationChannelIds: []
 };
 
+const protocolOptions = [
+  { value: "https", label: "HTTPS", port: 443 },
+  { value: "tls", label: "Custom TCP TLS", port: 443 },
+  { value: "smtps", label: "SMTPS / SMTP SSL", port: 465 },
+  { value: "imaps", label: "IMAPS / IMAP SSL", port: 993 },
+  { value: "pop3s", label: "POP3S / POP3 SSL", port: 995 },
+  { value: "ldaps", label: "LDAPS", port: 636 },
+  { value: "ftps", label: "Implicit FTPS", port: 990 },
+  { value: "xmpps", label: "XMPP TLS", port: 5223 },
+  { value: "smtp_starttls", label: "SMTP STARTTLS", port: 587 },
+  { value: "imap_starttls", label: "IMAP STARTTLS", port: 143 },
+  { value: "pop3_starttls", label: "POP3 STARTTLS", port: 110 }
+];
+
 export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAndCheck }: { monitor?: Monitor | null; channels?: any[]; onCancel: () => void; onSave: (data: any) => void; onSaveAndCheck: (data: any) => void }) {
   const [form, setForm] = useState<any>({ ...blank, ...monitor, tagsText: monitor?.tags?.join(", ") ?? "" });
   const data = () => ({ ...form, port: Number(form.port), intervalSeconds: Number(form.intervalSeconds), timeoutSeconds: Number(form.timeoutSeconds), warningDays: Number(form.warningDays), criticalDays: Number(form.criticalDays), tags: String(form.tagsText || "").split(",").map((tag) => tag.trim()).filter(Boolean), sniHost: form.sniHost || null });
   const set = (key: string, value: unknown) => setForm((current: any) => ({ ...current, [key]: value }));
+  const setProtocol = (type: string) => {
+    const option = protocolOptions.find((item) => item.value === type);
+    setForm((current: any) => ({
+      ...current,
+      type,
+      port: option?.port ?? current.port
+    }));
+  };
   const toggleChannel = (id: string) => {
     const current = new Set(form.notificationChannelIds ?? []);
     current.has(id) ? current.delete(id) : current.add(id);
@@ -37,7 +59,7 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
         <h2>{monitor ? "Edit monitor" : "New monitor"}</h2>
         <div className="grid two">
           <label>Name<input value={form.name} onChange={(e) => set("name", e.target.value)} required /></label>
-          <label>Protocol<select value={form.type} onChange={(e) => set("type", e.target.value)}><option value="https">HTTPS</option><option value="tls">TCP TLS</option><option value="smtp_starttls">SMTP STARTTLS</option><option value="imap_starttls">IMAP STARTTLS</option><option value="pop3_starttls">POP3 STARTTLS</option></select></label>
+          <label>Protocol<select value={form.type} onChange={(e) => setProtocol(e.target.value)}>{protocolOptions.map((option) => <option value={option.value} key={option.value}>{option.label} ({option.port})</option>)}</select></label>
           <label>Hostname<input value={form.host} onChange={(e) => set("host", e.target.value)} required /></label>
           <label>Port<input type="number" min="1" max="65535" value={form.port} onChange={(e) => set("port", e.target.value)} /></label>
           <label>Interval seconds<input type="number" min="60" value={form.intervalSeconds} onChange={(e) => set("intervalSeconds", e.target.value)} /></label>

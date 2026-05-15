@@ -21,7 +21,7 @@ This stack keeps the application easy to self-host while still supporting real T
 ## Features
 
 - Dashboard with OK, warning, critical, down, paused, and unknown status counts
-- Monitor types for HTTPS, direct TCP TLS, SMTP STARTTLS, IMAP STARTTLS, and POP3 STARTTLS
+- Monitor types for HTTPS, custom TCP TLS, SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, XMPP TLS, SMTP STARTTLS, IMAP STARTTLS, and POP3 STARTTLS
 - Certificate detail view with CN, SANs, issuer, serial number, SHA256 fingerprint, validity, chain, TLS version, and cipher suite
 - Hostname mismatch, self-signed, expiry, weak TLS protocol, chain trust, and fingerprint-change detection
 - Historical check results per monitor
@@ -106,7 +106,9 @@ On first launch, CertWatch shows a setup screen where the first user creates the
 ## Example Monitors
 
 - `example.com`, port `443`, type `HTTPS`
+- `smtp.example.com`, port `465`, type `SMTPS`
 - `mail.example.com`, port `993`, type `TCP TLS`
+- `ldap.example.com`, port `636`, type `LDAPS`
 - `smtp.example.com`, port `587`, type `SMTP STARTTLS`
 - `imap.example.com`, port `143`, type `IMAP STARTTLS`
 - `pop3.example.com`, port `110`, type `POP3 STARTTLS`

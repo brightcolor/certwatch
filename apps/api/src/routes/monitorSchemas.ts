@@ -3,11 +3,13 @@ import { env } from "../config/env.js";
 import { validateHost, validatePort } from "../checks/validation.js";
 import type { Monitor } from "../types.js";
 
+export const monitorTypes = ["https", "tls", "smtps", "imaps", "pop3s", "ldaps", "ftps", "xmpps", "smtp_starttls", "imap_starttls", "pop3_starttls"] as const;
+
 export const monitorInputSchema = z.object({
   name: z.string().trim().min(1).max(120),
   host: z.string().transform(validateHost),
   port: z.number().int().transform(validatePort),
-  type: z.enum(["https", "tls", "smtp_starttls", "imap_starttls", "pop3_starttls"]),
+  type: z.enum(monitorTypes),
   enabled: z.boolean().default(true),
   intervalSeconds: z.number().int().min(60).max(2_592_000).default(env.defaultIntervalSeconds),
   timeoutSeconds: z.number().int().min(2).max(120).default(10),
