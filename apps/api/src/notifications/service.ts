@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
-import type { CheckResult, Monitor, NotificationChannel, Severity, SmtpSettings } from "../types.js";
+import type { CheckResult, Monitor, NotificationChannel, NotificationRoute, Severity, SmtpSettings } from "../types.js";
 import { alerts, appSettings } from "../storage/repositories.js";
 import { alertFingerprint } from "../checks/status.js";
 
@@ -42,11 +42,24 @@ export const buildPayload = (monitor: Monitor, result: CheckResult) => ({
 });
 
 const sendToChannels = async (monitor: Monitor, result: CheckResult, configured: NotificationChannel[]) => {
-  const targets = configured.filter((channel) => channel.enabled && (!monitor.notificationChannelIds.length || monitor.notificationChannelIds.includes(channel.id)));
+  const selected = selectedChannelIds(monitor, result, appSettings.notificationRoutes(), configured.map((channel) => channel.id));
+  const targets = configured.filter((channel) => channel.enabled && selected.has(channel.id));
   await Promise.allSettled(targets.map(async (channel) => {
     await sendChannel(channel, monitor, result);
     alerts.record(monitor.id, channel.id, result.severity, result.status, alertFingerprint(result), result.message);
   }));
+};
+
+const selectedChannelIds = (monitor: Monitor, result: CheckResult, routes: NotificationRoute[], fallback: string[]) => {
+  const explicit = new Set(monitor.notificationChannelIds);
+  for (const route of routes) {
+    if (!route.enabled) continue;
+    const tagMatch = !route.tags.length || route.tags.some((tag) => monitor.tags.includes(tag));
+    const severityMatch = !route.severities.length || route.severities.includes(result.severity);
+    if (tagMatch && severityMatch) route.channelIds.forEach((channelId) => explicit.add(channelId));
+  }
+  if (!explicit.size) return new Set<string>(fallback);
+  return explicit;
 };
 
 const sendChannel = async (channel: NotificationChannel, monitor: Monitor, result: CheckResult) => {

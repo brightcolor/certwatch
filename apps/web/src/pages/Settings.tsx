@@ -33,14 +33,17 @@ const providerFields: Record<string, Array<{ key: string; label: string; type?: 
   opsgenie: [{ key: "apiKey", label: "API key", type: "password" }]
 };
 
-export function Settings({ channels, alerting, smtp, onSaveChannel, onDeleteChannel, onTest, onSaveAlerting, onSaveSmtp }: any) {
+export function Settings({ channels, alerting, smtp, retention, routes, onSaveChannel, onDeleteChannel, onTest, onSaveAlerting, onSaveSmtp, onSaveRetention, onSaveRoutes }: any) {
   const [channel, setChannel] = useState<any>({ name: "", type: "email", enabled: true, config: {} });
   const [alertForm, setAlertForm] = useState(alerting);
   const [smtpForm, setSmtpForm] = useState(smtp);
+  const [retentionForm, setRetentionForm] = useState(retention);
+  const [routeForm, setRouteForm] = useState({ name: "", tags: "", severities: ["critical"], channelIds: [] as string[], enabled: true });
   const fields = useMemo(() => providerFields[channel.type] ?? providerFields.webhook, [channel.type]);
 
   useEffect(() => setAlertForm(alerting), [alerting]);
   useEffect(() => setSmtpForm(smtp), [smtp]);
+  useEffect(() => setRetentionForm(retention), [retention]);
 
   const saveChannel = () => {
     onSaveChannel(channel);
@@ -57,6 +60,7 @@ export function Settings({ channels, alerting, smtp, onSaveChannel, onDeleteChan
             <label>Repeat unresolved alerts after hours<input type="number" min="1" max="720" value={alertForm.resendAfterHours} onChange={(e) => setAlertForm({ ...alertForm, resendAfterHours: Number(e.target.value) })} /></label>
             <div className="checks">
               <label><input type="checkbox" checked={alertForm.recoveryEnabled} onChange={(e) => setAlertForm({ ...alertForm, recoveryEnabled: e.target.checked })} /> Send recovery alerts</label>
+              <label><input type="checkbox" checked={alertForm.certificateChangeAlerts} onChange={(e) => setAlertForm({ ...alertForm, certificateChangeAlerts: e.target.checked })} /> Alert on certificate changes</label>
               <label><input type="checkbox" checked={alertForm.quietHoursEnabled} onChange={(e) => setAlertForm({ ...alertForm, quietHoursEnabled: e.target.checked })} /> Enable quiet hours</label>
               <label><input type="checkbox" checked={alertForm.quietSuppressCritical} onChange={(e) => setAlertForm({ ...alertForm, quietSuppressCritical: e.target.checked })} /> Also silence critical alerts</label>
             </div>
@@ -83,6 +87,25 @@ export function Settings({ channels, alerting, smtp, onSaveChannel, onDeleteChan
             </div>
             <button onClick={() => onSaveSmtp(smtpForm)}>Save SMTP settings</button>
           </>}
+        </div>
+      </div>
+      <div className="grid two">
+        <div className="panel">
+          <h3>Retention</h3>
+          {retentionForm && <>
+            <label>Check history days<input type="number" min="1" max="3650" value={retentionForm.checkResultsDays} onChange={(e) => setRetentionForm({ ...retentionForm, checkResultsDays: Number(e.target.value) })} /></label>
+            <label>Alert history days<input type="number" min="1" max="3650" value={retentionForm.alertHistoryDays} onChange={(e) => setRetentionForm({ ...retentionForm, alertHistoryDays: Number(e.target.value) })} /></label>
+            <button onClick={() => onSaveRetention(retentionForm)}>Save retention</button>
+          </>}
+        </div>
+        <div className="panel">
+          <h3>Notification routing</h3>
+          <label>Name<input value={routeForm.name} onChange={(e) => setRouteForm({ ...routeForm, name: e.target.value })} /></label>
+          <label>Tags<input value={routeForm.tags} placeholder="prod,mail" onChange={(e) => setRouteForm({ ...routeForm, tags: e.target.value })} /></label>
+          <label>Severity<select value={routeForm.severities[0] ?? "critical"} onChange={(e) => setRouteForm({ ...routeForm, severities: [e.target.value] })}><option value="warning">Warning</option><option value="critical">Critical</option><option value="recovery">Recovery</option></select></label>
+          <div className="checks">{channels.map((item: any) => <label key={item.id}><input type="checkbox" checked={routeForm.channelIds.includes(item.id)} onChange={() => setRouteForm((current) => ({ ...current, channelIds: current.channelIds.includes(item.id) ? current.channelIds.filter((id) => id !== item.id) : [...current.channelIds, item.id] }))} /> {item.name}</label>)}</div>
+          <button onClick={() => { onSaveRoutes([...(routes ?? []), { id: crypto.randomUUID(), name: routeForm.name, tags: routeForm.tags.split(",").map((tag) => tag.trim()).filter(Boolean), severities: routeForm.severities, channelIds: routeForm.channelIds, enabled: true }]); setRouteForm({ name: "", tags: "", severities: ["critical"], channelIds: [], enabled: true }); }}>Add route</button>
+          {(routes ?? []).map((route: any) => <div className="channel" key={route.id}><strong>{route.name}</strong><span>{route.tags.join(", ") || "all tags"} · {route.severities.join(", ")}</span><button onClick={() => onSaveRoutes(routes.filter((item: any) => item.id !== route.id))}>Delete</button></div>)}
         </div>
       </div>
       <div className="grid two">

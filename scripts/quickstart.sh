@@ -71,6 +71,9 @@ else
 fi
 
 docker compose up -d --build
+if [[ "${CERTWATCH_ENABLE_WATCHTOWER:-false}" == "true" ]]; then
+  docker compose --profile watchtower up -d watchtower
+fi
 
 echo
 echo "CertWatch is starting."
@@ -82,3 +85,4 @@ echo "Useful commands:"
 echo "  cd ${INSTALL_DIR}"
 echo "  docker compose logs -f"
 echo "  docker compose pull && docker compose up -d --build"
+echo "  CERTWATCH_ENABLE_WATCHTOWER=true bash scripts/quickstart.sh"

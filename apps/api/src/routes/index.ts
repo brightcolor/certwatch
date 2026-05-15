@@ -8,6 +8,7 @@ import { exportRoutes } from "./exportRoutes.js";
 export const apiRoutes = Router();
 
 apiRoutes.use("/auth", authRoutes);
+apiRoutes.get("/health", (_req, res) => res.json({ ok: true }));
 apiRoutes.use(requireAuth);
 apiRoutes.use("/monitors", monitorRoutes);
 apiRoutes.use("/", systemRoutes);

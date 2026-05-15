@@ -1,9 +1,11 @@
 import { env } from "../config/env.js";
 import { runTlsCheck } from "../checks/tlsChecker.js";
-import { channels, monitors, results } from "../storage/repositories.js";
+import { alerts, appSettings, channels, monitors, results } from "../storage/repositories.js";
 import { dispatchAlerts } from "../notifications/service.js";
+import { applyCertificateChangeWatch } from "../checks/changeWatch.js";
 
 let running = false;
+let lastRetentionRun = 0;
 
 export const startScheduler = () => {
   const tick = async () => {
@@ -12,6 +14,7 @@ export const startScheduler = () => {
     try {
       const due = monitors.due(env.checkConcurrency);
       await Promise.allSettled(due.map(runMonitor));
+      runRetentionIfDue();
     } finally {
       running = false;
     }
@@ -20,10 +23,19 @@ export const startScheduler = () => {
   setInterval(tick, 30_000).unref();
 };
 
+const runRetentionIfDue = () => {
+  if (Date.now() - lastRetentionRun < 3_600_000) return;
+  lastRetentionRun = Date.now();
+  const retention = appSettings.retention();
+  results.prune(retention.checkResultsDays);
+  alerts.prune(retention.alertHistoryDays);
+};
+
 const runMonitor = async (monitor: ReturnType<typeof monitors.list>[number]) => {
   try {
-    const previous = results.list(monitor.id, 1)[0]?.fingerprintSha256;
-    const result = await runTlsCheck(monitor, previous);
+    const previous = results.list(monitor.id, 1)[0];
+    const checked = await runTlsCheck(monitor, previous?.fingerprintSha256);
+    const result = applyCertificateChangeWatch(checked, previous, appSettings.alerting());
     results.insert(result);
     monitors.markChecked(monitor, result);
     await dispatchAlerts(monitor, result, channels.list());

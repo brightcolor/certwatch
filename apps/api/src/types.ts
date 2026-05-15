@@ -106,10 +106,25 @@ export interface User {
 export interface AlertingSettings {
   resendAfterHours: number;
   recoveryEnabled: boolean;
+  certificateChangeAlerts: boolean;
   quietHoursEnabled: boolean;
   quietStart: string;
   quietEnd: string;
   quietSuppressCritical: boolean;
+}
+
+export interface RetentionSettings {
+  checkResultsDays: number;
+  alertHistoryDays: number;
+}
+
+export interface NotificationRoute {
+  id: string;
+  name: string;
+  tags: string[];
+  severities: Severity[];
+  channelIds: string[];
+  enabled: boolean;
 }
 
 export interface SmtpSettings {

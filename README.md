@@ -161,6 +161,38 @@ All API routes require login session authentication except `/api/auth/login`.
 - `GET /api/export/certificates.csv`
 - `GET /api/export/history.csv`
 
+## Public Status And Badges
+
+Public status pages are available by tag:
+
+```text
+/public/status/prod.html
+/public/status/prod
+```
+
+Monitor badges are SVG URLs:
+
+```text
+/public/badge/{monitorId}.svg
+```
+
+## Watchtower Updates
+
+The Compose file uses the published image `ghcr.io/brightcolor/certwatch:latest` and includes an optional Watchtower service. Enable it during quickstart:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo CERTWATCH_ENABLE_WATCHTOWER=true bash
+```
+
+Or enable it later:
+
+```bash
+cd /opt/certwatch
+docker compose --profile watchtower up -d watchtower
+```
+
+Watchtower updates containers that have `com.centurylinklabs.watchtower.enable=true`.
+
 ## Reverse Proxy
 
 Set:
@@ -213,7 +245,6 @@ The schema migration currently creates missing tables only. Back up the database
 
 - Add API token management
 - Add full quiet-hours and maintenance-window enforcement
-- Add public status pages and badge URLs
 - Add Prometheus metrics endpoint
 - Add OIDC, LDAP, and reverse-proxy-auth integrations
 - Add encrypted storage for notification secrets

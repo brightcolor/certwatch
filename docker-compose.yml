@@ -1,5 +1,6 @@
 services:
   certwatch:
+    image: ghcr.io/brightcolor/certwatch:latest
     build: .
     container_name: certwatch
     restart: unless-stopped
@@ -17,6 +18,22 @@ services:
       - "${HOST_PORT:-8080}:${PORT:-8080}"
     volumes:
       - certwatch-data:/data
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:$${PORT:-8080}/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    restart: unless-stopped
+    profiles: ["watchtower"]
+    command: --label-enable --cleanup --interval 300
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   certwatch-data:

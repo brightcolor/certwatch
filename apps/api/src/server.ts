@@ -8,6 +8,7 @@ import { env } from "./config/env.js";
 import { attachSession } from "./auth/auth.js";
 import { migrate } from "./storage/db.js";
 import { apiRoutes } from "./routes/index.js";
+import { publicRoutes } from "./routes/publicRoutes.js";
 import { startScheduler } from "./scheduler/scheduler.js";
 
 migrate();
@@ -21,6 +22,7 @@ app.use(cookieParser(env.sessionSecret));
 app.use(morgan(env.nodeEnv === "production" ? "combined" : "dev"));
 app.use(attachSession);
 app.use("/api", apiRoutes);
+app.use("/public", publicRoutes);
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const webDist = path.resolve(currentDir, "../../web/dist");

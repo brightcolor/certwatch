@@ -1,9 +1,11 @@
 import { Router } from "express";
+import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { id } from "../utils/id.js";
 import { nowIso } from "../utils/time.js";
-import { alerts, appSettings, channels, monitors, results } from "../storage/repositories.js";
+import { alerts, appSettings, channels, monitors, results, users } from "../storage/repositories.js";
 import { testChannel } from "../notifications/service.js";
+import { requireAdmin } from "../auth/auth.js";
 
 export const systemRoutes = Router();
 
@@ -26,6 +28,7 @@ systemRoutes.get("/status", (_req, res) => {
 });
 
 systemRoutes.get("/alerts", (_req, res) => res.json(alerts.list()));
+systemRoutes.get("/health", (_req, res) => res.json({ ok: true }));
 systemRoutes.get("/settings/alerting", (_req, res) => res.json(appSettings.alerting()));
 systemRoutes.put("/settings/alerting", (req, res) => {
   const parsed = alertingSchema.safeParse(req.body);
@@ -41,6 +44,20 @@ systemRoutes.put("/settings/smtp", (req, res) => {
   const next = { ...parsed.data, password: parsed.data.password === "********" ? current.password : parsed.data.password };
   appSettings.set("smtp", next);
   res.json(redactConfig(next));
+});
+systemRoutes.get("/settings/retention", (_req, res) => res.json(appSettings.retention()));
+systemRoutes.put("/settings/retention", (req, res) => {
+  const parsed = retentionSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid retention settings." });
+  appSettings.set("retention", parsed.data);
+  res.json(parsed.data);
+});
+systemRoutes.get("/notification-routes", (_req, res) => res.json(appSettings.notificationRoutes()));
+systemRoutes.put("/notification-routes", (req, res) => {
+  const parsed = z.array(routeSchema).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid notification routes." });
+  appSettings.set("notificationRoutes", parsed.data);
+  res.json(parsed.data);
 });
 systemRoutes.get("/notification-channels", (_req, res) => res.json(channels.list().map(redactChannel)));
 
@@ -65,6 +82,31 @@ systemRoutes.post("/notification-channels/test", async (req, res) => {
   res.json({ ok: true });
 });
 
+systemRoutes.get("/users", requireAdmin, (_req, res) => {
+  res.json(users.list().map(publicUser));
+});
+
+systemRoutes.post("/users", requireAdmin, async (req, res) => {
+  const parsed = userSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid user." });
+  const user = users.create(parsed.data.email, await bcrypt.hash(parsed.data.password, 12), parsed.data.role);
+  res.status(201).json(publicUser(user));
+});
+
+systemRoutes.put("/users/:id", requireAdmin, async (req, res) => {
+  const parsed = updateUserSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid user." });
+  const hash = parsed.data.password ? await bcrypt.hash(parsed.data.password, 12) : undefined;
+  users.update(req.params.id, parsed.data.role, hash);
+  res.json({ ok: true });
+});
+
+systemRoutes.delete("/users/:id", requireAdmin, (req, res) => {
+  if (req.user?.id === req.params.id) return res.status(409).json({ error: "You cannot delete your own user." });
+  users.delete(req.params.id);
+  res.status(204).end();
+});
+
 const channelSchema = z.object({
   id: z.string().uuid().optional(),
   name: z.string().min(1).max(100),
@@ -81,6 +123,31 @@ const alertingSchema = z.object({
   quietEnd: z.string().regex(/^\d{2}:\d{2}$/),
   quietSuppressCritical: z.boolean()
 });
+
+const retentionSchema = z.object({
+  checkResultsDays: z.number().int().min(1).max(3650),
+  alertHistoryDays: z.number().int().min(1).max(3650)
+});
+
+const routeSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(100),
+  tags: z.array(z.string().min(1).max(40)),
+  severities: z.array(z.enum(["info", "warning", "critical", "recovery"])),
+  channelIds: z.array(z.string()),
+  enabled: z.boolean()
+});
+
+const userSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(12),
+  role: z.enum(["admin", "viewer"])
+});
+
+const updateUserSchema = z.object({
+  password: z.string().min(12).optional().or(z.literal("")),
+  role: z.enum(["admin", "viewer"])
+}).transform((value) => ({ ...value, password: value.password || undefined }));
 
 const smtpSchema = z.object({
   host: z.string().max(255),
@@ -101,3 +168,5 @@ const redactChannel = (channel: any) => ({
   ...channel,
   config: redactConfig(channel.config)
 });
+
+const publicUser = (user: any) => ({ id: user.id, email: user.email, role: user.role, createdAt: user.createdAt });

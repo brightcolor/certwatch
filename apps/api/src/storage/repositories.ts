@@ -1,7 +1,7 @@
 import { db, rowToChannel, rowToMonitor, rowToResult, rowToUser } from "./db.js";
 import { id } from "../utils/id.js";
 import { addSecondsIso, nowIso } from "../utils/time.js";
-import type { AlertingSettings, CheckResult, Monitor, NotificationChannel, SmtpSettings, User } from "../types.js";
+import type { AlertingSettings, CheckResult, Monitor, NotificationChannel, NotificationRoute, RetentionSettings, SmtpSettings, User } from "../types.js";
 
 export const users = {
   count(): number {
@@ -21,6 +21,22 @@ export const users = {
     const user = { id: id(), email: email.toLowerCase(), passwordHash, role: "admin" as const, createdAt };
     db.prepare("INSERT INTO users VALUES (?, ?, ?, ?, ?)").run(user.id, user.email, user.passwordHash, user.role, user.createdAt);
     return user;
+  },
+  list(): User[] {
+    return db.prepare("SELECT * FROM users ORDER BY email").all().map(rowToUser);
+  },
+  create(email: string, passwordHash: string, role: "admin" | "viewer"): User {
+    const createdAt = nowIso();
+    const user = { id: id(), email: email.toLowerCase(), passwordHash, role, createdAt };
+    db.prepare("INSERT INTO users VALUES (?, ?, ?, ?, ?)").run(user.id, user.email, user.passwordHash, user.role, user.createdAt);
+    return user;
+  },
+  update(userId: string, role: "admin" | "viewer", passwordHash?: string) {
+    if (passwordHash) db.prepare("UPDATE users SET role = ?, password_hash = ? WHERE id = ?").run(role, passwordHash, userId);
+    else db.prepare("UPDATE users SET role = ? WHERE id = ?").run(role, userId);
+  },
+  delete(userId: string) {
+    db.prepare("DELETE FROM users WHERE id = ?").run(userId);
   }
 };
 
@@ -120,6 +136,9 @@ export const results = {
       chainJson: JSON.stringify(result.chain),
       problemsJson: JSON.stringify(result.problems)
     });
+  },
+  prune(days: number) {
+    db.prepare("DELETE FROM check_results WHERE checked_at < ?").run(new Date(Date.now() - days * 86_400_000).toISOString());
   }
 };
 
@@ -163,6 +182,9 @@ export const alerts = {
   },
   list(limit = 100) {
     return db.prepare("SELECT * FROM alert_history ORDER BY sent_at DESC LIMIT ?").all(limit);
+  },
+  prune(days: number) {
+    db.prepare("DELETE FROM alert_history WHERE sent_at < ?").run(new Date(Date.now() - days * 86_400_000).toISOString());
   }
 };
 
@@ -171,6 +193,7 @@ export const appSettings = {
     return this.get("alerting", {
       resendAfterHours: 24,
       recoveryEnabled: true,
+      certificateChangeAlerts: true,
       quietHoursEnabled: false,
       quietStart: "22:00",
       quietEnd: "07:00",
@@ -187,6 +210,12 @@ export const appSettings = {
       secure: false,
       starttls: true
     });
+  },
+  retention(): RetentionSettings {
+    return this.get("retention", { checkResultsDays: 365, alertHistoryDays: 365 });
+  },
+  notificationRoutes(): NotificationRoute[] {
+    return this.get("notificationRoutes", []);
   },
   get<T>(key: string, fallback: T): T {
     const row = db.prepare("SELECT value_json FROM settings WHERE key = ?").get(key) as { value_json?: string } | undefined;

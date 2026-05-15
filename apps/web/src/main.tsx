@@ -7,6 +7,8 @@ import { Login } from "./pages/Login";
 import { MonitorDetail } from "./pages/MonitorDetail";
 import { MonitorForm } from "./pages/MonitorForm";
 import { Settings } from "./pages/Settings";
+import { BulkImport } from "./pages/BulkImport";
+import { UsersPage } from "./pages/Users";
 import "./styles/app.css";
 
 function App() {
@@ -18,6 +20,9 @@ function App() {
   const [channels, setChannels] = useState<any[]>([]);
   const [alerting, setAlerting] = useState<any>(null);
   const [smtp, setSmtp] = useState<any>(null);
+  const [retention, setRetention] = useState<any>(null);
+  const [routes, setRoutes] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [results, setResults] = useState<CheckResult[]>([]);
   const [editing, setEditing] = useState<Monitor | null | "new">(null);
@@ -46,12 +51,20 @@ function App() {
       api.request<any>("/status"),
       api.request<any[]>("/notification-channels")
     ]);
-    const [alertingData, smtpData] = await Promise.all([api.request<any>("/settings/alerting"), api.request<any>("/settings/smtp")]);
+    const [alertingData, smtpData, retentionData, routesData] = await Promise.all([
+      api.request<any>("/settings/alerting"),
+      api.request<any>("/settings/smtp"),
+      api.request<any>("/settings/retention"),
+      api.request<any[]>("/notification-routes")
+    ]);
     setMonitors(monitorData);
     setStats(statusData);
     setChannels(channelData);
     setAlerting(alertingData);
     setSmtp(smtpData);
+    setRetention(retentionData);
+    setRoutes(routesData);
+    if (user?.role === "admin") setUsers(await api.request<any[]>("/users"));
   };
 
   const loadResults = async (id: string) => setResults(await api.request<CheckResult[]>(`/monitors/${id}/results`));
@@ -87,12 +100,20 @@ function App() {
           channels={channels}
           alerting={alerting}
           smtp={smtp}
+          retention={retention}
+          routes={routes}
           onSaveChannel={async (channel: any) => { await api.request("/notification-channels", { method: "POST", body: JSON.stringify(channel) }); await refresh(); }}
           onDeleteChannel={async (id: string) => { await api.request(`/notification-channels/${id}`, { method: "DELETE" }); await refresh(); }}
           onTest={(id: string) => api.request("/notification-channels/test", { method: "POST", body: JSON.stringify({ id }) })}
           onSaveAlerting={async (data: any) => { await api.request("/settings/alerting", { method: "PUT", body: JSON.stringify(data) }); await refresh(); }}
           onSaveSmtp={async (data: any) => { await api.request("/settings/smtp", { method: "PUT", body: JSON.stringify(data) }); await refresh(); }}
+          onSaveRetention={async (data: any) => { await api.request("/settings/retention", { method: "PUT", body: JSON.stringify(data) }); await refresh(); }}
+          onSaveRoutes={async (data: any) => { await api.request("/notification-routes", { method: "PUT", body: JSON.stringify(data) }); await refresh(); }}
         />
+      ) : page === "import" ? (
+        <BulkImport onImport={async (text) => { const result = await api.request("/monitors/bulk", { method: "POST", body: JSON.stringify({ text }) }); await refresh(); return result; }} />
+      ) : page === "users" ? (
+        <UsersPage users={users} onCreate={async (data: any) => { await api.request("/users", { method: "POST", body: JSON.stringify(data) }); await refresh(); }} onDelete={async (id: string) => { await api.request(`/users/${id}`, { method: "DELETE" }); await refresh(); }} />
       ) : selectedMonitor ? (
         <MonitorDetail monitor={selectedMonitor} results={results} onBack={() => setSelected(null)} onEdit={() => setEditing(selectedMonitor)} onCheck={() => checkNow(selectedMonitor.id)} />
       ) : (
