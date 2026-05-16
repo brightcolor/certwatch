@@ -11,6 +11,7 @@ const blank = {
   timeoutSeconds: 10,
   warningDays: 30,
   criticalDays: 7,
+  gracePeriodSeconds: 0,
   sniEnabled: true,
   sniHost: "",
   validateCertificate: true,
@@ -49,7 +50,7 @@ const protocolOptions = [
 
 export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAndCheck }: { monitor?: Monitor | null; channels?: any[]; onCancel: () => void; onSave: (data: any) => void; onSaveAndCheck: (data: any) => void }) {
   const [form, setForm] = useState<any>({ ...blank, ...monitor, tagsText: monitor?.tags?.join(", ") ?? "" });
-  const data = () => ({ ...form, port: Number(form.port), intervalSeconds: Number(form.intervalSeconds), timeoutSeconds: Number(form.timeoutSeconds), warningDays: Number(form.warningDays), criticalDays: Number(form.criticalDays), tags: String(form.tagsText || "").split(",").map((tag) => tag.trim()).filter(Boolean), sniHost: form.sniHost || null });
+  const data = () => ({ ...form, port: Number(form.port), intervalSeconds: Number(form.intervalSeconds), timeoutSeconds: Number(form.timeoutSeconds), warningDays: Number(form.warningDays), criticalDays: Number(form.criticalDays), gracePeriodSeconds: Number(form.gracePeriodSeconds), tags: String(form.tagsText || "").split(",").map((tag) => tag.trim()).filter(Boolean), sniHost: form.sniHost || null });
   const set = (key: string, value: unknown) => setForm((current: any) => ({ ...current, [key]: value }));
   const setConfig = (key: string, value: unknown) => set("config", { ...(form.config ?? {}), [key]: value });
   const setProtocol = (type: string) => {
@@ -81,6 +82,7 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
           <label>Timeout seconds<input type="number" min="2" value={form.timeoutSeconds} onChange={(e) => set("timeoutSeconds", e.target.value)} /></label>
           <label>Warning days<input type="number" min="1" value={form.warningDays} onChange={(e) => set("warningDays", e.target.value)} /></label>
           <label>Critical days<input type="number" min="0" value={form.criticalDays} onChange={(e) => set("criticalDays", e.target.value)} /></label>
+          <label>Alert grace period seconds<input type="number" min="0" max="604800" value={form.gracePeriodSeconds ?? 0} onChange={(e) => set("gracePeriodSeconds", e.target.value)} /></label>
           <label>SNI hostname<input value={form.sniHost ?? ""} onChange={(e) => set("sniHost", e.target.value)} /></label>
           <label>Tags<input value={form.tagsText} onChange={(e) => set("tagsText", e.target.value)} placeholder="prod, mail, customer-a" /></label>
         </div>
@@ -106,8 +108,14 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
               <label>Record type<select value={String(form.config?.recordType ?? "A")} onChange={(e) => setConfig("recordType", e.target.value)}>{["A", "AAAA", "CNAME", "MX", "TXT"].map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
               <label>Expected value<input value={String(form.config?.expectedValue ?? "")} onChange={(e) => setConfig("expectedValue", e.target.value)} placeholder="Optional substring" /></label>
             </>}
+            {usesProtocolLogin(form.type) && <>
+              <label><input type="checkbox" checked={Boolean(form.config?.loginEnabled)} onChange={(e) => setConfig("loginEnabled", e.target.checked)} /> Test login</label>
+              <label>Username<input value={String(form.config?.username ?? "")} onChange={(e) => setConfig("username", e.target.value)} autoComplete="off" /></label>
+              <label>Password<input type="password" value={String(form.config?.password ?? "")} onChange={(e) => setConfig("password", e.target.value)} autoComplete="new-password" /></label>
+              {form.type !== "ssh" && <label><input type="checkbox" checked={Boolean(form.config?.allowInsecureLogin)} onChange={(e) => setConfig("allowInsecureLogin", e.target.checked)} /> Allow plaintext login test</label>}
+            </>}
           </div>
-          {form.type === "http_login" && <p className="muted">Login secrets are encrypted at rest and masked after saving. Keep SESSION_SECRET stable across upgrades.</p>}
+          {(form.type === "http_login" || usesProtocolLogin(form.type)) && <p className="muted">Login secrets are encrypted at rest and masked after saving. Plain FTP, SMTP, IMAP and POP3 login tests require explicit plaintext approval.</p>}
         </div>}
         <div className="panel compact">
           <h3>Notifications for this monitor</h3>
@@ -139,7 +147,8 @@ const recipientLabel = (type: string) => type === "email" ? "Recipients" : type 
 const recipientPlaceholder = (type: string) => type === "email" ? "ops@example.com, admin@example.com" : type === "telegram" ? "-1001234567890" : type === "pushover" ? "Pushover user key" : type === "matrix" ? "!room:example.com" : "https://...";
 
 const usesHttpConfig = (type: string) => type === "http" || type === "http_login";
-const usesServiceConfig = (type: string) => usesHttpConfig(type) || type === "dns";
+const usesProtocolLogin = (type: string) => ["ssh", "ftp", "smtp", "imap", "pop3"].includes(type);
+const usesServiceConfig = (type: string) => usesHttpConfig(type) || type === "dns" || usesProtocolLogin(type);
 const defaultsForType = (type: string, current: Record<string, unknown>) => {
   if (type === "http") return { scheme: "http", path: "/", expectedStatus: 200, ...current };
   if (type === "http_login") return { scheme: "https", path: "/login", expectedStatus: 200, authType: "form", usernameField: "username", passwordField: "password", ...current };

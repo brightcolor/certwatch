@@ -8,6 +8,7 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck 
   );
   const tags = Array.from(new Set<string>(monitors.flatMap((monitor: Monitor) => monitor.tags))).sort();
   const origin = window.location.origin;
+  const combinations = tagCombinations(tags);
 
   return (
     <section className="content">
@@ -22,11 +23,15 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck 
         <div className="panel">
           <h3>Public status pages</h3>
           <div className="history">
-            {tags.map((tag) => {
-              const html = `${origin}/public/status/${encodeURIComponent(tag)}.html`;
-              const json = `${origin}/public/status/${encodeURIComponent(tag)}`;
-              const iframe = `<iframe src="${html}" title="CertWatch ${tag}" loading="lazy"></iframe>`;
-              return <div key={tag}><strong>{tag}</strong><code>{html}</code><button onClick={() => navigator.clipboard?.writeText(html)}>Copy URL</button><button onClick={() => navigator.clipboard?.writeText(iframe)}>Copy iframe</button><a href={html} target="_blank" rel="noreferrer">Open</a><small>JSON: {json}</small></div>;
+            {combinations.map((group) => {
+              const key = group.map(encodeURIComponent).join("+");
+              const label = group.join(" + ");
+              const html = `${origin}/public/status/${key}.html`;
+              const json = `${origin}/public/status/${key}`;
+              const badge = `${origin}/public/badge/tags/${key}.svg`;
+              const iframe = `<iframe src="${html}" title="CertWatch ${label}" loading="lazy"></iframe>`;
+              const markdown = `[![${label}](${badge})](${html})`;
+              return <div key={key}><strong>{label}</strong><code>{html}</code><button onClick={() => navigator.clipboard?.writeText(html)}>Copy URL</button><button onClick={() => navigator.clipboard?.writeText(iframe)}>Copy iframe</button><button onClick={() => navigator.clipboard?.writeText(markdown)}>Copy badge</button><a href={html} target="_blank" rel="noreferrer">Open</a><small>JSON: {json}</small></div>;
             })}
           </div>
         </div>
@@ -53,3 +58,7 @@ function Metric({ icon, label, value }: any) {
 }
 
 const shortDate = (value?: string | null) => value ? new Date(value).toLocaleDateString() : "";
+const tagCombinations = (tags: string[]) => [
+  ...tags.map((tag) => [tag]),
+  ...tags.flatMap((left, index) => tags.slice(index + 1).map((right) => [left, right]))
+];

@@ -1,7 +1,7 @@
 import type { CheckResult, Monitor } from "../api/client";
 import { StatusPill } from "../components/StatusPill";
 
-export function MonitorDetail({ monitor, results, onBack, onEdit, onCheck }: { monitor: Monitor; results: CheckResult[]; onBack: () => void; onEdit: () => void; onCheck: () => void }) {
+export function MonitorDetail({ monitor, results, onBack, onEdit, onCheck, onDelete }: { monitor: Monitor; results: CheckResult[]; onBack: () => void; onEdit: () => void; onCheck: () => void; onDelete: () => void }) {
   const latest = results[0] ?? monitor.latestResult;
   const origin = window.location.origin;
   const statusTag = monitor.tags[0] ?? "all";
@@ -15,7 +15,7 @@ export function MonitorDetail({ monitor, results, onBack, onEdit, onCheck }: { m
       <button className="ghost" onClick={onBack}>Back</button>
       <div className="detail-head">
         <div><h2>{monitor.name}</h2><p>{monitor.host}:{monitor.port} - {monitor.type}</p></div>
-        <div className="actions"><StatusPill status={monitor.lastStatus} /><button onClick={onCheck}>Check now</button><button onClick={onEdit}>Edit</button></div>
+        <div className="actions"><StatusPill status={monitor.lastStatus} /><button onClick={onCheck}>Check now</button><button onClick={onEdit}>Edit</button><button className="ghost" onClick={() => { if (confirm(`Delete monitor "${monitor.name}"?`)) onDelete(); }}>Delete</button></div>
       </div>
       <div className="grid two">
         <Panel title="Certificate">

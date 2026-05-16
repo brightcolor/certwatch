@@ -40,6 +40,7 @@ export interface Monitor {
   timeoutSeconds: number;
   warningDays: number;
   criticalDays: number;
+  gracePeriodSeconds: number;
   sniEnabled: boolean;
   sniHost?: string | null;
   validateCertificate: boolean;

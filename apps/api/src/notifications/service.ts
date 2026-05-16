@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
 import type { CheckResult, Monitor, NotificationChannel, NotificationRoute, Severity, SmtpSettings } from "../types.js";
-import { alerts, appSettings } from "../storage/repositories.js";
+import { alerts, appSettings, results as checkResults } from "../storage/repositories.js";
 import { alertFingerprint } from "../checks/status.js";
 
 export const dispatchAlerts = async (monitor: Monitor, result: CheckResult, configured: NotificationChannel[]) => {
@@ -15,6 +15,7 @@ export const dispatchAlerts = async (monitor: Monitor, result: CheckResult, conf
   if (isQuietHour(settings.quietStart, settings.quietEnd) && settings.quietHoursEnabled && (settings.quietSuppressCritical || result.severity !== "critical")) {
     return;
   }
+  if (isWithinGracePeriod(monitor, result)) return;
   const fingerprint = alertFingerprint(result);
   if (!alerts.shouldSend(monitor.id, result.status, fingerprint, settings.resendAfterHours)) return;
   await sendToChannels(monitor, result, configured);
@@ -48,6 +49,13 @@ const sendToChannels = async (monitor: Monitor, result: CheckResult, configured:
     await sendChannel(channel, monitor, result, selected.get(channel.id) ?? "");
     alerts.record(monitor.id, channel.id, result.severity, result.status, alertFingerprint(result), result.message);
   }));
+};
+
+const isWithinGracePeriod = (monitor: Monitor, result: CheckResult) => {
+  if (result.status === "OK" || monitor.gracePeriodSeconds <= 0) return false;
+  const failureStartedAt = checkResults.consecutiveFailureStartedAt(monitor.id);
+  if (!failureStartedAt) return false;
+  return Date.now() - new Date(failureStartedAt).getTime() < monitor.gracePeriodSeconds * 1000;
 };
 
 const selectedChannelIds = (monitor: Monitor, result: CheckResult, routes: NotificationRoute[], fallback: string[]) => {

@@ -78,11 +78,11 @@ export const monitors = {
     const monitor: Monitor = { ...input, id: id(), lastStatus: input.enabled ? "UNKNOWN" : "PAUSED", nextCheckAt: null, createdAt, updatedAt: createdAt };
     db.prepare(`
       INSERT INTO monitors (id, name, host, port, type, enabled, interval_seconds,
-      timeout_seconds, warning_days, critical_days, sni_enabled, sni_host, validate_certificate,
+      timeout_seconds, warning_days, critical_days, grace_period_seconds, sni_enabled, sni_host, validate_certificate,
       allow_self_signed, tags_json, notes, owner, channel_ids_json, notification_recipients_json,
       config_json, maintenance_windows, last_status, next_check_at, created_at, updated_at)
       VALUES (@id, @name, @host, @port, @type, @enabled, @intervalSeconds,
-      @timeoutSeconds, @warningDays, @criticalDays, @sniEnabled, @sniHost, @validateCertificate,
+      @timeoutSeconds, @warningDays, @criticalDays, @gracePeriodSeconds, @sniEnabled, @sniHost, @validateCertificate,
       @allowSelfSigned, @tagsJson, @notes, @owner, @channelIdsJson, @notificationRecipientsJson,
       @configJson, @maintenanceWindows, @lastStatus, @nextCheckAt, @createdAt, @updatedAt)
     `).run(serializeMonitor(monitor));
@@ -93,7 +93,7 @@ export const monitors = {
     db.prepare(`
       UPDATE monitors SET name=@name, host=@host, port=@port, type=@type, enabled=@enabled,
       interval_seconds=@intervalSeconds, timeout_seconds=@timeoutSeconds, warning_days=@warningDays,
-      critical_days=@criticalDays, sni_enabled=@sniEnabled, sni_host=@sniHost,
+      critical_days=@criticalDays, grace_period_seconds=@gracePeriodSeconds, sni_enabled=@sniEnabled, sni_host=@sniHost,
       validate_certificate=@validateCertificate, allow_self_signed=@allowSelfSigned,
       tags_json=@tagsJson, notes=@notes, owner=@owner, channel_ids_json=@channelIdsJson,
       notification_recipients_json=@notificationRecipientsJson,
@@ -104,6 +104,8 @@ export const monitors = {
     return updated;
   },
   delete(monitorId: string) {
+    db.prepare("DELETE FROM check_results WHERE monitor_id = ?").run(monitorId);
+    db.prepare("DELETE FROM alert_history WHERE monitor_id = ?").run(monitorId);
     db.prepare("DELETE FROM monitors WHERE id = ?").run(monitorId);
   },
   markChecked(monitor: Monitor, result: CheckResult) {
@@ -143,6 +145,15 @@ export const results = {
       chainJson: JSON.stringify(result.chain),
       problemsJson: JSON.stringify(result.problems)
     });
+  },
+  consecutiveFailureStartedAt(monitorId: string): string | null {
+    const rows = db.prepare("SELECT status, checked_at FROM check_results WHERE monitor_id = ? ORDER BY checked_at DESC LIMIT 500").all(monitorId) as Array<{ status: string; checked_at: string }>;
+    const failures = [];
+    for (const row of rows) {
+      if (row.status === "OK") break;
+      failures.push(row);
+    }
+    return failures.at(-1)?.checked_at ?? null;
   },
   prune(days: number) {
     db.prepare("DELETE FROM check_results WHERE checked_at < ?").run(new Date(Date.now() - days * 86_400_000).toISOString());

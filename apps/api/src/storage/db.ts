@@ -107,6 +107,7 @@ export const migrate = () => {
       timeout_seconds INTEGER NOT NULL,
       warning_days INTEGER NOT NULL,
       critical_days INTEGER NOT NULL,
+      grace_period_seconds INTEGER NOT NULL DEFAULT 0,
       sni_enabled INTEGER NOT NULL,
       sni_host TEXT,
       validate_certificate INTEGER NOT NULL,
@@ -188,6 +189,11 @@ export const migrate = () => {
   } catch {
     // Existing databases already have the column.
   }
+  try {
+    db.exec("ALTER TABLE monitors ADD COLUMN grace_period_seconds INTEGER NOT NULL DEFAULT 0;");
+  } catch {
+    // Existing databases already have the column.
+  }
 };
 
 const parse = <T>(value: string | null | undefined, fallback: T): T => {
@@ -210,6 +216,7 @@ export const rowToMonitor = (row: any): Monitor => ({
   timeoutSeconds: row.timeout_seconds,
   warningDays: row.warning_days,
   criticalDays: row.critical_days,
+  gracePeriodSeconds: row.grace_period_seconds ?? 0,
   sniEnabled: Boolean(row.sni_enabled),
   sniHost: row.sni_host,
   validateCertificate: Boolean(row.validate_certificate),

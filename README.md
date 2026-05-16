@@ -23,6 +23,8 @@ This stack keeps the application easy to self-host while still supporting real T
 - Dashboard with OK, warning, critical, down, paused, and unknown status counts
 - Monitor types for HTTPS, custom TCP TLS, SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, XMPP TLS, SMTP STARTTLS, IMAP STARTTLS, POP3 STARTTLS, and explicit FTP AUTH TLS
 - Service health checks for HTTP, HTTP login flows, raw TCP ports, DNS records, SSH, FTP, SMTP, IMAP, and POP3 banners
+- Optional service login checks for HTTP Basic/Form, SSH password auth, FTP, SMTP AUTH LOGIN, IMAP LOGIN, and POP3 USER/PASS
+- Per-monitor alert grace period before failed checks create notifications
 - Certificate detail view with CN, SANs, issuer, serial number, SHA256 fingerprint, validity, chain, TLS version, and cipher suite
 - Hostname mismatch, self-signed, expiry, weak TLS protocol, chain trust, and fingerprint-change detection
 - Historical check results per monitor
@@ -128,6 +130,7 @@ CertWatch can monitor certificate-focused targets and general service availabili
 - TCP checks validate that a port accepts connections.
 - DNS checks validate record resolution and can require an expected value.
 - SSH, FTP, SMTP, IMAP, and POP3 checks validate the protocol banner or capability response.
+- Service login checks can validate credentials. SSH uses the SSH protocol; plain FTP, SMTP, IMAP, and POP3 login tests require explicit plaintext approval on the monitor. Prefer TLS or STARTTLS variants for credential-bearing checks.
 - Direct SSL/TLS checks remain available for SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, and custom TLS ports.
 - Explicit TLS upgrade checks are available for SMTP, IMAP, POP3, and FTP.
 
@@ -184,17 +187,20 @@ All API routes require login session authentication except `/api/auth/login`.
 
 ## Public Status And Badges
 
-Public status pages are available by tag:
+Public status pages are available by label/tag:
 
 ```text
 /public/status/prod.html
 /public/status/prod
+/public/status/prod+mail.html
+/public/status/prod+mail
 ```
 
 Monitor badges are SVG URLs:
 
 ```text
 /public/badge/{monitorId}.svg
+/public/badge/tags/prod+mail.svg
 ```
 
 ## Watchtower Updates

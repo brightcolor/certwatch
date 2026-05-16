@@ -12,6 +12,10 @@
 - Split notification provider configuration from per-monitor and per-route recipients.
 - Added Uptime Kuma-style service checks for HTTP, HTTP login, TCP, DNS, SSH, FTP, SMTP, IMAP, and POP3.
 - Added explicit FTP AUTH TLS certificate checks alongside the existing mail STARTTLS and direct SSL/TLS presets.
+- Added optional service login checks for HTTP, SSH, FTP, SMTP, IMAP, and POP3, with plaintext credential checks gated per monitor.
+- Added per-monitor alert grace periods so transient failures do not notify until the configured duration is exceeded.
+- Added monitor deletion from the detail view and explicit cleanup of monitor history and alert history.
+- Added public status pages and SVG badges for combined label/tag filters such as `prod+mail`.
 - Added encrypted-at-rest storage for monitor login secrets, SMTP settings, and notification provider secrets.
 - Added UI fields for service-check configuration and masked saved login/provider secrets in API responses.
 - Added Docker Compose deployment on port `8080`.

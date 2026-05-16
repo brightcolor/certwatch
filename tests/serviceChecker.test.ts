@@ -33,6 +33,29 @@ describe("service checks", () => {
     expect(result.status).toBe("DOWN");
     expect(result.problems[0]).toContain("banner was unexpected");
   });
+
+  it("checks FTP username and password login when explicitly allowed", async () => {
+    const port = await startTcpServer((socket) => {
+      socket.write("220 FTP ready\r\n");
+      socket.on("data", (chunk) => {
+        const command = chunk.toString("utf8");
+        if (/USER alice/i.test(command)) socket.write("331 Password required\r\n");
+        if (/PASS secret/i.test(command)) socket.write("230 Login successful\r\n");
+      });
+    });
+    const result = await runServiceCheck(monitor({ type: "ftp", port, config: { loginEnabled: true, allowInsecureLogin: true, username: "alice", password: "secret" } }));
+
+    expect(result.status).toBe("OK");
+    expect(result.message).toContain("login succeeded");
+  });
+
+  it("blocks plaintext protocol login checks unless explicitly allowed", async () => {
+    const port = await startTcpServer((socket) => socket.write("220 FTP ready\r\n"));
+    const result = await runServiceCheck(monitor({ type: "ftp", port, config: { loginEnabled: true, username: "alice", password: "secret" } }));
+
+    expect(result.status).toBe("DOWN");
+    expect(result.message).toContain("plaintext is disabled");
+  });
 });
 
 const startHttpServer = (handler: http.RequestListener) =>
@@ -66,6 +89,7 @@ const monitor = (partial: Partial<Monitor>): Monitor => ({
   timeoutSeconds: 2,
   warningDays: 30,
   criticalDays: 7,
+  gracePeriodSeconds: 0,
   sniEnabled: true,
   sniHost: null,
   validateCertificate: true,

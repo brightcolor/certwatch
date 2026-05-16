@@ -87,6 +87,13 @@ function App() {
     if (selected === id) await loadResults(id);
     setToast("Check completed");
   };
+  const deleteMonitor = async (id: string) => {
+    await api.request(`/monitors/${id}`, { method: "DELETE" });
+    setSelected(null);
+    setResults([]);
+    await refresh();
+    setToast("Monitor deleted");
+  };
 
   if (!booted) return <main className="login"><div className="login-panel"><span className="eyebrow">CertWatch</span><h1>Loading</h1></div></main>;
   if (!user) return <Login setupRequired={setupRequired} onLogin={(nextUser) => { setUser(nextUser); setSetupRequired(false); }} />;
@@ -115,7 +122,7 @@ function App() {
       ) : page === "users" ? (
         <UsersPage users={users} onCreate={async (data: any) => { await api.request("/users", { method: "POST", body: JSON.stringify(data) }); await refresh(); }} onDelete={async (id: string) => { await api.request(`/users/${id}`, { method: "DELETE" }); await refresh(); }} />
       ) : selectedMonitor ? (
-        <MonitorDetail monitor={selectedMonitor} results={results} onBack={() => setSelected(null)} onEdit={() => setEditing(selectedMonitor)} onCheck={() => checkNow(selectedMonitor.id)} />
+        <MonitorDetail monitor={selectedMonitor} results={results} onBack={() => setSelected(null)} onEdit={() => setEditing(selectedMonitor)} onCheck={() => checkNow(selectedMonitor.id)} onDelete={() => deleteMonitor(selectedMonitor.id)} />
       ) : (
         <Dashboard monitors={monitors} stats={stats} query={query} setQuery={setQuery} onSelect={setSelected} onCheck={checkNow} />
       )}
