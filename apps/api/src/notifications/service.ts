@@ -45,40 +45,41 @@ const sendToChannels = async (monitor: Monitor, result: CheckResult, configured:
   const selected = selectedChannelIds(monitor, result, appSettings.notificationRoutes(), configured.map((channel) => channel.id));
   const targets = configured.filter((channel) => channel.enabled && selected.has(channel.id));
   await Promise.allSettled(targets.map(async (channel) => {
-    await sendChannel(channel, monitor, result);
+    await sendChannel(channel, monitor, result, selected.get(channel.id) ?? "");
     alerts.record(monitor.id, channel.id, result.severity, result.status, alertFingerprint(result), result.message);
   }));
 };
 
 const selectedChannelIds = (monitor: Monitor, result: CheckResult, routes: NotificationRoute[], fallback: string[]) => {
-  const explicit = new Set(monitor.notificationChannelIds);
+  const explicit = new Map<string, string>();
+  for (const channelId of monitor.notificationChannelIds) explicit.set(channelId, monitor.notificationRecipients[channelId] ?? "");
   for (const route of routes) {
     if (!route.enabled) continue;
     const tagMatch = !route.tags.length || route.tags.some((tag) => monitor.tags.includes(tag));
     const severityMatch = !route.severities.length || route.severities.includes(result.severity);
-    if (tagMatch && severityMatch) route.channelIds.forEach((channelId) => explicit.add(channelId));
+    if (tagMatch && severityMatch) route.channelIds.forEach((channelId) => explicit.set(channelId, route.recipients[channelId] ?? explicit.get(channelId) ?? ""));
   }
-  if (!explicit.size) return new Set<string>(fallback);
+  if (!explicit.size) return new Map(fallback.map((channelId) => [channelId, ""]));
   return explicit;
 };
 
-const sendChannel = async (channel: NotificationChannel, monitor: Monitor, result: CheckResult) => {
-  if (channel.type === "email") return sendEmail(channel, monitor, result);
+const sendChannel = async (channel: NotificationChannel, monitor: Monitor, result: CheckResult, recipient = "") => {
+  if (channel.type === "email") return sendEmail(channel, monitor, result, recipient);
   if (channel.type === "pushover") return postForm(endpoint(channel, ["https://api", "pushover", "net/1/messages.json"]), {
     token: String(channel.config.apiToken ?? ""),
-    user: String(channel.config.userKey ?? ""),
+    user: recipient || String(channel.config.userKey ?? ""),
     message: result.message,
     title: `[CertWatch] ${monitor.name}`,
     priority: String(priorityFor(result.severity))
   });
   if (channel.type === "telegram") {
     const url = endpoint(channel, ["https://api", "telegram", `org/bot${String(channel.config.botToken ?? "")}/sendMessage`]);
-    return postJson(url, { chat_id: channel.config.chatId, text: result.message });
+    return postJson(url, { chat_id: recipient || channel.config.chatId, text: result.message });
   }
-  if (channel.type === "matrix") return postJson(matrixEndpoint(channel), { msgtype: "m.text", body: result.message });
+  if (channel.type === "matrix") return postJson(matrixEndpoint(channel, recipient), { msgtype: "m.text", body: result.message });
   if (channel.type === "pagerduty") return postJson(endpoint(channel, ["https://events", "pagerduty", "com/v2/enqueue"]), pagerDutyPayload(channel, monitor, result));
   if (channel.type === "opsgenie") return postJson(endpoint(channel, ["https://api", "opsgenie", "com/v2/alerts"]), opsgeniePayload(monitor, result), { Authorization: `GenieKey ${String(channel.config.apiKey ?? "")}` });
-  return postJson(endpoint(channel), providerPayload(channel, monitor, result));
+  return postJson(recipient || endpoint(channel), providerPayload(channel, monitor, result));
 };
 
 const endpoint = (channel: NotificationChannel, fallbackParts?: string[]) => {
@@ -88,7 +89,7 @@ const endpoint = (channel: NotificationChannel, fallbackParts?: string[]) => {
   throw new Error("Notification URL is required.");
 };
 
-const sendEmail = async (channel: NotificationChannel, monitor: Monitor, result: CheckResult) => {
+const sendEmail = async (channel: NotificationChannel, monitor: Monitor, result: CheckResult, recipient = "") => {
   const globalSmtp = appSettings.smtp();
   const smtp = mergeSmtp(globalSmtp, channel.config);
   const transport = nodemailer.createTransport({
@@ -100,7 +101,7 @@ const sendEmail = async (channel: NotificationChannel, monitor: Monitor, result:
   });
   await transport.sendMail({
     from: String(channel.config.from ?? smtp.from ?? "certwatch@localhost"),
-    to: String(channel.config.to ?? channel.config.username ?? ""),
+    to: recipient || String(channel.config.to ?? channel.config.username ?? ""),
     subject: `[CertWatch] ${subjectFor(result.severity)}: ${monitor.name}`,
     text: emailBody(monitor, result)
   });
@@ -177,9 +178,9 @@ const providerPayload = (channel: NotificationChannel, monitor: Monitor, result:
   return payload;
 };
 
-const matrixEndpoint = (channel: NotificationChannel) => {
+const matrixEndpoint = (channel: NotificationChannel, recipient = "") => {
   const baseUrl = String(channel.config.baseUrl ?? "").replace(/\/$/, "");
-  const roomId = encodeURIComponent(String(channel.config.roomId ?? ""));
+  const roomId = encodeURIComponent(recipient || String(channel.config.roomId ?? ""));
   const token = encodeURIComponent(String(channel.config.accessToken ?? ""));
   if (!baseUrl || !roomId || !token) return endpoint(channel);
   return `${baseUrl}/_matrix/client/v3/rooms/${roomId}/send/m.room.message?access_token=${token}`;

@@ -114,6 +114,7 @@ export const migrate = () => {
       notes TEXT,
       owner TEXT,
       channel_ids_json TEXT NOT NULL,
+      notification_recipients_json TEXT NOT NULL DEFAULT '{}',
       maintenance_windows TEXT,
       last_status TEXT NOT NULL,
       next_check_at TEXT,
@@ -175,6 +176,11 @@ export const migrate = () => {
       created_at TEXT NOT NULL
     );
   `);
+  try {
+    db.exec("ALTER TABLE monitors ADD COLUMN notification_recipients_json TEXT NOT NULL DEFAULT '{}';");
+  } catch {
+    // Existing databases already have the column.
+  }
 };
 
 const parse = <T>(value: string | null | undefined, fallback: T): T => {
@@ -205,6 +211,7 @@ export const rowToMonitor = (row: any): Monitor => ({
   notes: row.notes,
   owner: row.owner,
   notificationChannelIds: parse<string[]>(row.channel_ids_json, []),
+  notificationRecipients: parse<Record<string, string>>(row.notification_recipients_json, {}),
   maintenanceWindows: row.maintenance_windows,
   lastStatus: row.last_status,
   nextCheckAt: row.next_check_at,

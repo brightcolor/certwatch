@@ -23,6 +23,7 @@ export const monitorInputSchema = z.object({
   notes: z.string().max(2000).optional().nullable(),
   owner: z.string().max(120).optional().nullable(),
   notificationChannelIds: z.array(z.string().uuid()).default([]),
+  notificationRecipients: z.record(z.string().max(2000)).default({}),
   maintenanceWindows: z.string().max(1000).optional().nullable()
 });
 
@@ -44,5 +45,6 @@ export const defaultsFor = (partial: Partial<Monitor>) => ({
   notes: partial.notes ?? null,
   owner: partial.owner ?? null,
   notificationChannelIds: partial.notificationChannelIds ?? [],
+  notificationRecipients: partial.notificationRecipients ?? {},
   maintenanceWindows: partial.maintenanceWindows ?? null
 });

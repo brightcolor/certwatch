@@ -67,6 +67,7 @@ const parseBulkLine = (line: string) => {
     notes: null,
     owner: null,
     notificationChannelIds: [],
+    notificationRecipients: {},
     maintenanceWindows: null
   };
 };

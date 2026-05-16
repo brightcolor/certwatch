@@ -135,6 +135,7 @@ const routeSchema = z.object({
   tags: z.array(z.string().min(1).max(40)),
   severities: z.array(z.enum(["info", "warning", "critical", "recovery"])),
   channelIds: z.array(z.string()),
+  recipients: z.record(z.string().max(2000)).default({}),
   enabled: z.boolean()
 });
 

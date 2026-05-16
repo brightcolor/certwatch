@@ -2,31 +2,22 @@ import { useEffect, useMemo, useState } from "react";
 import { Bell, Mail, PlugZap, Trash2 } from "lucide-react";
 
 const providerFields: Record<string, Array<{ key: string; label: string; type?: string; placeholder?: string }>> = {
-  email: [
-    { key: "to", label: "Recipients", placeholder: "ops@example.com, admin@example.com" },
-    { key: "from", label: "Sender override", placeholder: "certwatch@example.com" }
-  ],
-  webhook: [{ key: "url", label: "Webhook URL" }],
-  discord: [{ key: "url", label: "Discord webhook URL" }],
-  slack: [{ key: "url", label: "Slack webhook URL" }],
-  teams: [{ key: "url", label: "Microsoft Teams webhook URL" }],
-  mattermost: [{ key: "url", label: "Mattermost webhook URL" }],
+  email: [{ key: "from", label: "Sender override", placeholder: "certwatch@example.com" }],
+  webhook: [],
+  discord: [],
+  slack: [],
+  teams: [],
+  mattermost: [],
   pushover: [
-    { key: "userKey", label: "User key", type: "password" },
     { key: "apiToken", label: "API token", type: "password" }
   ],
   telegram: [
-    { key: "botToken", label: "Bot token", type: "password" },
-    { key: "chatId", label: "Chat ID" }
+    { key: "botToken", label: "Bot token", type: "password" }
   ],
-  gotify: [{ key: "url", label: "Gotify message URL" }],
-  ntfy: [
-    { key: "url", label: "ntfy publish URL", placeholder: "https://ntfy.sh/my-topic" },
-    { key: "topic", label: "Topic", placeholder: "optional when URL contains topic" }
-  ],
+  gotify: [],
+  ntfy: [],
   matrix: [
     { key: "baseUrl", label: "Homeserver URL", placeholder: "https://matrix.example.com" },
-    { key: "roomId", label: "Room ID" },
     { key: "accessToken", label: "Access token", type: "password" }
   ],
   pagerduty: [{ key: "integrationKey", label: "Events API integration key", type: "password" }],
@@ -38,7 +29,7 @@ export function Settings({ channels, alerting, smtp, retention, routes, onSaveCh
   const [alertForm, setAlertForm] = useState(alerting);
   const [smtpForm, setSmtpForm] = useState(smtp);
   const [retentionForm, setRetentionForm] = useState(retention);
-  const [routeForm, setRouteForm] = useState({ name: "", tags: "", severities: ["critical"], channelIds: [] as string[], enabled: true });
+  const [routeForm, setRouteForm] = useState({ name: "", tags: "", severities: ["critical"], channelIds: [] as string[], recipients: {} as Record<string, string>, enabled: true });
   const fields = useMemo(() => providerFields[channel.type] ?? providerFields.webhook, [channel.type]);
 
   useEffect(() => setAlertForm(alerting), [alerting]);
@@ -103,8 +94,8 @@ export function Settings({ channels, alerting, smtp, retention, routes, onSaveCh
           <label>Name<input value={routeForm.name} onChange={(e) => setRouteForm({ ...routeForm, name: e.target.value })} /></label>
           <label>Tags<input value={routeForm.tags} placeholder="prod,mail" onChange={(e) => setRouteForm({ ...routeForm, tags: e.target.value })} /></label>
           <label>Severity<select value={routeForm.severities[0] ?? "critical"} onChange={(e) => setRouteForm({ ...routeForm, severities: [e.target.value] })}><option value="warning">Warning</option><option value="critical">Critical</option><option value="recovery">Recovery</option></select></label>
-          <div className="checks">{channels.map((item: any) => <label key={item.id}><input type="checkbox" checked={routeForm.channelIds.includes(item.id)} onChange={() => setRouteForm((current) => ({ ...current, channelIds: current.channelIds.includes(item.id) ? current.channelIds.filter((id) => id !== item.id) : [...current.channelIds, item.id] }))} /> {item.name}</label>)}</div>
-          <button onClick={() => { onSaveRoutes([...(routes ?? []), { id: crypto.randomUUID(), name: routeForm.name, tags: routeForm.tags.split(",").map((tag) => tag.trim()).filter(Boolean), severities: routeForm.severities, channelIds: routeForm.channelIds, enabled: true }]); setRouteForm({ name: "", tags: "", severities: ["critical"], channelIds: [], enabled: true }); }}>Add route</button>
+          <div className="grid two">{channels.map((item: any) => <div className="panel compact" key={item.id}><label><input type="checkbox" checked={routeForm.channelIds.includes(item.id)} onChange={() => setRouteForm((current) => ({ ...current, channelIds: current.channelIds.includes(item.id) ? current.channelIds.filter((id) => id !== item.id) : [...current.channelIds, item.id] }))} /> {item.name}</label>{routeForm.channelIds.includes(item.id) && <label>{recipientLabel(item.type)}<input value={routeForm.recipients[item.id] ?? ""} onChange={(e) => setRouteForm((current) => ({ ...current, recipients: { ...current.recipients, [item.id]: e.target.value } }))} /></label>}</div>)}</div>
+          <button onClick={() => { onSaveRoutes([...(routes ?? []), { id: crypto.randomUUID(), name: routeForm.name, tags: routeForm.tags.split(",").map((tag) => tag.trim()).filter(Boolean), severities: routeForm.severities, channelIds: routeForm.channelIds, recipients: routeForm.recipients, enabled: true }]); setRouteForm({ name: "", tags: "", severities: ["critical"], channelIds: [], recipients: {}, enabled: true }); }}>Add route</button>
           {(routes ?? []).map((route: any) => <div className="channel" key={route.id}><strong>{route.name}</strong><span>{route.tags.join(", ") || "all tags"} · {route.severities.join(", ")}</span><button onClick={() => onSaveRoutes(routes.filter((item: any) => item.id !== route.id))}>Delete</button></div>)}
         </div>
       </div>
@@ -115,6 +106,7 @@ export function Settings({ channels, alerting, smtp, retention, routes, onSaveCh
           <label>Provider<select value={channel.type} onChange={(e) => setChannel({ name: channel.name, type: e.target.value, enabled: true, config: {} })}>
             {Object.keys(providerFields).map((type) => <option value={type} key={type}>{labelFor(type)}</option>)}
           </select></label>
+          {!fields.length && <p className="muted">Recipients are configured on each monitor or notification route.</p>}
           {fields.map((field) => <label key={field.key}>{field.label}<input type={field.type ?? "text"} value={channel.config[field.key] ?? ""} placeholder={field.placeholder} onChange={(e) => setConfig(field.key, e.target.value)} /></label>)}
           <label className="inline"><input type="checkbox" checked={channel.enabled} onChange={(e) => setChannel({ ...channel, enabled: e.target.checked })} /> Enabled</label>
           <button onClick={saveChannel}>Save provider</button>
@@ -150,3 +142,5 @@ const labelFor = (type: string) => ({
   pagerduty: "PagerDuty",
   opsgenie: "Opsgenie"
 }[type] ?? type);
+
+const recipientLabel = (type: string) => type === "email" ? "Recipients" : type === "telegram" ? "Chat ID" : type === "pushover" ? "User key" : type === "matrix" ? "Room ID" : "Target URL";

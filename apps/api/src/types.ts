@@ -46,6 +46,7 @@ export interface Monitor {
   notes?: string | null;
   owner?: string | null;
   notificationChannelIds: string[];
+  notificationRecipients: Record<string, string>;
   maintenanceWindows?: string | null;
   lastStatus: MonitorStatus;
   nextCheckAt?: string | null;
@@ -124,6 +125,7 @@ export interface NotificationRoute {
   tags: string[];
   severities: Severity[];
   channelIds: string[];
+  recipients: Record<string, string>;
   enabled: boolean;
 }
 

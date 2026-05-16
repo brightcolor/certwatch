@@ -9,6 +9,7 @@
 - Fixed STARTTLS negotiation by using protocol-aware multiline response parsing for SMTP, IMAP, and POP3.
 - Added direct SSL/TLS protocol presets with default ports for SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, and XMPP TLS.
 - Added certificate-change alerts, public status pages, SVG badges, notification routing, user management, bulk import, retention settings, Docker health checks, and Watchtower/GHCR update support.
+- Split notification provider configuration from per-monitor and per-route recipients.
 - Added Docker Compose deployment on port `8080`.
 - Added Express API, SQLite persistence, session authentication, CSRF header checks, and seeded admin user.
 - Added monitor CRUD, manual checks, scheduler, TLS and STARTTLS check engine, status classification, and historical check storage.

@@ -18,7 +18,8 @@ const blank = {
   tags: [],
   notes: "",
   owner: "",
-  notificationChannelIds: []
+  notificationChannelIds: [],
+  notificationRecipients: {}
 };
 
 const protocolOptions = [
@@ -52,6 +53,7 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
     current.has(id) ? current.delete(id) : current.add(id);
     set("notificationChannelIds", [...current]);
   };
+  const setRecipient = (id: string, value: string) => set("notificationRecipients", { ...(form.notificationRecipients ?? {}), [id]: value });
 
   return (
     <div className="modal">
@@ -70,11 +72,14 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
           <label>Tags<input value={form.tagsText} onChange={(e) => set("tagsText", e.target.value)} placeholder="prod, mail, customer-a" /></label>
         </div>
         <div className="panel compact">
-          <h3>Notification channels</h3>
-          <p className="muted">Leave all unchecked to use every enabled global channel.</p>
-          <div className="checks">
+          <h3>Notifications for this monitor</h3>
+          <p className="muted">Select provider channels and set the recipient or target for this monitor.</p>
+          <div className="grid two">
             {channels.map((channel) => (
-              <label key={channel.id}><input type="checkbox" checked={(form.notificationChannelIds ?? []).includes(channel.id)} onChange={() => toggleChannel(channel.id)} /> {channel.name}</label>
+              <div key={channel.id} className="panel compact">
+                <label><input type="checkbox" checked={(form.notificationChannelIds ?? []).includes(channel.id)} onChange={() => toggleChannel(channel.id)} /> {channel.name}</label>
+                {(form.notificationChannelIds ?? []).includes(channel.id) && <label>{recipientLabel(channel.type)}<input value={(form.notificationRecipients ?? {})[channel.id] ?? ""} placeholder={recipientPlaceholder(channel.type)} onChange={(e) => setRecipient(channel.id, e.target.value)} /></label>}
+              </div>
             ))}
             {!channels.length && <span className="muted">No channels configured yet.</span>}
           </div>
@@ -91,3 +96,6 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
     </div>
   );
 }
+
+const recipientLabel = (type: string) => type === "email" ? "Recipients" : type === "telegram" ? "Chat ID" : type === "pushover" ? "User key" : type === "matrix" ? "Room ID" : type === "pagerduty" ? "Routing key override" : type === "opsgenie" ? "Responder/alias override" : "Target URL";
+const recipientPlaceholder = (type: string) => type === "email" ? "ops@example.com, admin@example.com" : type === "telegram" ? "-1001234567890" : type === "pushover" ? "Pushover user key" : type === "matrix" ? "!room:example.com" : "https://...";

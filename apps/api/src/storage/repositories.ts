@@ -76,10 +76,14 @@ export const monitors = {
     const createdAt = nowIso();
     const monitor: Monitor = { ...input, id: id(), lastStatus: input.enabled ? "UNKNOWN" : "PAUSED", nextCheckAt: null, createdAt, updatedAt: createdAt };
     db.prepare(`
-      INSERT INTO monitors VALUES (@id, @name, @host, @port, @type, @enabled, @intervalSeconds,
+      INSERT INTO monitors (id, name, host, port, type, enabled, interval_seconds,
+      timeout_seconds, warning_days, critical_days, sni_enabled, sni_host, validate_certificate,
+      allow_self_signed, tags_json, notes, owner, channel_ids_json, notification_recipients_json,
+      maintenance_windows, last_status, next_check_at, created_at, updated_at)
+      VALUES (@id, @name, @host, @port, @type, @enabled, @intervalSeconds,
       @timeoutSeconds, @warningDays, @criticalDays, @sniEnabled, @sniHost, @validateCertificate,
-      @allowSelfSigned, @tagsJson, @notes, @owner, @channelIdsJson, @maintenanceWindows,
-      @lastStatus, @nextCheckAt, @createdAt, @updatedAt)
+      @allowSelfSigned, @tagsJson, @notes, @owner, @channelIdsJson, @notificationRecipientsJson,
+      @maintenanceWindows, @lastStatus, @nextCheckAt, @createdAt, @updatedAt)
     `).run(serializeMonitor(monitor));
     return monitor;
   },
@@ -91,6 +95,7 @@ export const monitors = {
       critical_days=@criticalDays, sni_enabled=@sniEnabled, sni_host=@sniHost,
       validate_certificate=@validateCertificate, allow_self_signed=@allowSelfSigned,
       tags_json=@tagsJson, notes=@notes, owner=@owner, channel_ids_json=@channelIdsJson,
+      notification_recipients_json=@notificationRecipientsJson,
       maintenance_windows=@maintenanceWindows, last_status=@lastStatus, next_check_at=@nextCheckAt,
       updated_at=@updatedAt WHERE id=@id
     `).run(serializeMonitor(updated));
@@ -241,5 +246,6 @@ const serializeMonitor = (monitor: Monitor) => ({
   validateCertificate: monitor.validateCertificate ? 1 : 0,
   allowSelfSigned: monitor.allowSelfSigned ? 1 : 0,
   tagsJson: JSON.stringify(monitor.tags),
-  channelIdsJson: JSON.stringify(monitor.notificationChannelIds)
+  channelIdsJson: JSON.stringify(monitor.notificationChannelIds),
+  notificationRecipientsJson: JSON.stringify(monitor.notificationRecipients ?? {})
 });
