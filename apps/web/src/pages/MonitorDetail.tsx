@@ -3,11 +3,18 @@ import { StatusPill } from "../components/StatusPill";
 
 export function MonitorDetail({ monitor, results, onBack, onEdit, onCheck }: { monitor: Monitor; results: CheckResult[]; onBack: () => void; onEdit: () => void; onCheck: () => void }) {
   const latest = results[0] ?? monitor.latestResult;
+  const origin = window.location.origin;
+  const statusTag = monitor.tags[0] ?? "all";
+  const badgeUrl = `${origin}/public/badge/${monitor.id}.svg`;
+  const statusUrl = `${origin}/public/status/${encodeURIComponent(statusTag)}.html`;
+  const markdownBadge = `[![${monitor.name}](${badgeUrl})](${statusUrl})`;
+  const htmlBadge = `<a href="${statusUrl}"><img src="${badgeUrl}" alt="${monitor.name} status"></a>`;
+
   return (
     <section className="content">
       <button className="ghost" onClick={onBack}>Back</button>
       <div className="detail-head">
-        <div><h2>{monitor.name}</h2><p>{monitor.host}:{monitor.port} · {monitor.type}</p></div>
+        <div><h2>{monitor.name}</h2><p>{monitor.host}:{monitor.port} - {monitor.type}</p></div>
         <div className="actions"><StatusPill status={monitor.lastStatus} /><button onClick={onCheck}>Check now</button><button onClick={onEdit}>Edit</button></div>
       </div>
       <div className="grid two">
@@ -32,6 +39,11 @@ export function MonitorDetail({ monitor, results, onBack, onEdit, onCheck }: { m
       <Panel title="Certificate Chain">
         {(latest?.chain ?? []).map((item, index) => <div className="chain" key={item.fingerprintSha256 ?? index}><strong>{index + 1}. {item.subject}</strong><span>{item.issuer}</span><small>{dateTime(item.validUntil)}</small></div>)}
       </Panel>
+      <Panel title="Embed">
+        <EmbedRow label="Badge URL" value={badgeUrl} />
+        <EmbedRow label="Markdown" value={markdownBadge} />
+        <EmbedRow label="HTML" value={htmlBadge} />
+      </Panel>
       <Panel title="Check History">
         <div className="history">{results.map((result) => <div key={result.id}><StatusPill status={result.status} /><span>{dateTime(result.checkedAt)}</span><span>{result.message}</span></div>)}</div>
       </Panel>
@@ -45,6 +57,10 @@ function Panel({ title, children }: any) {
 
 function Info({ label, value }: { label: string; value?: string | null }) {
   return <div className="info"><span>{label}</span><strong>{value || "-"}</strong></div>;
+}
+
+function EmbedRow({ label, value }: { label: string; value: string }) {
+  return <div className="info embed-row"><span>{label}</span><code>{value}</code><button type="button" onClick={() => navigator.clipboard?.writeText(value)}>Copy</button></div>;
 }
 
 const dateTime = (value?: string | null) => value ? new Date(value).toLocaleString() : "";

@@ -6,6 +6,8 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck 
   const filtered = monitors.filter((monitor: Monitor) =>
     [monitor.name, monitor.host, monitor.tags.join(" ")].join(" ").toLowerCase().includes(query.toLowerCase())
   );
+  const tags = Array.from(new Set<string>(monitors.flatMap((monitor: Monitor) => monitor.tags))).sort();
+  const origin = window.location.origin;
 
   return (
     <section className="content">
@@ -16,6 +18,19 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck 
         <Metric icon={<TimerReset />} label="Paused" value={stats.paused ?? 0} />
       </div>
       <div className="toolbar"><Search size={18} /><input placeholder="Search monitors, hosts, tags" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
+      {tags.length > 0 && (
+        <div className="panel">
+          <h3>Public status pages</h3>
+          <div className="history">
+            {tags.map((tag) => {
+              const html = `${origin}/public/status/${encodeURIComponent(tag)}.html`;
+              const json = `${origin}/public/status/${encodeURIComponent(tag)}`;
+              const iframe = `<iframe src="${html}" title="CertWatch ${tag}" loading="lazy"></iframe>`;
+              return <div key={tag}><strong>{tag}</strong><code>{html}</code><button onClick={() => navigator.clipboard?.writeText(html)}>Copy URL</button><button onClick={() => navigator.clipboard?.writeText(iframe)}>Copy iframe</button><a href={html} target="_blank" rel="noreferrer">Open</a><small>JSON: {json}</small></div>;
+            })}
+          </div>
+        </div>
+      )}
       <div className="table">
         <div className="row head"><span>Status</span><span>Name</span><span>Target</span><span>Expires</span><span>TLS</span><span></span></div>
         {filtered.map((monitor: Monitor) => (
