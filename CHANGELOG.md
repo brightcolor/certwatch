@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1 - 2026-05-16
+
+- Reworked the main UI around clearer navigation, dashboard scanning, application rollups, detail actions, and grouped monitor form sections.
+- Moved public status embed controls into the Applications area and added clearer empty states for first-run usage.
+
 ## 0.2.0 - 2026-05-16
 
 - Added SemVer versioning and a subtle UI version display.

@@ -12,10 +12,17 @@ export function MonitorDetail({ monitor, results, onBack, onEdit, onCheck, onDel
 
   return (
     <section className="content">
-      <button className="ghost" onClick={onBack}>Back</button>
-      <div className="detail-head">
-        <div><h2>{monitor.name}</h2><p>{monitor.host}:{monitor.port} - {monitor.type}</p></div>
-        <div className="actions"><StatusPill status={monitor.lastStatus} /><button onClick={onCheck}>Check now</button><button onClick={onEdit}>Edit</button><button className="ghost" onClick={() => { if (confirm(`Delete monitor "${monitor.name}"?`)) onDelete(); }}>Delete</button></div>
+      <div className="detail-hero">
+        <button className="ghost" onClick={onBack}>Back</button>
+        <div className="detail-head">
+          <div>
+            <StatusPill status={monitor.lastStatus} />
+            <h2>{monitor.name}</h2>
+            <p>{monitor.host}:{monitor.port} - {monitor.type}</p>
+            <small>{monitor.tags.join(", ") || "unlabeled"}</small>
+          </div>
+          <div className="actions"><button onClick={onCheck}>Check now</button><button onClick={onEdit}>Edit</button><button className="ghost danger" onClick={() => { if (confirm(`Delete monitor "${monitor.name}"?`)) onDelete(); }}>Delete</button></div>
+        </div>
       </div>
       <div className="grid two">
         <Panel title="Certificate">
@@ -45,7 +52,7 @@ export function MonitorDetail({ monitor, results, onBack, onEdit, onCheck, onDel
         <EmbedRow label="HTML" value={htmlBadge} />
       </Panel>
       <Panel title="Check History">
-        <div className="history">{results.map((result) => <div key={result.id}><StatusPill status={result.status} /><span>{dateTime(result.checkedAt)}</span><span>{result.message}</span></div>)}</div>
+        <div className="stack-list">{results.map((result) => <div key={result.id}><StatusPill status={result.status} /><span>{dateTime(result.checkedAt)}</span><span>{result.message}</span></div>)}</div>
       </Panel>
     </section>
   );
