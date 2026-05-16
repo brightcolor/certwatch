@@ -3,6 +3,8 @@ import net from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
 import { runServiceCheck } from "../apps/api/src/checks/serviceChecker.js";
 import type { Monitor } from "../apps/api/src/types.js";
+import { metricsHandler } from "../apps/api/src/routes/metrics.js";
+import { migrate } from "../apps/api/src/storage/db.js";
 
 const servers: Array<http.Server | net.Server> = [];
 
@@ -56,6 +58,15 @@ describe("service checks", () => {
     expect(result.status).toBe("DOWN");
     expect(result.message).toContain("plaintext is disabled");
   });
+
+  it("renders Prometheus metrics text", () => {
+    migrate();
+    const response = fakeResponse();
+    metricsHandler({} as any, response as any);
+
+    expect(response.body).toContain("certwatch_monitor_status");
+    expect(response.typeValue).toContain("text/plain");
+  });
 });
 
 const startHttpServer = (handler: http.RequestListener) =>
@@ -102,4 +113,17 @@ const monitor = (partial: Partial<Monitor>): Monitor => ({
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   ...partial
+});
+
+const fakeResponse = () => ({
+  typeValue: "",
+  body: "",
+  type(value: string) {
+    this.typeValue = value;
+    return this;
+  },
+  send(value: string) {
+    this.body = value;
+    return this;
+  }
 });

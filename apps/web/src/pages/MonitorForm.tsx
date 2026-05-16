@@ -104,6 +104,11 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
                 <label>Password field<input value={String(form.config?.passwordField ?? "password")} onChange={(e) => setConfig("passwordField", e.target.value)} /></label>
               </>}
             </>}
+            {["smtp_starttls", "imap_starttls", "pop3_starttls"].includes(form.type) && <>
+              <label><input type="checkbox" checked={Boolean(form.config?.loginEnabled)} onChange={(e) => setConfig("loginEnabled", e.target.checked)} /> Test login after STARTTLS</label>
+              <label>Username<input value={String(form.config?.username ?? "")} onChange={(e) => setConfig("username", e.target.value)} autoComplete="off" /></label>
+              <label>Password<input type="password" value={String(form.config?.password ?? "")} onChange={(e) => setConfig("password", e.target.value)} autoComplete="new-password" /></label>
+            </>}
             {form.type === "dns" && <>
               <label>Record type<select value={String(form.config?.recordType ?? "A")} onChange={(e) => setConfig("recordType", e.target.value)}>{["A", "AAAA", "CNAME", "MX", "TXT"].map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
               <label>Expected value<input value={String(form.config?.expectedValue ?? "")} onChange={(e) => setConfig("expectedValue", e.target.value)} placeholder="Optional substring" /></label>
@@ -115,7 +120,7 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
               {form.type !== "ssh" && <label><input type="checkbox" checked={Boolean(form.config?.allowInsecureLogin)} onChange={(e) => setConfig("allowInsecureLogin", e.target.checked)} /> Allow plaintext login test</label>}
             </>}
           </div>
-          {(form.type === "http_login" || usesProtocolLogin(form.type)) && <p className="muted">Login secrets are encrypted at rest and masked after saving. Plain FTP, SMTP, IMAP and POP3 login tests require explicit plaintext approval.</p>}
+          {(form.type === "http_login" || usesProtocolLogin(form.type) || form.type.endsWith("_starttls")) && <p className="muted">Login secrets are encrypted at rest and masked after saving. Plain FTP, SMTP, IMAP and POP3 login tests require explicit plaintext approval.</p>}
         </div>}
         <div className="panel compact">
           <h3>Notifications for this monitor</h3>
@@ -148,7 +153,7 @@ const recipientPlaceholder = (type: string) => type === "email" ? "ops@example.c
 
 const usesHttpConfig = (type: string) => type === "http" || type === "http_login";
 const usesProtocolLogin = (type: string) => ["ssh", "ftp", "smtp", "imap", "pop3"].includes(type);
-const usesServiceConfig = (type: string) => usesHttpConfig(type) || type === "dns" || usesProtocolLogin(type);
+const usesServiceConfig = (type: string) => usesHttpConfig(type) || type === "dns" || usesProtocolLogin(type) || ["smtp_starttls", "imap_starttls", "pop3_starttls"].includes(type);
 const defaultsForType = (type: string, current: Record<string, unknown>) => {
   if (type === "http") return { scheme: "http", path: "/", expectedStatus: 200, ...current };
   if (type === "http_login") return { scheme: "https", path: "/login", expectedStatus: 200, authType: "form", usernameField: "username", passwordField: "password", ...current };

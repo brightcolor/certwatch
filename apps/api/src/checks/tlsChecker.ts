@@ -21,6 +21,7 @@ export const runTlsCheck = async (monitor: Monitor, previousFingerprint?: string
     const validFrom = x509 ? new Date(x509.validFrom) : cert.valid_from ? new Date(cert.valid_from) : undefined;
     const validUntil = x509 ? new Date(x509.validTo) : cert.valid_to ? new Date(cert.valid_to) : undefined;
     const fingerprint = x509?.fingerprint256.replaceAll(":", "").toLowerCase() ?? cert.fingerprint256?.replaceAll(":", "").toLowerCase();
+    if (monitor.type.endsWith("_starttls") && monitor.config.loginEnabled) await checkStartTlsLogin(connection.socket, monitor);
     const selfSigned = Boolean(x509 && x509.subject === x509.issuer);
     const hostnameMatch = matchHostname(monitor.sniHost || monitor.host, commonName, subjectAltNames);
     const chain = buildChain(cert);
@@ -145,3 +146,115 @@ const buildChain = (cert: PeerCertificate) => {
   }
   return items;
 };
+
+class SecureLineReader {
+  private buffer = "";
+  private lines: string[] = [];
+  private waiters: Array<() => void> = [];
+  private error: Error | null = null;
+
+  constructor(private readonly socket: tls.TLSSocket) {
+    socket.on("data", this.onData);
+    socket.once("error", this.onError);
+    socket.once("timeout", this.onTimeout);
+    socket.once("end", this.onEnd);
+  }
+
+  write(line: string) {
+    this.socket.write(`${line}\r\n`);
+  }
+
+  detach() {
+    this.socket.off("data", this.onData);
+    this.socket.off("error", this.onError);
+    this.socket.off("timeout", this.onTimeout);
+    this.socket.off("end", this.onEnd);
+  }
+
+  async readUntil(done: (lines: string[]) => boolean) {
+    const seen: string[] = [];
+    while (true) {
+      while (this.lines.length) {
+        const line = this.lines.shift()!;
+        seen.push(line);
+        if (done(seen)) return seen;
+      }
+      if (this.error) throw this.error;
+      await new Promise<void>((resolve) => this.waiters.push(resolve));
+    }
+  }
+
+  private wake() {
+    const waiters = this.waiters.splice(0);
+    for (const waiter of waiters) waiter();
+  }
+
+  private onData = (chunk: Buffer) => {
+    this.buffer += chunk.toString("utf8");
+    const parts = this.buffer.split(/\r?\n/);
+    this.buffer = parts.pop() ?? "";
+    this.lines.push(...parts.filter(Boolean));
+    this.wake();
+  };
+
+  private onError = (error: Error) => {
+    this.error = error;
+    this.wake();
+  };
+
+  private onTimeout = () => {
+    this.error = new Error("STARTTLS login timed out.");
+    this.wake();
+  };
+
+  private onEnd = () => {
+    this.error = new Error("Connection closed during STARTTLS login.");
+    this.wake();
+  };
+}
+
+const checkStartTlsLogin = async (socket: tls.TLSSocket, monitor: Monitor) => {
+  const reader = new SecureLineReader(socket);
+  try {
+    if (monitor.type === "smtp_starttls") await smtpStartTlsLogin(reader, monitor);
+    if (monitor.type === "imap_starttls") await imapStartTlsLogin(reader, monitor);
+    if (monitor.type === "pop3_starttls") await pop3StartTlsLogin(reader, monitor);
+  } finally {
+    reader.detach();
+  }
+};
+
+const smtpStartTlsLogin = async (reader: SecureLineReader, monitor: Monitor) => {
+  reader.write("EHLO certwatch.local");
+  await reader.readUntil((lines) => smtpFinal(lines, 250));
+  reader.write("AUTH LOGIN");
+  const auth = await reader.readUntil((lines) => smtpFinal(lines, 334) || smtpFinal(lines, 503));
+  if (auth.some((line) => /^503\b/.test(line))) return;
+  reader.write(Buffer.from(String(monitor.config.username ?? "")).toString("base64"));
+  await reader.readUntil((lines) => smtpFinal(lines, 334));
+  reader.write(Buffer.from(String(monitor.config.password ?? "")).toString("base64"));
+  const done = await reader.readUntil((lines) => smtpFinal(lines, 235) || smtpFinal(lines, 535));
+  if (!done.some((line) => /^235\b/.test(line))) throw new Error("SMTP STARTTLS login failed.");
+};
+
+const imapStartTlsLogin = async (reader: SecureLineReader, monitor: Monitor) => {
+  reader.write(`cw003 LOGIN "${escapeImap(String(monitor.config.username ?? ""))}" "${escapeImap(String(monitor.config.password ?? ""))}"`);
+  const response = await reader.readUntil((lines) => lines.some((line) => /^cw003 (OK|NO|BAD)\b/i.test(line)));
+  if (!response.some((line) => /^cw003 OK\b/i.test(line))) throw new Error("IMAP STARTTLS login failed.");
+};
+
+const pop3StartTlsLogin = async (reader: SecureLineReader, monitor: Monitor) => {
+  reader.write(`USER ${String(monitor.config.username ?? "")}`);
+  const user = await reader.readUntil((lines) => lines.some((line) => /^(\+OK|-ERR)/i.test(line)));
+  if (!user.some((line) => /^\+OK/i.test(line))) throw new Error("POP3 STARTTLS username was rejected.");
+  reader.write(`PASS ${String(monitor.config.password ?? "")}`);
+  const pass = await reader.readUntil((lines) => lines.some((line) => /^(\+OK|-ERR)/i.test(line)));
+  if (!pass.some((line) => /^\+OK/i.test(line))) throw new Error("POP3 STARTTLS login failed.");
+};
+
+const smtpFinal = (lines: string[], code: number) => {
+  const prefix = String(code);
+  return lines.some((line) => line.startsWith(`${prefix} `)) || (lines.length === 1 && lines[0].startsWith(prefix) && !lines[0].startsWith(`${prefix}-`));
+};
+
+const escapeImap = (value: string) => value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');

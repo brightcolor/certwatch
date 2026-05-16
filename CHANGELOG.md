@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 - 2026-05-16
+
+- Added SemVer versioning and a subtle UI version display.
+- Added label-based application rollups so one service can contain multiple checks.
+- Added optional login checks after SMTP, IMAP, and POP3 STARTTLS negotiation.
+- Added Prometheus-compatible `/metrics` output.
+
 ## 0.1.0 - 2026-05-12
 
 - Initial CertWatch implementation.

@@ -6,6 +6,7 @@ import { nowIso } from "../utils/time.js";
 import { alerts, appSettings, channels, monitors, results, users } from "../storage/repositories.js";
 import { testChannel } from "../notifications/service.js";
 import { requireAdmin } from "../auth/auth.js";
+import rootPackage from "../../../../package.json" with { type: "json" };
 
 export const systemRoutes = Router();
 
@@ -29,6 +30,7 @@ systemRoutes.get("/status", (_req, res) => {
 
 systemRoutes.get("/alerts", (_req, res) => res.json(alerts.list()));
 systemRoutes.get("/health", (_req, res) => res.json({ ok: true }));
+systemRoutes.get("/version", (_req, res) => res.json({ name: rootPackage.name, version: rootPackage.version }));
 systemRoutes.get("/settings/alerting", (_req, res) => res.json(appSettings.alerting()));
 systemRoutes.put("/settings/alerting", (req, res) => {
   const parsed = alertingSchema.safeParse(req.body);

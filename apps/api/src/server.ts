@@ -9,6 +9,7 @@ import { attachSession } from "./auth/auth.js";
 import { migrate } from "./storage/db.js";
 import { apiRoutes } from "./routes/index.js";
 import { publicRoutes } from "./routes/publicRoutes.js";
+import { metricsHandler } from "./routes/metrics.js";
 import { startScheduler } from "./scheduler/scheduler.js";
 
 migrate();
@@ -21,6 +22,7 @@ app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser(env.sessionSecret));
 app.use(morgan(env.nodeEnv === "production" ? "combined" : "dev"));
 app.use(attachSession);
+app.get("/metrics", metricsHandler);
 app.use("/api", apiRoutes);
 app.use("/public", publicRoutes);
 

@@ -25,6 +25,8 @@ This stack keeps the application easy to self-host while still supporting real T
 - Service health checks for HTTP, HTTP login flows, raw TCP ports, DNS records, SSH, FTP, SMTP, IMAP, and POP3 banners
 - Optional service login checks for HTTP Basic/Form, SSH password auth, FTP, SMTP AUTH LOGIN, IMAP LOGIN, and POP3 USER/PASS
 - Per-monitor alert grace period before failed checks create notifications
+- Label-based application rollups where one service can contain multiple checks
+- Prometheus-compatible metrics at `/metrics`
 - Certificate detail view with CN, SANs, issuer, serial number, SHA256 fingerprint, validity, chain, TLS version, and cipher suite
 - Hostname mismatch, self-signed, expiry, weak TLS protocol, chain trust, and fingerprint-change detection
 - Historical check results per monitor
@@ -121,6 +123,8 @@ On first launch, CertWatch shows a setup screen where the first user creates the
 - `ssh.example.com`, port `22`, type `SSH banner`
 - `example.com`, port `53`, type `DNS record check`
 
+Use the same label on related monitors to model one application with multiple checks, for example `mail` on DNS, SMTP STARTTLS, IMAP STARTTLS, and webmail login monitors.
+
 ## Service Checks
 
 CertWatch can monitor certificate-focused targets and general service availability from the same monitor list.
@@ -131,6 +135,7 @@ CertWatch can monitor certificate-focused targets and general service availabili
 - DNS checks validate record resolution and can require an expected value.
 - SSH, FTP, SMTP, IMAP, and POP3 checks validate the protocol banner or capability response.
 - Service login checks can validate credentials. SSH uses the SSH protocol; plain FTP, SMTP, IMAP, and POP3 login tests require explicit plaintext approval on the monitor. Prefer TLS or STARTTLS variants for credential-bearing checks.
+- STARTTLS checks for SMTP, IMAP, and POP3 can optionally validate login credentials after the TLS upgrade.
 - Direct SSL/TLS checks remain available for SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, and custom TLS ports.
 - Explicit TLS upgrade checks are available for SMTP, IMAP, POP3, and FTP.
 
@@ -202,6 +207,16 @@ Monitor badges are SVG URLs:
 /public/badge/{monitorId}.svg
 /public/badge/tags/prod+mail.svg
 ```
+
+## Prometheus
+
+Scrape:
+
+```text
+http://localhost:8080/metrics
+```
+
+Exported metrics include `certwatch_monitor_status`, `certwatch_cert_days_remaining`, `certwatch_last_check_timestamp`, and `certwatch_check_duration_seconds`.
 
 ## Watchtower Updates
 

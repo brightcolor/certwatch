@@ -9,6 +9,7 @@ import { MonitorForm } from "./pages/MonitorForm";
 import { Settings } from "./pages/Settings";
 import { BulkImport } from "./pages/BulkImport";
 import { UsersPage } from "./pages/Users";
+import { Applications } from "./pages/Applications";
 import "./styles/app.css";
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
   const [retention, setRetention] = useState<any>(null);
   const [routes, setRoutes] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [version, setVersion] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [results, setResults] = useState<CheckResult[]>([]);
   const [editing, setEditing] = useState<Monitor | null | "new">(null);
@@ -64,6 +66,7 @@ function App() {
     setSmtp(smtpData);
     setRetention(retentionData);
     setRoutes(routesData);
+    setVersion((await api.request<any>("/version")).version);
     if (user?.role === "admin") setUsers(await api.request<any[]>("/users"));
   };
 
@@ -100,7 +103,7 @@ function App() {
   const selectedMonitor = monitors.find((monitor) => monitor.id === selected);
 
   return (
-    <Layout page={page} onPage={setPage} onNew={() => setEditing("new")} theme={theme} setTheme={setTheme}>
+    <Layout page={page} onPage={setPage} onNew={() => setEditing("new")} theme={theme} setTheme={setTheme} version={version}>
       {toast && <div className="toast" onAnimationEnd={() => setToast("")}>{toast}</div>}
       {page === "settings" ? (
         <Settings
@@ -121,6 +124,8 @@ function App() {
         <BulkImport onImport={async (text) => { const result = await api.request("/monitors/bulk", { method: "POST", body: JSON.stringify({ text }) }); await refresh(); return result; }} />
       ) : page === "users" ? (
         <UsersPage users={users} onCreate={async (data: any) => { await api.request("/users", { method: "POST", body: JSON.stringify(data) }); await refresh(); }} onDelete={async (id: string) => { await api.request(`/users/${id}`, { method: "DELETE" }); await refresh(); }} />
+      ) : page === "applications" ? (
+        <Applications monitors={monitors} onSelect={(id) => { setSelected(id); setPage("dashboard"); }} />
       ) : selectedMonitor ? (
         <MonitorDetail monitor={selectedMonitor} results={results} onBack={() => setSelected(null)} onEdit={() => setEditing(selectedMonitor)} onCheck={() => checkNow(selectedMonitor.id)} onDelete={() => deleteMonitor(selectedMonitor.id)} />
       ) : (
