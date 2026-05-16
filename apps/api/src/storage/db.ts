@@ -3,6 +3,7 @@ import path from "node:path";
 import initSqlJs, { Database as SqlJsDatabase, SqlValue } from "sql.js";
 import { env } from "../config/env.js";
 import type { CheckResult, Monitor, NotificationChannel, User } from "../types.js";
+import { decryptConfigSecrets } from "../utils/secrets.js";
 
 fs.mkdirSync(path.dirname(env.databasePath), { recursive: true });
 const SQL = await initSqlJs();
@@ -115,6 +116,7 @@ export const migrate = () => {
       owner TEXT,
       channel_ids_json TEXT NOT NULL,
       notification_recipients_json TEXT NOT NULL DEFAULT '{}',
+      config_json TEXT NOT NULL DEFAULT '{}',
       maintenance_windows TEXT,
       last_status TEXT NOT NULL,
       next_check_at TEXT,
@@ -181,6 +183,11 @@ export const migrate = () => {
   } catch {
     // Existing databases already have the column.
   }
+  try {
+    db.exec("ALTER TABLE monitors ADD COLUMN config_json TEXT NOT NULL DEFAULT '{}';");
+  } catch {
+    // Existing databases already have the column.
+  }
 };
 
 const parse = <T>(value: string | null | undefined, fallback: T): T => {
@@ -212,6 +219,7 @@ export const rowToMonitor = (row: any): Monitor => ({
   owner: row.owner,
   notificationChannelIds: parse<string[]>(row.channel_ids_json, []),
   notificationRecipients: parse<Record<string, string>>(row.notification_recipients_json, {}),
+  config: decryptConfigSecrets(parse<Record<string, unknown>>(row.config_json, {})),
   maintenanceWindows: row.maintenance_windows,
   lastStatus: row.last_status,
   nextCheckAt: row.next_check_at,
@@ -247,7 +255,7 @@ export const rowToChannel = (row: any): NotificationChannel => ({
   name: row.name,
   type: row.type,
   enabled: Boolean(row.enabled),
-  config: parse<Record<string, unknown>>(row.config_json, {}),
+  config: decryptConfigSecrets(parse<Record<string, unknown>>(row.config_json, {})),
   createdAt: row.created_at,
   updatedAt: row.updated_at
 });

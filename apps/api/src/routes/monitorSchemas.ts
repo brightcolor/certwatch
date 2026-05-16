@@ -3,7 +3,7 @@ import { env } from "../config/env.js";
 import { validateHost, validatePort } from "../checks/validation.js";
 import type { Monitor } from "../types.js";
 
-export const monitorTypes = ["https", "tls", "smtps", "imaps", "pop3s", "ldaps", "ftps", "xmpps", "smtp_starttls", "imap_starttls", "pop3_starttls"] as const;
+export const monitorTypes = ["https", "tls", "smtps", "imaps", "pop3s", "ldaps", "ftps", "xmpps", "smtp_starttls", "imap_starttls", "pop3_starttls", "ftp_starttls", "http", "tcp", "dns", "http_login", "ssh", "ftp", "smtp", "imap", "pop3"] as const;
 
 export const monitorInputSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -24,6 +24,7 @@ export const monitorInputSchema = z.object({
   owner: z.string().max(120).optional().nullable(),
   notificationChannelIds: z.array(z.string().uuid()).default([]),
   notificationRecipients: z.record(z.string().max(2000)).default({}),
+  config: z.record(z.unknown()).default({}),
   maintenanceWindows: z.string().max(1000).optional().nullable()
 });
 
@@ -46,5 +47,6 @@ export const defaultsFor = (partial: Partial<Monitor>) => ({
   owner: partial.owner ?? null,
   notificationChannelIds: partial.notificationChannelIds ?? [],
   notificationRecipients: partial.notificationRecipients ?? {},
+  config: partial.config ?? {},
   maintenanceWindows: partial.maintenanceWindows ?? null
 });

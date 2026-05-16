@@ -2,6 +2,7 @@ import { db, rowToChannel, rowToMonitor, rowToResult, rowToUser } from "./db.js"
 import { id } from "../utils/id.js";
 import { addSecondsIso, nowIso } from "../utils/time.js";
 import type { AlertingSettings, CheckResult, Monitor, NotificationChannel, NotificationRoute, RetentionSettings, SmtpSettings, User } from "../types.js";
+import { decryptConfigSecrets, encryptConfigSecrets } from "../utils/secrets.js";
 
 export const users = {
   count(): number {
@@ -79,11 +80,11 @@ export const monitors = {
       INSERT INTO monitors (id, name, host, port, type, enabled, interval_seconds,
       timeout_seconds, warning_days, critical_days, sni_enabled, sni_host, validate_certificate,
       allow_self_signed, tags_json, notes, owner, channel_ids_json, notification_recipients_json,
-      maintenance_windows, last_status, next_check_at, created_at, updated_at)
+      config_json, maintenance_windows, last_status, next_check_at, created_at, updated_at)
       VALUES (@id, @name, @host, @port, @type, @enabled, @intervalSeconds,
       @timeoutSeconds, @warningDays, @criticalDays, @sniEnabled, @sniHost, @validateCertificate,
       @allowSelfSigned, @tagsJson, @notes, @owner, @channelIdsJson, @notificationRecipientsJson,
-      @maintenanceWindows, @lastStatus, @nextCheckAt, @createdAt, @updatedAt)
+      @configJson, @maintenanceWindows, @lastStatus, @nextCheckAt, @createdAt, @updatedAt)
     `).run(serializeMonitor(monitor));
     return monitor;
   },
@@ -96,6 +97,7 @@ export const monitors = {
       validate_certificate=@validateCertificate, allow_self_signed=@allowSelfSigned,
       tags_json=@tagsJson, notes=@notes, owner=@owner, channel_ids_json=@channelIdsJson,
       notification_recipients_json=@notificationRecipientsJson,
+      config_json=@configJson,
       maintenance_windows=@maintenanceWindows, last_status=@lastStatus, next_check_at=@nextCheckAt,
       updated_at=@updatedAt WHERE id=@id
     `).run(serializeMonitor(updated));
@@ -159,7 +161,7 @@ export const channels = {
     db.prepare(`
       INSERT INTO notification_channels VALUES (@id, @name, @type, @enabled, @configJson, @createdAt, @updatedAt)
       ON CONFLICT(id) DO UPDATE SET name=@name, type=@type, enabled=@enabled, config_json=@configJson, updated_at=@updatedAt
-    `).run({ ...channel, configJson: JSON.stringify(channel.config) });
+    `).run({ ...channel, configJson: JSON.stringify(encryptConfigSecrets(channel.config ?? {})) });
   },
   delete(channelId: string) {
     db.prepare("DELETE FROM notification_channels WHERE id = ?").run(channelId);
@@ -226,15 +228,19 @@ export const appSettings = {
     const row = db.prepare("SELECT value_json FROM settings WHERE key = ?").get(key) as { value_json?: string } | undefined;
     if (!row?.value_json) return fallback;
     try {
-      return { ...fallback, ...JSON.parse(row.value_json) };
+      const parsed = JSON.parse(row.value_json);
+      const value = isPlainSettingsObject(parsed) ? decryptConfigSecrets(parsed) : parsed;
+      if (Array.isArray(fallback)) return (Array.isArray(value) ? value : fallback) as T;
+      return { ...fallback, ...value };
     } catch {
       return fallback;
     }
   },
   set<T>(key: string, value: T) {
+    const stored = isPlainSettingsObject(value) ? encryptConfigSecrets(value as Record<string, unknown>) : value;
     db.prepare("INSERT INTO settings VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json").run(
       key,
-      JSON.stringify(value)
+      JSON.stringify(stored)
     );
   }
 };
@@ -247,5 +253,9 @@ const serializeMonitor = (monitor: Monitor) => ({
   allowSelfSigned: monitor.allowSelfSigned ? 1 : 0,
   tagsJson: JSON.stringify(monitor.tags),
   channelIdsJson: JSON.stringify(monitor.notificationChannelIds),
-  notificationRecipientsJson: JSON.stringify(monitor.notificationRecipients ?? {})
+  notificationRecipientsJson: JSON.stringify(monitor.notificationRecipients ?? {}),
+  configJson: JSON.stringify(encryptConfigSecrets(monitor.config ?? {}))
 });
+
+const isPlainSettingsObject = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === "object" && !Array.isArray(value);

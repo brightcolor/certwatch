@@ -57,6 +57,19 @@ describe("STARTTLS negotiation", () => {
     expect(ready.transcript).toContain("STLS");
     ready.socket.destroy();
   });
+
+  it("handles FTP AUTH TLS responses", async () => {
+    const port = await startServer((socket) => {
+      socket.write("220 FTP ready\r\n");
+      socket.on("data", (chunk) => {
+        if (/AUTH TLS/i.test(chunk.toString("utf8"))) socket.write("234 Proceed with negotiation.\r\n");
+      });
+    });
+
+    const ready = await prepareStartTls("127.0.0.1", port, "ftp", 1000);
+    expect(ready.transcript).toContain("234 Proceed with negotiation.");
+    ready.socket.destroy();
+  });
 });
 
 const startServer = (handler: (socket: net.Socket) => void) =>

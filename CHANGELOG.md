@@ -10,6 +10,10 @@
 - Added direct SSL/TLS protocol presets with default ports for SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, and XMPP TLS.
 - Added certificate-change alerts, public status pages, SVG badges, notification routing, user management, bulk import, retention settings, Docker health checks, and Watchtower/GHCR update support.
 - Split notification provider configuration from per-monitor and per-route recipients.
+- Added Uptime Kuma-style service checks for HTTP, HTTP login, TCP, DNS, SSH, FTP, SMTP, IMAP, and POP3.
+- Added explicit FTP AUTH TLS certificate checks alongside the existing mail STARTTLS and direct SSL/TLS presets.
+- Added encrypted-at-rest storage for monitor login secrets, SMTP settings, and notification provider secrets.
+- Added UI fields for service-check configuration and masked saved login/provider secrets in API responses.
 - Added Docker Compose deployment on port `8080`.
 - Added Express API, SQLite persistence, session authentication, CSRF header checks, and seeded admin user.
 - Added monitor CRUD, manual checks, scheduler, TLS and STARTTLS check engine, status classification, and historical check storage.

@@ -4,7 +4,7 @@
 
 # CertWatch
 
-CertWatch is a self-hosted monitoring service for SSL/TLS certificates and TLS service configuration. It is intentionally similar in operating style to Uptime Kuma, but focused on certificate expiry, hostname mismatches, certificate chain issues, STARTTLS services, and alert deduplication.
+CertWatch is a self-hosted monitoring service for SSL/TLS certificates, TLS service configuration, and lightweight service health checks. It is intentionally similar in operating style to Uptime Kuma, but focused on certificate expiry, hostname mismatches, certificate chain issues, STARTTLS services, protocol availability, and alert deduplication.
 
 The codebase is deliberately simple and compact. It also shows the signs of a fast AI-assisted build, so review the security and operational defaults before exposing it beyond a trusted network.
 
@@ -21,7 +21,8 @@ This stack keeps the application easy to self-host while still supporting real T
 ## Features
 
 - Dashboard with OK, warning, critical, down, paused, and unknown status counts
-- Monitor types for HTTPS, custom TCP TLS, SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, XMPP TLS, SMTP STARTTLS, IMAP STARTTLS, and POP3 STARTTLS
+- Monitor types for HTTPS, custom TCP TLS, SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, XMPP TLS, SMTP STARTTLS, IMAP STARTTLS, POP3 STARTTLS, and explicit FTP AUTH TLS
+- Service health checks for HTTP, HTTP login flows, raw TCP ports, DNS records, SSH, FTP, SMTP, IMAP, and POP3 banners
 - Certificate detail view with CN, SANs, issuer, serial number, SHA256 fingerprint, validity, chain, TLS version, and cipher suite
 - Hostname mismatch, self-signed, expiry, weak TLS protocol, chain trust, and fingerprint-change detection
 - Historical check results per monitor
@@ -30,6 +31,7 @@ This stack keeps the application easy to self-host while still supporting real T
 - Notification channels for SMTP email, Pushover, generic webhooks, Discord, Slack, Telegram, Gotify, and ntfy-compatible endpoints
 - Alert deduplication with resend interval and recovery messages
 - Local user login with bcrypt password hashes, secure sessions, CSRF token header, and admin seed user
+- Encrypted storage for monitor login secrets, SMTP settings, and notification provider secrets using `SESSION_SECRET`
 - JSON monitor import/export and CSV exports for certificate summary and check history
 - REST API under `/api`
 - Dark and light mode
@@ -109,9 +111,28 @@ On first launch, CertWatch shows a setup screen where the first user creates the
 - `smtp.example.com`, port `465`, type `SMTPS`
 - `mail.example.com`, port `993`, type `TCP TLS`
 - `ldap.example.com`, port `636`, type `LDAPS`
+- `ftp.example.com`, port `21`, type `FTP explicit TLS`
 - `smtp.example.com`, port `587`, type `SMTP STARTTLS`
 - `imap.example.com`, port `143`, type `IMAP STARTTLS`
 - `pop3.example.com`, port `110`, type `POP3 STARTTLS`
+- `app.example.com`, port `443`, type `HTTP login check`
+- `ssh.example.com`, port `22`, type `SSH banner`
+- `example.com`, port `53`, type `DNS record check`
+
+## Service Checks
+
+CertWatch can monitor certificate-focused targets and general service availability from the same monitor list.
+
+- HTTP checks validate the status code and can optionally require a response substring.
+- HTTP login checks support Basic Auth or form POST checks. Login credentials are encrypted at rest and masked in API/UI responses.
+- TCP checks validate that a port accepts connections.
+- DNS checks validate record resolution and can require an expected value.
+- SSH, FTP, SMTP, IMAP, and POP3 checks validate the protocol banner or capability response.
+- Direct SSL/TLS checks remain available for SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, and custom TLS ports.
+- Explicit TLS upgrade checks are available for SMTP, IMAP, POP3, and FTP.
+
+Keep `SESSION_SECRET` stable after first deployment. It is used to decrypt stored service-login passwords and provider secrets.
+Monitor JSON exports mask stored secrets and are suitable for moving monitor definitions, not for full secret-bearing backups.
 
 ## Notification Setup
 
@@ -240,6 +261,7 @@ The schema migration currently creates missing tables only. Back up the database
 - Checks fail for private hosts: set `ALLOW_PRIVATE_TARGETS=true` if the instance is intentionally allowed to monitor internal networks.
 - Cookies fail behind HTTPS: set `COOKIE_SECURE=true` and ensure `X-Forwarded-Proto` is passed by the proxy.
 - STARTTLS fails: verify the service advertises STARTTLS and that firewalls allow the configured port.
+- Stored secrets cannot be read after changing `SESSION_SECRET`: restore the previous secret or re-enter affected monitor, SMTP, and notification provider passwords.
 
 ## TODO
 
@@ -247,4 +269,3 @@ The schema migration currently creates missing tables only. Back up the database
 - Add full quiet-hours and maintenance-window enforcement
 - Add Prometheus metrics endpoint
 - Add OIDC, LDAP, and reverse-proxy-auth integrations
-- Add encrypted storage for notification secrets

@@ -3,6 +3,7 @@ import { runTlsCheck } from "../checks/tlsChecker.js";
 import { alerts, appSettings, channels, monitors, results } from "../storage/repositories.js";
 import { dispatchAlerts } from "../notifications/service.js";
 import { applyCertificateChangeWatch } from "../checks/changeWatch.js";
+import { isServiceMonitor, runServiceCheck } from "../checks/serviceChecker.js";
 
 let running = false;
 let lastRetentionRun = 0;
@@ -34,8 +35,8 @@ const runRetentionIfDue = () => {
 const runMonitor = async (monitor: ReturnType<typeof monitors.list>[number]) => {
   try {
     const previous = results.list(monitor.id, 1)[0];
-    const checked = await runTlsCheck(monitor, previous?.fingerprintSha256);
-    const result = applyCertificateChangeWatch(checked, previous, appSettings.alerting());
+    const checked = isServiceMonitor(monitor.type) ? await runServiceCheck(monitor) : await runTlsCheck(monitor, previous?.fingerprintSha256);
+    const result = isServiceMonitor(monitor.type) ? checked : applyCertificateChangeWatch(checked, previous, appSettings.alerting());
     results.insert(result);
     monitors.markChecked(monitor, result);
     await dispatchAlerts(monitor, result, channels.list());

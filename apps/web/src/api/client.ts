@@ -16,6 +16,7 @@ export interface Monitor {
   tags: string[];
   notes?: string | null;
   owner?: string | null;
+  config: Record<string, unknown>;
   notificationChannelIds: string[];
   notificationRecipients: Record<string, string>;
   lastStatus: string;

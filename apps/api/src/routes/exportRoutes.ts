@@ -1,11 +1,13 @@
 import { Router } from "express";
 import { monitors, results } from "../storage/repositories.js";
 import { defaultsFor, monitorInputSchema } from "./monitorSchemas.js";
+import type { Monitor } from "../types.js";
+import { redactConfigSecrets } from "../utils/secrets.js";
 
 export const exportRoutes = Router();
 
 exportRoutes.get("/monitors.json", (_req, res) => {
-  res.attachment("certwatch-monitors.json").json({ monitors: monitors.list() });
+  res.attachment("certwatch-monitors.json").json({ monitors: monitors.list().map(publicMonitor) });
 });
 
 exportRoutes.post("/monitors.json", (req, res) => {
@@ -13,7 +15,7 @@ exportRoutes.post("/monitors.json", (req, res) => {
   const created = [];
   for (const item of input) {
     const parsed = monitorInputSchema.safeParse(defaultsFor(item));
-    if (parsed.success) created.push(monitors.create(parsed.data));
+    if (parsed.success) created.push(publicMonitor(monitors.create(parsed.data)));
   }
   res.status(201).json({ imported: created.length, monitors: created });
 });
@@ -39,3 +41,5 @@ exportRoutes.get("/history.csv", (_req, res) => {
 });
 
 const toCsv = (rows: string[][]) => rows.map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
+
+const publicMonitor = (monitor: Monitor) => ({ ...monitor, config: redactConfigSecrets(monitor.config ?? {}) });

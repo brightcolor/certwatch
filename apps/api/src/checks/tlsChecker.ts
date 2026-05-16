@@ -68,7 +68,7 @@ const openTlsConnection = (monitor: Monitor) =>
     let rawSocket: import("node:net").Socket | undefined;
     try {
       if (monitor.type.endsWith("_starttls")) {
-        const mode = monitor.type.split("_")[0] as "smtp" | "imap" | "pop3";
+        const mode = monitor.type.split("_")[0] as "smtp" | "imap" | "pop3" | "ftp";
         rawSocket = (await prepareStartTls(monitor.host, monitor.port, mode, timeoutMs)).socket;
       }
       const socket = rawSocket ? tls.connect({ ...options, socket: rawSocket }) : tls.connect(options);

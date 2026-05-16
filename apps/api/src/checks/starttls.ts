@@ -5,7 +5,7 @@ export interface StartTlsReady {
   transcript: string[];
 }
 
-export const prepareStartTls = async (host: string, port: number, mode: "smtp" | "imap" | "pop3", timeoutMs: number) => {
+export const prepareStartTls = async (host: string, port: number, mode: "smtp" | "imap" | "pop3" | "ftp", timeoutMs: number) => {
   const socket = net.connect({ host, port });
   socket.setTimeout(timeoutMs);
   const reader = new LineReader(socket);
@@ -14,6 +14,7 @@ export const prepareStartTls = async (host: string, port: number, mode: "smtp" |
     if (mode === "smtp") await prepareSmtp(socket, reader);
     if (mode === "imap") await prepareImap(socket, reader);
     if (mode === "pop3") await preparePop3(socket, reader);
+    if (mode === "ftp") await prepareFtp(socket, reader);
     socket.setTimeout(0);
     return { socket, transcript: reader.transcript } satisfies StartTlsReady;
   } catch (error) {
@@ -118,6 +119,13 @@ const preparePop3 = async (socket: net.Socket, reader: LineReader) => {
   write(socket, "STLS");
   const response = await reader.readUntil((lines) => lines.some((line) => /^(\+OK|-ERR)/i.test(line)));
   if (!response.some((line) => /^\+OK/i.test(line))) throw new Error(`POP3 STLS rejected: ${response.join(" ")}`);
+};
+
+const prepareFtp = async (socket: net.Socket, reader: LineReader) => {
+  await reader.readUntil((lines) => lines.some((line) => /^220\b/.test(line)));
+  write(socket, "AUTH TLS");
+  const response = await reader.readUntil((lines) => lines.some((line) => /^(\d{3})\b/.test(line)));
+  if (!response.some((line) => /^234\b/.test(line))) throw new Error(`FTP AUTH TLS rejected: ${response.join(" ")}`);
 };
 
 const write = (socket: net.Socket, line: string) => socket.write(`${line}\r\n`);

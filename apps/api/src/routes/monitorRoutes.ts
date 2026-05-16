@@ -4,19 +4,22 @@ import { monitorInputSchema } from "./monitorSchemas.js";
 import { runTlsCheck } from "../checks/tlsChecker.js";
 import { dispatchAlerts } from "../notifications/service.js";
 import { applyCertificateChangeWatch } from "../checks/changeWatch.js";
+import { isServiceMonitor, runServiceCheck } from "../checks/serviceChecker.js";
+import type { Monitor } from "../types.js";
+import { redactConfigSecrets } from "../utils/secrets.js";
 
 export const monitorRoutes = Router();
 
 monitorRoutes.get("/", (_req, res) => {
   const latest = results.latestByMonitor();
-  res.json(monitors.list().map((monitor) => ({ ...monitor, latestResult: latest[monitor.id] ?? null })));
+  res.json(monitors.list().map((monitor) => ({ ...publicMonitor(monitor), latestResult: latest[monitor.id] ?? null })));
 });
 
 monitorRoutes.post("/", async (req, res) => {
   const parsed = monitorInputSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid monitor." });
   const monitor = monitors.create(parsed.data);
-  res.status(201).json(monitor);
+  res.status(201).json(publicMonitor(monitor));
 });
 
 monitorRoutes.post("/bulk", (req, res) => {
@@ -26,7 +29,7 @@ monitorRoutes.post("/bulk", (req, res) => {
   for (const line of lines) {
     const parsedLine = parseBulkLine(line);
     const parsed = monitorInputSchema.safeParse(parsedLine);
-    if (parsed.success) created.push(monitors.create(parsed.data));
+    if (parsed.success) created.push(publicMonitor(monitors.create(parsed.data)));
     else errors.push({ line, error: parsed.error.issues[0]?.message ?? "Invalid monitor." });
   }
   res.status(errors.length ? 207 : 201).json({ imported: created.length, errors, monitors: created });
@@ -35,7 +38,7 @@ monitorRoutes.post("/bulk", (req, res) => {
 monitorRoutes.get("/:id", (req, res) => {
   const monitor = monitors.get(req.params.id);
   if (!monitor) return res.status(404).json({ error: "Monitor not found." });
-  res.json({ ...monitor, latestResult: results.list(monitor.id, 1)[0] ?? null });
+  res.json({ ...publicMonitor(monitor), latestResult: results.list(monitor.id, 1)[0] ?? null });
 });
 
 const parseBulkLine = (line: string) => {
@@ -46,7 +49,7 @@ const parseBulkLine = (line: string) => {
   }));
   const starttls = optionMap.starttls;
   const type = optionMap.type || (starttls ? `${starttls}_starttls` : "https");
-  const portByType: Record<string, number> = { https: 443, tls: 443, smtps: 465, imaps: 993, pop3s: 995, ldaps: 636, ftps: 990, xmpps: 5223, smtp_starttls: 587, imap_starttls: 143, pop3_starttls: 110 };
+  const portByType: Record<string, number> = { https: 443, tls: 443, smtps: 465, imaps: 993, pop3s: 995, ldaps: 636, ftps: 990, xmpps: 5223, smtp_starttls: 587, imap_starttls: 143, pop3_starttls: 110, ftp_starttls: 21, http: 80, tcp: 80, dns: 53, http_login: 443, ssh: 22, ftp: 21, smtp: 25, imap: 143, pop3: 110 };
   const [host, rawPort] = target.replace(/^https?:\/\//, "").split(/[/:]/);
   const port = Number(optionMap.port || rawPort || portByType[type] || 443);
   return {
@@ -77,7 +80,7 @@ monitorRoutes.put("/:id", (req, res) => {
   if (!monitor) return res.status(404).json({ error: "Monitor not found." });
   const parsed = monitorInputSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid monitor." });
-  res.json(monitors.update({ ...monitor, ...parsed.data }));
+  res.json(publicMonitor(monitors.update({ ...monitor, ...parsed.data, config: mergeMaskedSecrets(monitor.config, parsed.data.config) })));
 });
 
 monitorRoutes.delete("/:id", (req, res) => {
@@ -90,8 +93,8 @@ monitorRoutes.post("/:id/check", async (req, res) => {
   if (!monitor) return res.status(404).json({ error: "Monitor not found." });
   if (!monitor.enabled) return res.status(409).json({ error: "Monitor is paused." });
   const previous = results.list(monitor.id, 1)[0];
-  const checked = await runTlsCheck(monitor, previous?.fingerprintSha256);
-  const result = applyCertificateChangeWatch(checked, previous, appSettings.alerting());
+  const checked = isServiceMonitor(monitor.type) ? await runServiceCheck(monitor) : await runTlsCheck(monitor, previous?.fingerprintSha256);
+  const result = isServiceMonitor(monitor.type) ? checked : applyCertificateChangeWatch(checked, previous, appSettings.alerting());
   results.insert(result);
   monitors.markChecked(monitor, result);
   await dispatchAlerts(monitor, result, channels.list());
@@ -101,3 +104,11 @@ monitorRoutes.post("/:id/check", async (req, res) => {
 monitorRoutes.get("/:id/results", (req, res) => {
   res.json(results.list(req.params.id, Number(req.query.limit ?? 100)));
 });
+
+const publicMonitor = (monitor: Monitor) => ({ ...monitor, config: redactConfigSecrets(monitor.config ?? {}) });
+
+const mergeMaskedSecrets = (previous: Record<string, unknown>, next: Record<string, unknown>) =>
+  Object.fromEntries(Object.entries(next ?? {}).map(([key, value]) => [
+    key,
+    value === "********" ? previous?.[key] : value
+  ]));

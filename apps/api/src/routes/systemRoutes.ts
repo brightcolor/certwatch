@@ -65,7 +65,14 @@ systemRoutes.post("/notification-channels", (req, res) => {
   const parsed = channelSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid channel." });
   const now = nowIso();
-  const channel = { ...parsed.data, id: parsed.data.id ?? id(), createdAt: now, updatedAt: now };
+  const existing = parsed.data.id ? channels.get(parsed.data.id) : null;
+  const channel = {
+    ...parsed.data,
+    id: parsed.data.id ?? id(),
+    config: mergeMaskedConfig(existing?.config ?? {}, parsed.data.config ?? {}),
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now
+  };
   channels.upsert(channel);
   res.status(201).json(redactChannel(channel));
 });
@@ -164,6 +171,12 @@ const redactConfig = (config: object) =>
   Object.fromEntries(Object.entries(config ?? {}).map(([key, value]) =>
     /pass|token|secret|key/i.test(key) ? [key, value ? "********" : ""] : [key, value]
   ));
+
+const mergeMaskedConfig = (previous: Record<string, unknown>, next: Record<string, unknown>) =>
+  Object.fromEntries(Object.entries(next).map(([key, value]) => [
+    key,
+    value === "********" ? previous?.[key] : value
+  ]));
 
 const redactChannel = (channel: any) => ({
   ...channel,

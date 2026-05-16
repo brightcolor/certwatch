@@ -9,7 +9,9 @@ export type MonitorType =
   | "xmpps"
   | "smtp_starttls"
   | "imap_starttls"
-  | "pop3_starttls";
+  | "pop3_starttls"
+  | "ftp_starttls";
+export type ServiceMonitorType = "http" | "tcp" | "dns" | "http_login" | "ssh" | "ftp" | "smtp" | "imap" | "pop3";
 export type MonitorStatus = "OK" | "WARNING" | "CRITICAL" | "DOWN" | "PAUSED" | "UNKNOWN";
 export type Severity = "info" | "warning" | "critical" | "recovery";
 export type ChannelType =
@@ -32,7 +34,7 @@ export interface Monitor {
   name: string;
   host: string;
   port: number;
-  type: MonitorType;
+  type: MonitorType | ServiceMonitorType;
   enabled: boolean;
   intervalSeconds: number;
   timeoutSeconds: number;
@@ -47,6 +49,7 @@ export interface Monitor {
   owner?: string | null;
   notificationChannelIds: string[];
   notificationRecipients: Record<string, string>;
+  config: Record<string, unknown>;
   maintenanceWindows?: string | null;
   lastStatus: MonitorStatus;
   nextCheckAt?: string | null;

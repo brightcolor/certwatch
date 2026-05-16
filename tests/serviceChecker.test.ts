@@ -1,0 +1,81 @@
+import http from "node:http";
+import net from "node:net";
+import { afterEach, describe, expect, it } from "vitest";
+import { runServiceCheck } from "../apps/api/src/checks/serviceChecker.js";
+import type { Monitor } from "../apps/api/src/types.js";
+
+const servers: Array<http.Server | net.Server> = [];
+
+describe("service checks", () => {
+  afterEach(async () => {
+    await Promise.all(servers.map((server) => new Promise<void>((resolve) => server.close(() => resolve()))));
+    servers.length = 0;
+  });
+
+  it("checks HTTP status and expected text", async () => {
+    const port = await startHttpServer((_req, res) => res.end("service healthy"));
+    const result = await runServiceCheck(monitor({ type: "http", port, config: { scheme: "http", expectedText: "healthy" } }));
+
+    expect(result.status).toBe("OK");
+  });
+
+  it("checks SSH service banners", async () => {
+    const port = await startTcpServer((socket) => socket.write("SSH-2.0-OpenSSH_9.6\r\n"));
+    const result = await runServiceCheck(monitor({ type: "ssh", port }));
+
+    expect(result.status).toBe("OK");
+  });
+
+  it("marks unexpected service banners as down", async () => {
+    const port = await startTcpServer((socket) => socket.write("not ssh\r\n"));
+    const result = await runServiceCheck(monitor({ type: "ssh", port }));
+
+    expect(result.status).toBe("DOWN");
+    expect(result.problems[0]).toContain("banner was unexpected");
+  });
+});
+
+const startHttpServer = (handler: http.RequestListener) =>
+  new Promise<number>((resolve) => {
+    const server = http.createServer(handler);
+    servers.push(server);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      if (typeof address === "object" && address) resolve(address.port);
+    });
+  });
+
+const startTcpServer = (handler: (socket: net.Socket) => void) =>
+  new Promise<number>((resolve) => {
+    const server = net.createServer(handler);
+    servers.push(server);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      if (typeof address === "object" && address) resolve(address.port);
+    });
+  });
+
+const monitor = (partial: Partial<Monitor>): Monitor => ({
+  id: "monitor-1",
+  name: "Local service",
+  host: "127.0.0.1",
+  port: 80,
+  type: "http",
+  enabled: true,
+  intervalSeconds: 60,
+  timeoutSeconds: 2,
+  warningDays: 30,
+  criticalDays: 7,
+  sniEnabled: true,
+  sniHost: null,
+  validateCertificate: true,
+  allowSelfSigned: false,
+  tags: [],
+  notificationChannelIds: [],
+  notificationRecipients: {},
+  config: {},
+  lastStatus: "UNKNOWN",
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  ...partial
+});
