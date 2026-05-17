@@ -46,6 +46,18 @@ function App() {
   }, []);
   useEffect(() => { if (user) void refresh(); }, [user]);
   useEffect(() => { if (selected) void loadResults(selected); }, [selected]);
+  useEffect(() => {
+    if (!user) return;
+    if (!window.history.state?.certwatch) window.history.replaceState({ certwatch: true, page: "dashboard", selected: null }, "");
+    const onPopState = () => {
+      const state = window.history.state?.certwatch ? window.history.state : { page: "dashboard", selected: null };
+      setPage(state.page ?? "dashboard");
+      setSelected(state.selected ?? null);
+      if (!state.selected) setResults([]);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [user]);
 
   const refresh = async () => {
     const [monitorData, statusData, channelData] = await Promise.all([
@@ -92,10 +104,19 @@ function App() {
   };
   const deleteMonitor = async (id: string) => {
     await api.request(`/monitors/${id}`, { method: "DELETE" });
-    setSelected(null);
-    setResults([]);
+    navigate("dashboard");
     await refresh();
     setToast("Monitor deleted");
+  };
+  const navigate = (nextPage: string, nextSelected: string | null = null) => {
+    setPage(nextPage);
+    setSelected(nextSelected);
+    if (!nextSelected) setResults([]);
+    window.history.pushState({ certwatch: true, page: nextPage, selected: nextSelected }, "");
+  };
+  const backToOverview = () => {
+    if (window.history.state?.certwatch && window.history.state.selected) window.history.back();
+    else navigate("dashboard");
   };
 
   if (!booted) return <main className="login"><div className="login-panel"><span className="eyebrow">CertWatch</span><h1>Loading</h1></div></main>;
@@ -103,7 +124,7 @@ function App() {
   const selectedMonitor = monitors.find((monitor) => monitor.id === selected);
 
   return (
-    <Layout page={page} onPage={setPage} onNew={() => setEditing("new")} theme={theme} setTheme={setTheme} version={version}>
+    <Layout page={page} onPage={(nextPage: string) => navigate(nextPage)} onNew={() => setEditing("new")} theme={theme} setTheme={setTheme} version={version}>
       {toast && <div className="toast" onAnimationEnd={() => setToast("")}>{toast}</div>}
       {page === "settings" ? (
         <Settings
@@ -125,11 +146,11 @@ function App() {
       ) : page === "users" ? (
         <UsersPage users={users} onCreate={async (data: any) => { await api.request("/users", { method: "POST", body: JSON.stringify(data) }); await refresh(); }} onDelete={async (id: string) => { await api.request(`/users/${id}`, { method: "DELETE" }); await refresh(); }} />
       ) : page === "applications" ? (
-        <Applications monitors={monitors} onSelect={(id) => { setSelected(id); setPage("dashboard"); }} />
+        <Applications monitors={monitors} onSelect={(id) => navigate("dashboard", id)} />
       ) : selectedMonitor ? (
-        <MonitorDetail monitor={selectedMonitor} results={results} onBack={() => setSelected(null)} onEdit={() => setEditing(selectedMonitor)} onCheck={() => checkNow(selectedMonitor.id)} onDelete={() => deleteMonitor(selectedMonitor.id)} />
+        <MonitorDetail monitor={selectedMonitor} results={results} onBack={backToOverview} onEdit={() => setEditing(selectedMonitor)} onCheck={() => checkNow(selectedMonitor.id)} onDelete={() => deleteMonitor(selectedMonitor.id)} />
       ) : (
-        <Dashboard monitors={monitors} stats={stats} query={query} setQuery={setQuery} onSelect={setSelected} onCheck={checkNow} />
+        <Dashboard monitors={monitors} stats={stats} query={query} setQuery={setQuery} onSelect={(id: string) => navigate("dashboard", id)} onCheck={checkNow} />
       )}
       {editing && <MonitorForm channels={channels} monitor={editing === "new" ? null : editing} onCancel={() => setEditing(null)} onSave={saveMonitor} onSaveAndCheck={saveAndCheck} />}
     </Layout>

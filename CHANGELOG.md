@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2 - 2026-05-17
+
+- Added browser history support for monitor details so mouse/browser Back returns to the monitor overview.
+- Made Dashboard navigation always clear the selected monitor and return to the overview.
+
 ## 0.2.1 - 2026-05-16
 
 - Reworked the main UI around clearer navigation, dashboard scanning, application rollups, detail actions, and grouped monitor form sections.
