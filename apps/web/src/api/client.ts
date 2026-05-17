@@ -20,6 +20,7 @@ export interface Monitor {
   config: Record<string, unknown>;
   notificationChannelIds: string[];
   notificationRecipients: Record<string, string>;
+  maintenanceWindows?: string | null;
   lastStatus: string;
   latestResult?: CheckResult | null;
 }
@@ -57,6 +58,10 @@ export interface Incident {
   message: string;
   startedAt: string;
   resolvedAt?: string | null;
+  acknowledgedAt?: string | null;
+  acknowledgedBy?: string | null;
+  assignee?: string | null;
+  notes: Array<{ id: string; author: string; text: string; createdAt: string }>;
 }
 
 export interface StatusSubscription {

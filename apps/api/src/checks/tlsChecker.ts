@@ -1,7 +1,7 @@
 import tls from "node:tls";
 import { X509Certificate } from "node:crypto";
 import type { PeerCertificate } from "node:tls";
-import type { CheckResult, Monitor } from "../types.js";
+import type { CheckResult, Monitor, TlsPolicySettings } from "../types.js";
 import { id } from "../utils/id.js";
 import { nowIso } from "../utils/time.js";
 import { classifyResult } from "./status.js";
@@ -9,7 +9,7 @@ import { assertPublicResolution } from "./validation.js";
 import { prepareStartTls } from "./starttls.js";
 import { gradeTls } from "./tlsGrade.js";
 
-export const runTlsCheck = async (monitor: Monitor, previousFingerprint?: string | null): Promise<CheckResult> => {
+export const runTlsCheck = async (monitor: Monitor, previousFingerprint?: string | null, tlsPolicy?: TlsPolicySettings): Promise<CheckResult> => {
   const started = Date.now();
   try {
     await assertPublicResolution(monitor.host);
@@ -52,13 +52,13 @@ export const runTlsCheck = async (monitor: Monitor, previousFingerprint?: string
       tlsVersion: connection.socket.getProtocol(),
       cipherSuite: connection.socket.getCipher()?.name,
       chain
-    }));
+    }), tlsPolicy);
     connection.socket.destroy();
     return result;
   } catch (error) {
     return withTlsGrade(makeResult(monitor, "DOWN", "critical", started, [error instanceof Error ? error.message : "Check failed."], {
       rawError: error instanceof Error ? error.message : String(error)
-    }));
+    }), tlsPolicy);
   }
 };
 
@@ -112,7 +112,7 @@ const makeResult = (
   rawError: data.rawError ?? null
 });
 
-const withTlsGrade = (result: CheckResult): CheckResult => ({ ...result, ...gradeTls(result) });
+const withTlsGrade = (result: CheckResult, tlsPolicy?: TlsPolicySettings): CheckResult => ({ ...result, ...gradeTls(result, tlsPolicy) });
 
 const parseDn = (dn: string) =>
   Object.fromEntries(dn.split(/\n|, /).map((part) => {

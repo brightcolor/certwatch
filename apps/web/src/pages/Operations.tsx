@@ -1,0 +1,124 @@
+import { useEffect, useState } from "react";
+import { api } from "../api/client";
+import { TagInput } from "../components/TagInput";
+
+export function Operations() {
+  const [maintenance, setMaintenance] = useState<any>({ windows: [] });
+  const [tlsPolicy, setTlsPolicy] = useState<any>({ profile: "modern", minimumTlsVersion: "TLSv1.2", weakCipherPenalty: 40, requireSan: true });
+  const [statusPages, setStatusPages] = useState<any>({ pages: [] });
+  const [discovery, setDiscovery] = useState<any>({ enabled: false, intervalHours: 24, domains: [], suggestions: [] });
+  const [backupSettings, setBackupSettings] = useState<any>({ enabled: false, intervalHours: 24, keep: 7 });
+  const [backups, setBackups] = useState<any[]>([]);
+  const [tokens, setTokens] = useState<any[]>([]);
+  const [deliveries, setDeliveries] = useState<any[]>([]);
+  const [tokenResult, setTokenResult] = useState("");
+  const [route, setRoute] = useState({ name: "", tags: [] as string[], window: "daily 22:00-23:00" });
+  const [page, setPage] = useState({ slug: "", title: "", description: "", logoUrl: "", tags: [] as string[], hideHostnames: false });
+  const [tokenName, setTokenName] = useState("");
+  const [tokenScope, setTokenScope] = useState("read");
+
+  const load = async () => {
+    const [m, t, s, d, b, backupList, tokenList, deliveryList] = await Promise.all([
+      api.request<any>("/settings/maintenance"),
+      api.request<any>("/settings/tls-policy"),
+      api.request<any>("/settings/status-pages"),
+      api.request<any>("/settings/discovery"),
+      api.request<any>("/settings/backups"),
+      api.request<any[]>("/backups"),
+      api.request<any[]>("/api-tokens").catch(() => []),
+      api.request<any[]>("/deliveries")
+    ]);
+    setMaintenance(m); setTlsPolicy(t); setStatusPages(s); setDiscovery(d); setBackupSettings(b); setBackups(backupList); setTokens(tokenList); setDeliveries(deliveryList);
+  };
+  useEffect(() => { void load(); }, []);
+
+  const save = async (path: string, body: any) => { await api.request(path, { method: "PUT", body: JSON.stringify(body) }); await load(); };
+  const addMaintenance = () => {
+    const windows = [...maintenance.windows, { id: crypto.randomUUID(), ...route, enabled: true }];
+    void save("/settings/maintenance", { windows });
+    setRoute({ name: "", tags: [], window: "daily 22:00-23:00" });
+  };
+  const addStatusPage = () => {
+    const pages = [...statusPages.pages, { id: crypto.randomUUID(), ...page, enabled: true }];
+    void save("/settings/status-pages", { pages });
+    setPage({ slug: "", title: "", description: "", logoUrl: "", tags: [], hideHostnames: false });
+  };
+  const createToken = async () => {
+    const created = await api.request<any>("/api-tokens", { method: "POST", body: JSON.stringify({ name: tokenName, scopes: tokenScope === "write" ? ["read", "write"] : ["read"] }) });
+    setTokenResult(created.token);
+    setTokenName("");
+    await load();
+  };
+
+  return (
+    <section className="content">
+      <div className="grid two">
+        <div className="panel">
+          <h3>Maintenance windows</h3>
+          <label>Name<input value={route.name} onChange={(e) => setRoute({ ...route, name: e.target.value })} /></label>
+          <TagInput value={route.tags} onChange={(tags) => setRoute({ ...route, tags })} />
+          <label>Window<input value={route.window} onChange={(e) => setRoute({ ...route, window: e.target.value })} placeholder="daily 22:00-23:00" /></label>
+          <button onClick={addMaintenance}>Add window</button>
+          {maintenance.windows.map((item: any) => <Row key={item.id} title={item.name} detail={`${item.tags.join(", ")} - ${item.window}`} onDelete={() => save("/settings/maintenance", { windows: maintenance.windows.filter((entry: any) => entry.id !== item.id) })} />)}
+        </div>
+        <div className="panel">
+          <h3>TLS policy profile</h3>
+          <label>Profile<select value={tlsPolicy.profile} onChange={(e) => setTlsPolicy({ ...tlsPolicy, profile: e.target.value })}><option value="modern">Modern</option><option value="strict">Strict</option><option value="legacy">Legacy tolerated</option></select></label>
+          <label>Minimum TLS<select value={tlsPolicy.minimumTlsVersion} onChange={(e) => setTlsPolicy({ ...tlsPolicy, minimumTlsVersion: e.target.value })}>{["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"].map((item) => <option key={item}>{item}</option>)}</select></label>
+          <label>Weak cipher penalty<input type="number" min="0" max="80" value={tlsPolicy.weakCipherPenalty} onChange={(e) => setTlsPolicy({ ...tlsPolicy, weakCipherPenalty: Number(e.target.value) })} /></label>
+          <label><input type="checkbox" checked={tlsPolicy.requireSan} onChange={(e) => setTlsPolicy({ ...tlsPolicy, requireSan: e.target.checked })} /> Require SAN extension</label>
+          <button onClick={() => save("/settings/tls-policy", tlsPolicy)}>Save TLS policy</button>
+        </div>
+      </div>
+      <div className="grid two">
+        <div className="panel">
+          <h3>Status pages</h3>
+          <label>Slug<input value={page.slug} onChange={(e) => setPage({ ...page, slug: e.target.value.toLowerCase() })} placeholder="public-prod" /></label>
+          <label>Title<input value={page.title} onChange={(e) => setPage({ ...page, title: e.target.value })} /></label>
+          <label>Description<input value={page.description} onChange={(e) => setPage({ ...page, description: e.target.value })} /></label>
+          <label>Logo URL<input value={page.logoUrl} onChange={(e) => setPage({ ...page, logoUrl: e.target.value })} /></label>
+          <TagInput value={page.tags} onChange={(tags) => setPage({ ...page, tags })} />
+          <label><input type="checkbox" checked={page.hideHostnames} onChange={(e) => setPage({ ...page, hideHostnames: e.target.checked })} /> Hide hostnames</label>
+          <button onClick={addStatusPage}>Add status page</button>
+          {statusPages.pages.map((item: any) => <Row key={item.id} title={item.title} detail={`/public/status/${item.slug}.html - ${item.tags.join(", ")}`} onDelete={() => save("/settings/status-pages", { pages: statusPages.pages.filter((entry: any) => entry.id !== item.id) })} />)}
+        </div>
+        <div className="panel">
+          <h3>Discovery job</h3>
+          <label><input type="checkbox" checked={discovery.enabled} onChange={(e) => setDiscovery({ ...discovery, enabled: e.target.checked })} /> Enabled</label>
+          <label>Interval hours<input type="number" min="1" value={discovery.intervalHours} onChange={(e) => setDiscovery({ ...discovery, intervalHours: Number(e.target.value) })} /></label>
+          <label>Domains<textarea value={(discovery.domains ?? []).join("\n")} onChange={(e) => setDiscovery({ ...discovery, domains: e.target.value.split(/\s+/).filter(Boolean) })} /></label>
+          <div className="actions"><button onClick={() => save("/settings/discovery", discovery)}>Save discovery</button><button className="ghost" onClick={async () => { await api.request("/discovery/run", { method: "POST", body: "{}" }); await load(); }}>Run now</button></div>
+          <div className="stack-list">{(discovery.suggestions ?? []).slice(0, 8).map((item: any) => <div key={`${item.host}-${item.port}-${item.type}`}><strong>{item.name}</strong><span>{item.host}:{item.port}</span><small>{item.type}</small></div>)}</div>
+        </div>
+      </div>
+      <div className="grid two">
+        <div className="panel">
+          <h3>Database backups</h3>
+          <label><input type="checkbox" checked={backupSettings.enabled} onChange={(e) => setBackupSettings({ ...backupSettings, enabled: e.target.checked })} /> Scheduled backups</label>
+          <label>Interval hours<input type="number" min="1" value={backupSettings.intervalHours} onChange={(e) => setBackupSettings({ ...backupSettings, intervalHours: Number(e.target.value) })} /></label>
+          <label>Keep backups<input type="number" min="1" max="100" value={backupSettings.keep} onChange={(e) => setBackupSettings({ ...backupSettings, keep: Number(e.target.value) })} /></label>
+          <div className="actions"><button onClick={() => save("/settings/backups", backupSettings)}>Save backups</button><button className="ghost" onClick={async () => { await api.request("/backups/run", { method: "POST", body: "{}" }); await load(); }}>Run backup</button></div>
+          {backups.map((item) => <div className="channel" key={item.name}><strong>{item.name}</strong><span>{Math.round(item.size / 1024)} KB</span><div className="actions"><a className="button-link" href={`/api/backups/${item.name}`}>Download</a><button onClick={async () => { await api.request(`/backups/${item.name}`, { method: "DELETE" }); await load(); }}>Delete</button></div></div>)}
+        </div>
+        <div className="panel">
+          <h3>API tokens</h3>
+          <label>Name<input value={tokenName} onChange={(e) => setTokenName(e.target.value)} /></label>
+          <label>Scope<select value={tokenScope} onChange={(e) => setTokenScope(e.target.value)}><option value="read">Read only</option><option value="write">Read and write</option></select></label>
+          <button onClick={createToken}>Create token</button>
+          {tokenResult && <label>New token<input readOnly value={tokenResult} onFocus={(e) => e.currentTarget.select()} /></label>}
+          {tokens.map((item) => <Row key={item.id} title={item.name} detail={`created ${dateTime(item.createdAt)}${item.lastUsedAt ? ` - used ${dateTime(item.lastUsedAt)}` : ""}`} onDelete={async () => { await api.request(`/api-tokens/${item.id}`, { method: "DELETE" }); await load(); }} />)}
+        </div>
+      </div>
+      <div className="panel">
+        <h3>Notification delivery log</h3>
+        <div className="stack-list">{deliveries.slice(0, 25).map((item) => <div key={item.id}><strong>{item.deliveryStatus}</strong><span>{item.channelName} / {item.provider}</span><small>{item.message}{item.error ? ` - ${item.error}` : ""}</small></div>)}</div>
+      </div>
+    </section>
+  );
+}
+
+function Row({ title, detail, onDelete }: { title: string; detail: string; onDelete: () => void | Promise<void> }) {
+  return <div className="channel"><strong>{title}</strong><span>{detail}</span><button onClick={onDelete}>Delete</button></div>;
+}
+
+const dateTime = (value?: string | null) => value ? new Date(value).toLocaleString() : "";

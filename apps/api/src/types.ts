@@ -146,6 +146,17 @@ export interface Incident {
   message: string;
   startedAt: string;
   resolvedAt?: string | null;
+  acknowledgedAt?: string | null;
+  acknowledgedBy?: string | null;
+  assignee?: string | null;
+  notes: IncidentNote[];
+}
+
+export interface IncidentNote {
+  id: string;
+  author: string;
+  text: string;
+  createdAt: string;
 }
 
 export interface StatusSubscription {
@@ -161,6 +172,88 @@ export interface CtWatchSettings {
   enabled: boolean;
   domains: string[];
   lastSeen: Record<string, string>;
+}
+
+export interface MaintenanceWindow {
+  id: string;
+  name: string;
+  tags: string[];
+  window: string;
+  enabled: boolean;
+}
+
+export interface MaintenanceSettings {
+  windows: MaintenanceWindow[];
+}
+
+export interface TlsPolicySettings {
+  profile: "modern" | "strict" | "legacy";
+  minimumTlsVersion: "TLSv1" | "TLSv1.1" | "TLSv1.2" | "TLSv1.3";
+  weakCipherPenalty: number;
+  requireSan: boolean;
+}
+
+export interface StatusPageConfig {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  logoUrl: string;
+  tags: string[];
+  hideHostnames: boolean;
+  enabled: boolean;
+}
+
+export interface StatusPageSettings {
+  pages: StatusPageConfig[];
+}
+
+export interface DiscoverySettings {
+  enabled: boolean;
+  intervalHours: number;
+  domains: string[];
+  suggestions: DiscoveredMonitor[];
+  lastRunAt?: string | null;
+}
+
+export interface DiscoveredMonitor {
+  name: string;
+  host: string;
+  port: number;
+  type: Monitor["type"];
+  tags: string[];
+}
+
+export interface BackupSettings {
+  enabled: boolean;
+  intervalHours: number;
+  keep: number;
+  lastRunAt?: string | null;
+}
+
+export interface ApiToken {
+  id: string;
+  name: string;
+  tokenHash: string;
+  scopes: string[];
+  userId: string;
+  createdAt: string;
+  lastUsedAt?: string | null;
+}
+
+export interface NotificationDelivery {
+  id: string;
+  monitorId: string;
+  channelId?: string | null;
+  channelName: string;
+  provider: string;
+  target: string;
+  severity: Severity;
+  status: MonitorStatus;
+  deliveryStatus: "sent" | "failed";
+  message: string;
+  error?: string | null;
+  sentAt: string;
 }
 
 export interface SmtpSettings {

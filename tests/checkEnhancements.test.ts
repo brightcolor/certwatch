@@ -1,18 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { markFlapping } from "../apps/api/src/checks/flapping.js";
 import { gradeTls } from "../apps/api/src/checks/tlsGrade.js";
+import { isInMaintenance, windowActive } from "../apps/api/src/checks/maintenance.js";
 import type { CheckResult } from "../apps/api/src/types.js";
 
 describe("TLS security grading", () => {
   it("keeps modern healthy TLS in the A range", () => {
-    const grade = gradeTls({ status: "OK", problems: [], tlsVersion: "TLSv1.3", cipherSuite: "TLS_AES_256_GCM_SHA384", daysRemaining: 90 });
+    const grade = gradeTls({ status: "OK", problems: [], tlsVersion: "TLSv1.3", cipherSuite: "TLS_AES_256_GCM_SHA384", daysRemaining: 90, subjectAltNames: ["example.com"] });
 
     expect(grade.tlsGrade).toBe("A");
     expect(grade.tlsScore).toBe(100);
   });
 
   it("penalizes weak protocols and trust problems", () => {
-    const grade = gradeTls({ status: "CRITICAL", problems: ["Certificate chain is not trusted."], tlsVersion: "TLSv1", cipherSuite: "TLS_RSA_WITH_3DES_EDE_CBC_SHA", daysRemaining: 3 });
+    const grade = gradeTls({ status: "CRITICAL", problems: ["Certificate chain is not trusted."], tlsVersion: "TLSv1", cipherSuite: "TLS_RSA_WITH_3DES_EDE_CBC_SHA", daysRemaining: 3, subjectAltNames: [] });
 
     expect(grade.tlsGrade).toBe("F");
     expect(grade.tlsScore).toBeLessThan(50);
@@ -26,6 +27,17 @@ describe("flapping detection", () => {
     expect(result.flapping).toBe(true);
     expect(result.status).toBe("WARNING");
     expect(result.problems).toContain("Monitor is flapping between states.");
+  });
+});
+
+describe("maintenance windows", () => {
+  it("matches daily clock windows", () => {
+    expect(windowActive("daily 22:00-23:00", new Date("2026-05-17T22:30:00"))).toBe(true);
+    expect(windowActive("daily 22:00-23:00", new Date("2026-05-17T23:30:00"))).toBe(false);
+  });
+
+  it("matches label-scoped windows", () => {
+    expect(isInMaintenance({ tags: ["prod"] } as any, { windows: [{ id: "1", name: "prod", tags: ["prod"], window: "daily 01:00-02:00", enabled: true }] }, new Date("2026-05-17T01:30:00"))).toBe(true);
   });
 });
 

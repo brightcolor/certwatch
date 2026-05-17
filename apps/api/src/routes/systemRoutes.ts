@@ -1,12 +1,12 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import dns from "node:dns/promises";
 import { z } from "zod";
 import { id } from "../utils/id.js";
 import { nowIso } from "../utils/time.js";
 import { alerts, appSettings, channels, incidents, monitors, results, subscriptions, users } from "../storage/repositories.js";
 import { testChannel } from "../notifications/service.js";
 import { requireAdmin } from "../auth/auth.js";
+import { discoverMonitors } from "../checks/discovery.js";
 import rootPackage from "../../../../package.json" with { type: "json" };
 
 export const systemRoutes = Router();
@@ -219,26 +219,6 @@ const redactChannel = (channel: any) => ({
 });
 
 const publicUser = (user: any) => ({ id: user.id, email: user.email, role: user.role, createdAt: user.createdAt });
-
-const discoverMonitors = async (domain: string) => {
-  const clean = domain.toLowerCase().replace(/^https?:\/\//, "").split("/")[0];
-  const suggestions = [
-    { name: `${clean} HTTPS`, host: clean, port: 443, type: "https", tags: ["discovered", clean] },
-    { name: `www.${clean} HTTPS`, host: `www.${clean}`, port: 443, type: "https", tags: ["discovered", clean] }
-  ];
-  try {
-    const mx = await dns.resolveMx(clean);
-    for (const record of mx.slice(0, 3)) {
-      suggestions.push(
-        { name: `${record.exchange} SMTP STARTTLS`, host: record.exchange, port: 587, type: "smtp_starttls", tags: ["discovered", "mail", clean] },
-        { name: `${record.exchange} IMAPS`, host: record.exchange, port: 993, type: "imaps", tags: ["discovered", "mail", clean] }
-      );
-    }
-  } catch {
-    // MX discovery is best effort.
-  }
-  return suggestions;
-};
 
 const checkCtWatch = async () => {
   const settings = appSettings.ctWatch();

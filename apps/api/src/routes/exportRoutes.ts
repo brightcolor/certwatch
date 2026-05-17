@@ -33,7 +33,12 @@ exportRoutes.get("/backup.json", (_req, res) => {
       alerting: appSettings.alerting(),
       smtp: redactConfigSecrets(appSettings.smtp() as unknown as Record<string, unknown>),
       retention: appSettings.retention(),
-      ctWatch: appSettings.ctWatch()
+      ctWatch: appSettings.ctWatch(),
+      maintenance: appSettings.maintenance(),
+      tlsPolicy: appSettings.tlsPolicy(),
+      statusPages: appSettings.statusPages(),
+      discovery: { ...appSettings.discovery(), suggestions: [] },
+      backups: appSettings.backups()
     }
   });
 });
@@ -56,6 +61,11 @@ exportRoutes.post("/restore", (req, res) => {
   if (input.settings?.alerting) appSettings.set("alerting", input.settings.alerting);
   if (input.settings?.retention) appSettings.set("retention", input.settings.retention);
   if (input.settings?.ctWatch) appSettings.set("ctWatch", input.settings.ctWatch);
+  if (input.settings?.maintenance) appSettings.set("maintenance", input.settings.maintenance);
+  if (input.settings?.tlsPolicy) appSettings.set("tlsPolicy", input.settings.tlsPolicy);
+  if (input.settings?.statusPages) appSettings.set("statusPages", input.settings.statusPages);
+  if (input.settings?.discovery) appSettings.set("discovery", input.settings.discovery);
+  if (input.settings?.backups) appSettings.set("backups", input.settings.backups);
   if (Array.isArray(input.notificationRoutes)) appSettings.set("notificationRoutes", input.notificationRoutes);
   res.status(201).json({ imported: created.length, restoredChannels, monitors: created });
 });

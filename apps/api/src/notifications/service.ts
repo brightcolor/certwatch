@@ -1,11 +1,13 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
 import type { CheckResult, Monitor, NotificationChannel, NotificationRoute, Severity, SmtpSettings, StatusSubscription } from "../types.js";
-import { alerts, appSettings, results as checkResults } from "../storage/repositories.js";
+import { alerts, appSettings, deliveries, results as checkResults } from "../storage/repositories.js";
 import { alertFingerprint } from "../checks/status.js";
+import { isInMaintenance } from "../checks/maintenance.js";
 
 export const dispatchAlerts = async (monitor: Monitor, result: CheckResult, configured: NotificationChannel[]) => {
   const settings = appSettings.alerting();
+  if (isInMaintenance(monitor, appSettings.maintenance())) return;
   if (result.severity === "info" && result.status === "OK") {
     if (settings.recoveryEnabled && monitor.lastStatus !== "OK" && monitor.lastStatus !== "UNKNOWN") {
       await sendToChannels(monitor, { ...result, severity: "recovery", message: "Monitor recovered." }, configured);
@@ -26,6 +28,7 @@ export const testChannel = async (channel: NotificationChannel) => {
 };
 
 export const dispatchStatusSubscriptions = async (monitor: Monitor, result: CheckResult, event: "opened" | "resolved", configured: StatusSubscription[]) => {
+  if (isInMaintenance(monitor, appSettings.maintenance())) return;
   const targets = configured.filter((subscription) => subscription.enabled && subscription.tags.every((tag) => monitor.tags.includes(tag)));
   await Promise.allSettled(targets.map((subscription) => sendStatusSubscription(subscription, monitor, result, event)));
 };
@@ -74,10 +77,30 @@ const sendToChannels = async (monitor: Monitor, result: CheckResult, configured:
   const selected = selectedChannelIds(monitor, result, appSettings.notificationRoutes(), configured.map((channel) => channel.id));
   const targets = configured.filter((channel) => channel.enabled && selected.has(channel.id));
   await Promise.allSettled(targets.map(async (channel) => {
-    await sendChannel(channel, monitor, result, selected.get(channel.id) ?? "");
-    alerts.record(monitor.id, channel.id, result.severity, result.status, alertFingerprint(result), result.message);
+    const target = selected.get(channel.id) ?? "";
+    try {
+      await sendChannel(channel, monitor, result, target);
+      deliveries.record(deliveryBase(channel, monitor, result, target, "sent"));
+      alerts.record(monitor.id, channel.id, result.severity, result.status, alertFingerprint(result), result.message);
+    } catch (error) {
+      deliveries.record(deliveryBase(channel, monitor, result, target, "failed", error instanceof Error ? error.message : String(error)));
+      throw error;
+    }
   }));
 };
+
+const deliveryBase = (channel: NotificationChannel, monitor: Monitor, result: CheckResult, target: string, deliveryStatus: "sent" | "failed", error?: string) => ({
+  monitorId: monitor.id,
+  channelId: channel.id,
+  channelName: channel.name,
+  provider: channel.type,
+  target: target || String(channel.config.url ?? channel.config.to ?? channel.config.topic ?? ""),
+  severity: result.severity,
+  status: result.status,
+  deliveryStatus,
+  message: result.message,
+  error: error ?? null
+});
 
 const isWithinGracePeriod = (monitor: Monitor, result: CheckResult) => {
   if (result.status === "OK" || monitor.gracePeriodSeconds <= 0) return false;

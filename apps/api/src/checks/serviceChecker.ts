@@ -138,7 +138,8 @@ const checkHttp = async (monitor: Monitor) => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), monitor.timeoutSeconds * 1000);
   try {
-    const response = monitor.type === "http_login" ? await loginRequest(url, monitor, controller.signal) : await fetch(url, { signal: controller.signal, redirect: "manual" });
+    const redirect = monitor.config.followRedirects ? "follow" : "manual";
+    const response = monitor.type === "http_login" ? await loginRequest(url, monitor, controller.signal) : await fetch(url, { signal: controller.signal, redirect });
     const expectedStatus = Number(monitor.config.expectedStatus ?? 200);
     if (response.status !== expectedStatus) throw new Error(`HTTP status ${response.status}, expected ${expectedStatus}.`);
     const expectedText = String(monitor.config.expectedText ?? "");
@@ -146,10 +147,18 @@ const checkHttp = async (monitor: Monitor) => {
       const body = await response.text();
       if (!body.includes(expectedText)) throw new Error("HTTP response did not contain expected text.");
     }
+    const expectedHeader = parseExpectedHeader(String(monitor.config.expectedHeader ?? ""));
+    if (expectedHeader && !response.headers.get(expectedHeader.name)?.includes(expectedHeader.value)) throw new Error(`HTTP header ${expectedHeader.name} did not contain expected value.`);
     return `${url} returned HTTP ${response.status}.`;
   } finally {
     clearTimeout(timeout);
   }
+};
+
+const parseExpectedHeader = (value: string) => {
+  const [name, ...rest] = value.split(":");
+  const headerValue = rest.join(":").trim();
+  return name?.trim() && headerValue ? { name: name.trim(), value: headerValue } : null;
 };
 
 const checkTextProtocolLogin = async (monitor: Monitor) => {

@@ -1,7 +1,7 @@
-import { db, rowToChannel, rowToIncident, rowToMonitor, rowToResult, rowToSubscription, rowToUser } from "./db.js";
+import { db, rowToApiToken, rowToChannel, rowToDelivery, rowToIncident, rowToMonitor, rowToResult, rowToSubscription, rowToUser } from "./db.js";
 import { id } from "../utils/id.js";
 import { addSecondsIso, nowIso } from "../utils/time.js";
-import type { AlertingSettings, CheckResult, CtWatchSettings, Incident, Monitor, NotificationChannel, NotificationRoute, RetentionSettings, StatusSubscription, SmtpSettings, User } from "../types.js";
+import type { AlertingSettings, ApiToken, BackupSettings, CheckResult, CtWatchSettings, DiscoverySettings, Incident, IncidentNote, MaintenanceSettings, Monitor, NotificationChannel, NotificationDelivery, NotificationRoute, RetentionSettings, StatusPageSettings, StatusSubscription, SmtpSettings, TlsPolicySettings, User } from "../types.js";
 import { decryptConfigSecrets, encryptConfigSecrets } from "../utils/secrets.js";
 
 export const users = {
@@ -56,6 +56,27 @@ export const sessions = {
   },
   delete(token: string) {
     db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+  }
+};
+
+export const apiTokens = {
+  list(): ApiToken[] {
+    return db.prepare("SELECT * FROM api_tokens ORDER BY created_at DESC").all().map(rowToApiToken);
+  },
+  findByHash(tokenHash: string): ApiToken | null {
+    const row = db.prepare("SELECT * FROM api_tokens WHERE token_hash = ?").get(tokenHash);
+    return row ? rowToApiToken(row) : null;
+  },
+  create(name: string, tokenHash: string, scopes: string[], userId: string): ApiToken {
+    const token = { id: id(), name, tokenHash, scopes, userId, createdAt: nowIso(), lastUsedAt: null };
+    db.prepare("INSERT INTO api_tokens VALUES (?, ?, ?, ?, ?, ?, ?)").run(token.id, token.name, token.tokenHash, JSON.stringify(token.scopes), token.userId, token.createdAt, token.lastUsedAt);
+    return token;
+  },
+  markUsed(tokenId: string) {
+    db.prepare("UPDATE api_tokens SET last_used_at = ? WHERE id = ?").run(nowIso(), tokenId);
+  },
+  delete(tokenId: string) {
+    db.prepare("DELETE FROM api_tokens WHERE id = ?").run(tokenId);
   }
 };
 
@@ -185,9 +206,49 @@ export const incidents = {
       db.prepare("UPDATE incidents SET status = ?, severity = ?, message = ? WHERE id = ?").run(result.status, result.severity, result.message, open.id);
       return { ...open, status: result.status, severity: result.severity, message: result.message };
     }
-    const incident = { id: id(), monitorId: monitor.id, status: result.status, severity: result.severity, message: result.message, startedAt: result.checkedAt, resolvedAt: null };
-    db.prepare("INSERT INTO incidents VALUES (?, ?, ?, ?, ?, ?, ?)").run(incident.id, incident.monitorId, incident.status, incident.severity, incident.message, incident.startedAt, incident.resolvedAt);
+    const incident = { id: id(), monitorId: monitor.id, status: result.status, severity: result.severity, message: result.message, startedAt: result.checkedAt, resolvedAt: null, acknowledgedAt: null, acknowledgedBy: null, assignee: null, notes: [] };
+    db.prepare("INSERT INTO incidents VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(incident.id, incident.monitorId, incident.status, incident.severity, incident.message, incident.startedAt, incident.resolvedAt, incident.acknowledgedAt, incident.acknowledgedBy, incident.assignee, JSON.stringify(incident.notes));
     return incident;
+  },
+  acknowledge(incidentId: string, userEmail: string, assignee?: string | null): Incident | null {
+    db.prepare("UPDATE incidents SET acknowledged_at = ?, acknowledged_by = ?, assignee = COALESCE(?, assignee) WHERE id = ?").run(nowIso(), userEmail, assignee ?? null, incidentId);
+    const row = db.prepare("SELECT * FROM incidents WHERE id = ?").get(incidentId);
+    return row ? rowToIncident(row) : null;
+  },
+  addNote(incidentId: string, userEmail: string, text: string): Incident | null {
+    const row = db.prepare("SELECT * FROM incidents WHERE id = ?").get(incidentId);
+    if (!row) return null;
+    const current = rowToIncident(row);
+    const note: IncidentNote = { id: id(), author: userEmail, text, createdAt: nowIso() };
+    const notes = [...current.notes, note];
+    db.prepare("UPDATE incidents SET notes_json = ? WHERE id = ?").run(JSON.stringify(notes), incidentId);
+    return { ...current, notes };
+  }
+};
+
+export const deliveries = {
+  list(limit = 100): NotificationDelivery[] {
+    return db.prepare("SELECT * FROM notification_deliveries ORDER BY sent_at DESC LIMIT ?").all(limit).map(rowToDelivery);
+  },
+  record(input: Omit<NotificationDelivery, "id" | "sentAt">) {
+    const delivery = { ...input, id: id(), sentAt: nowIso() };
+    db.prepare("INSERT INTO notification_deliveries VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
+      delivery.id,
+      delivery.monitorId,
+      delivery.channelId ?? null,
+      delivery.channelName,
+      delivery.provider,
+      delivery.target,
+      delivery.severity,
+      delivery.status,
+      delivery.deliveryStatus,
+      delivery.message,
+      delivery.error ?? null,
+      delivery.sentAt
+    );
+  },
+  prune(days: number) {
+    db.prepare("DELETE FROM notification_deliveries WHERE sent_at < ?").run(new Date(Date.now() - days * 86_400_000).toISOString());
   }
 };
 
@@ -283,6 +344,21 @@ export const appSettings = {
   },
   ctWatch(): CtWatchSettings {
     return this.get("ctWatch", { enabled: false, domains: [], lastSeen: {} });
+  },
+  maintenance(): MaintenanceSettings {
+    return this.get("maintenance", { windows: [] });
+  },
+  tlsPolicy(): TlsPolicySettings {
+    return this.get("tlsPolicy", { profile: "modern", minimumTlsVersion: "TLSv1.2", weakCipherPenalty: 40, requireSan: true });
+  },
+  statusPages(): StatusPageSettings {
+    return this.get("statusPages", { pages: [] });
+  },
+  discovery(): DiscoverySettings {
+    return this.get("discovery", { enabled: false, intervalHours: 24, domains: [], suggestions: [], lastRunAt: null });
+  },
+  backups(): BackupSettings {
+    return this.get("backups", { enabled: false, intervalHours: 24, keep: 7, lastRunAt: null });
   },
   get<T>(key: string, fallback: T): T {
     const row = db.prepare("SELECT value_json FROM settings WHERE key = ?").get(key) as { value_json?: string } | undefined;

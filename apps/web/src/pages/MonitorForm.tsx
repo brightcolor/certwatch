@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import type { Monitor } from "../api/client";
+import { TagInput } from "../components/TagInput";
 
 const blank = {
   name: "",
@@ -57,8 +58,8 @@ const protocolOptions = [
 const flatProtocolOptions = protocolOptions.flatMap((group) => group.options);
 
 export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAndCheck }: { monitor?: Monitor | null; channels?: any[]; onCancel: () => void; onSave: (data: any) => void; onSaveAndCheck: (data: any) => void }) {
-  const [form, setForm] = useState<any>({ ...blank, ...monitor, tagsText: monitor?.tags?.join(", ") ?? "" });
-  const data = () => ({ ...form, port: Number(form.port), intervalSeconds: Number(form.intervalSeconds), timeoutSeconds: Number(form.timeoutSeconds), warningDays: Number(form.warningDays), criticalDays: Number(form.criticalDays), gracePeriodSeconds: Number(form.gracePeriodSeconds), tags: String(form.tagsText || "").split(",").map((tag) => tag.trim()).filter(Boolean), sniHost: form.sniHost || null });
+  const [form, setForm] = useState<any>({ ...blank, ...monitor, tags: monitor?.tags ?? [] });
+  const data = () => ({ ...form, port: Number(form.port), intervalSeconds: Number(form.intervalSeconds), timeoutSeconds: Number(form.timeoutSeconds), warningDays: Number(form.warningDays), criticalDays: Number(form.criticalDays), gracePeriodSeconds: Number(form.gracePeriodSeconds), sniHost: form.sniHost || null });
   const set = (key: string, value: unknown) => setForm((current: any) => ({ ...current, [key]: value }));
   const setConfig = (key: string, value: unknown) => set("config", { ...(form.config ?? {}), [key]: value });
   const setProtocol = (type: string) => {
@@ -92,7 +93,7 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
           <label>Type<select value={form.type} onChange={(e) => setProtocol(e.target.value)}>{protocolOptions.map((group) => <optgroup key={group.group} label={group.group}>{group.options.map((option) => <option value={option.value} key={option.value}>{option.label} ({option.port})</option>)}</optgroup>)}</select></label>
           <label>Hostname<input value={form.host} onChange={(e) => set("host", e.target.value)} required /></label>
           <label>Port<input type="number" min="1" max="65535" value={form.port} onChange={(e) => set("port", e.target.value)} /></label>
-          <label>Labels<input value={form.tagsText} onChange={(e) => set("tagsText", e.target.value)} placeholder="prod, mail, customer-a" /></label>
+          <TagInput value={form.tags ?? []} onChange={(tags) => set("tags", tags)} />
           <label>Owner<input value={form.owner ?? ""} onChange={(e) => set("owner", e.target.value)} placeholder="Team or person" /></label>
         </FormSection>
         <FormSection title="Schedule and thresholds">
@@ -101,6 +102,7 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
           <label>Warning days<input type="number" min="1" value={form.warningDays} onChange={(e) => set("warningDays", e.target.value)} /></label>
           <label>Critical days<input type="number" min="0" value={form.criticalDays} onChange={(e) => set("criticalDays", e.target.value)} /></label>
           <label>Alert grace period seconds<input type="number" min="0" max="604800" value={form.gracePeriodSeconds ?? 0} onChange={(e) => set("gracePeriodSeconds", e.target.value)} /></label>
+          <label>Maintenance windows<textarea value={form.maintenanceWindows ?? ""} placeholder="daily 22:00-23:00&#10;mon-fri 01:00-02:00&#10;2026-06-01T20:00:00/2026-06-01T22:00:00" onChange={(e) => set("maintenanceWindows", e.target.value)} /></label>
         </FormSection>
         <FormSection title="TLS validation">
           <label>SNI hostname<input value={form.sniHost ?? ""} onChange={(e) => set("sniHost", e.target.value)} /></label>
@@ -117,6 +119,8 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
               <label>Path<input value={String(form.config?.path ?? "/")} onChange={(e) => setConfig("path", e.target.value)} /></label>
               <label>Expected status<input type="number" min="100" max="599" value={String(form.config?.expectedStatus ?? 200)} onChange={(e) => setConfig("expectedStatus", Number(e.target.value))} /></label>
               <label>Expected text<input value={String(form.config?.expectedText ?? "")} onChange={(e) => setConfig("expectedText", e.target.value)} placeholder="Optional response text" /></label>
+              <label>Expected header<input value={String(form.config?.expectedHeader ?? "")} onChange={(e) => setConfig("expectedHeader", e.target.value)} placeholder="x-app-version: 1.2" /></label>
+              <label><input type="checkbox" checked={Boolean(form.config?.followRedirects)} onChange={(e) => setConfig("followRedirects", e.target.checked)} /> Follow redirects</label>
             </>}
             {form.type === "http_login" && <>
               <label>Auth mode<select value={String(form.config?.authType ?? "form")} onChange={(e) => setConfig("authType", e.target.value)}><option value="form">Form POST</option><option value="basic">Basic Auth</option></select></label>

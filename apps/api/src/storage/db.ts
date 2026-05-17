@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import initSqlJs, { Database as SqlJsDatabase, SqlValue } from "sql.js";
 import { env } from "../config/env.js";
-import type { CheckResult, Incident, Monitor, NotificationChannel, StatusSubscription, User } from "../types.js";
+import type { ApiToken, CheckResult, Incident, Monitor, NotificationChannel, NotificationDelivery, StatusSubscription, User } from "../types.js";
 import { decryptConfigSecrets } from "../utils/secrets.js";
 
 fs.mkdirSync(path.dirname(env.databasePath), { recursive: true });
@@ -96,6 +96,15 @@ export const migrate = () => {
       expires_at TEXT NOT NULL,
       created_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS api_tokens (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      token_hash TEXT UNIQUE NOT NULL,
+      scopes_json TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      last_used_at TEXT
+    );
     CREATE TABLE IF NOT EXISTS monitors (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -168,6 +177,20 @@ export const migrate = () => {
       message TEXT NOT NULL,
       sent_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS notification_deliveries (
+      id TEXT PRIMARY KEY,
+      monitor_id TEXT NOT NULL,
+      channel_id TEXT,
+      channel_name TEXT NOT NULL,
+      provider TEXT NOT NULL,
+      target TEXT NOT NULL,
+      severity TEXT NOT NULL,
+      status TEXT NOT NULL,
+      delivery_status TEXT NOT NULL,
+      message TEXT NOT NULL,
+      error TEXT,
+      sent_at TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value_json TEXT NOT NULL
@@ -179,7 +202,11 @@ export const migrate = () => {
       severity TEXT NOT NULL,
       message TEXT NOT NULL,
       started_at TEXT NOT NULL,
-      resolved_at TEXT
+      resolved_at TEXT,
+      acknowledged_at TEXT,
+      acknowledged_by TEXT,
+      assignee TEXT,
+      notes_json TEXT NOT NULL DEFAULT '[]'
     );
     CREATE TABLE IF NOT EXISTS status_subscriptions (
       id TEXT PRIMARY KEY,
@@ -218,6 +245,18 @@ export const migrate = () => {
     "ALTER TABLE check_results ADD COLUMN tls_grade TEXT;",
     "ALTER TABLE check_results ADD COLUMN tls_score INTEGER;",
     "ALTER TABLE check_results ADD COLUMN flapping INTEGER NOT NULL DEFAULT 0;"
+  ]) {
+    try {
+      db.exec(sql);
+    } catch {
+      // Existing databases already have the column.
+    }
+  }
+  for (const sql of [
+    "ALTER TABLE incidents ADD COLUMN acknowledged_at TEXT;",
+    "ALTER TABLE incidents ADD COLUMN acknowledged_by TEXT;",
+    "ALTER TABLE incidents ADD COLUMN assignee TEXT;",
+    "ALTER TABLE incidents ADD COLUMN notes_json TEXT NOT NULL DEFAULT '[]';"
   ]) {
     try {
       db.exec(sql);
@@ -316,7 +355,11 @@ export const rowToIncident = (row: any): Incident => ({
   severity: row.severity,
   message: row.message,
   startedAt: row.started_at,
-  resolvedAt: row.resolved_at
+  resolvedAt: row.resolved_at,
+  acknowledgedAt: row.acknowledged_at,
+  acknowledgedBy: row.acknowledged_by,
+  assignee: row.assignee,
+  notes: parse(row.notes_json, [])
 });
 
 export const rowToSubscription = (row: any): StatusSubscription => ({
@@ -326,4 +369,29 @@ export const rowToSubscription = (row: any): StatusSubscription => ({
   target: row.target,
   enabled: Boolean(row.enabled),
   createdAt: row.created_at
+});
+
+export const rowToApiToken = (row: any): ApiToken => ({
+  id: row.id,
+  name: row.name,
+  tokenHash: row.token_hash,
+  scopes: parse<string[]>(row.scopes_json, []),
+  userId: row.user_id,
+  createdAt: row.created_at,
+  lastUsedAt: row.last_used_at
+});
+
+export const rowToDelivery = (row: any): NotificationDelivery => ({
+  id: row.id,
+  monitorId: row.monitor_id,
+  channelId: row.channel_id,
+  channelName: row.channel_name,
+  provider: row.provider,
+  target: row.target,
+  severity: row.severity,
+  status: row.status,
+  deliveryStatus: row.delivery_status === "failed" ? "failed" : "sent",
+  message: row.message,
+  error: row.error,
+  sentAt: row.sent_at
 });

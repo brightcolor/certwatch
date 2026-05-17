@@ -1,7 +1,10 @@
+import { useState } from "react";
 import type { CheckResult, Incident, Monitor } from "../api/client";
 import { StatusPill } from "../components/StatusPill";
 
-export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onCheck, onDelete }: { monitor: Monitor; results: CheckResult[]; incidents: Incident[]; onBack: () => void; onEdit: () => void; onCheck: () => void; onDelete: () => void }) {
+export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onCheck, onDelete, onAck, onNote }: { monitor: Monitor; results: CheckResult[]; incidents: Incident[]; onBack: () => void; onEdit: () => void; onCheck: () => void; onDelete: () => void; onAck: (id: string, assignee: string) => Promise<void>; onNote: (id: string, text: string) => Promise<void> }) {
+  const [assignee, setAssignee] = useState("");
+  const [note, setNote] = useState("");
   const latest = results[0] ?? monitor.latestResult;
   const origin = window.location.origin;
   const statusTag = monitor.tags[0] ?? "all";
@@ -55,9 +58,16 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
       </Panel>
       <Panel title="Incident Timeline">
         <div className="stack-list">
-          {incidents.map((incident) => <div key={incident.id}><StatusPill status={incident.status} /><span>{incident.message}</span><small>{dateTime(incident.startedAt)} - {incident.resolvedAt ? dateTime(incident.resolvedAt) : "open"}</small></div>)}
+          {incidents.map((incident) => <div key={incident.id}><StatusPill status={incident.status} /><span>{incident.message}</span><small>{dateTime(incident.startedAt)} - {incident.resolvedAt ? dateTime(incident.resolvedAt) : "open"}{incident.acknowledgedAt ? ` - ack ${dateTime(incident.acknowledgedAt)}` : ""}</small></div>)}
           {!incidents.length && <span className="muted">No incidents recorded for this monitor.</span>}
         </div>
+        {incidents[0] && !incidents[0].resolvedAt && <div className="grid two">
+          <label>Assignee<input value={assignee} onChange={(e) => setAssignee(e.target.value)} placeholder="Team or person" /></label>
+          <button onClick={() => onAck(incidents[0].id, assignee)}>Acknowledge latest</button>
+          <label>Note<input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What happened?" /></label>
+          <button onClick={async () => { await onNote(incidents[0].id, note); setNote(""); }}>Add note</button>
+        </div>}
+        {incidents[0]?.notes?.length > 0 && <div className="stack-list">{incidents[0].notes.map((item) => <div key={item.id}><strong>{item.author}</strong><span>{item.text}</span><small>{dateTime(item.createdAt)}</small></div>)}</div>}
       </Panel>
       <Panel title="Check History">
         <div className="stack-list">{results.map((result) => <div key={result.id}><StatusPill status={result.status} /><span>{dateTime(result.checkedAt)}</span><span>{result.message}</span></div>)}</div>

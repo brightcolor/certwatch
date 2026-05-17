@@ -207,6 +207,34 @@
   gap: 14px;
 }
 
+.tag-input {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 6px;
+}
+
+.tag-input input {
+  min-width: 160px;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 6px;
+}
+
+.tag-chip {
+  min-height: 28px;
+  border-radius: 999px;
+  background: #58a6ff22;
+  color: var(--blue);
+  padding: 4px 10px;
+}
+
 .toast {
   position: fixed;
   right: 24px;

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.0 - 2026-05-17
+
+- Added monitor and label-based maintenance windows that suppress notifications while checks continue to run.
+- Added API token management with read-only and read/write scopes.
+- Added incident acknowledgement, assignment, and notes.
+- Added notification delivery logging for sent and failed provider deliveries.
+- Added TLS policy settings for security grading.
+- Added custom public status page settings with slugs, titles, descriptions, logo URLs, and hostname hiding.
+- Added scheduled auto-discovery jobs and persisted discovery suggestions.
+- Added availability reports with check counts, incident counts, availability percentage, and MTTR.
+- Added scheduled SQLite backups with UI download and retention controls.
+- Reworked monitor labels into Enter-driven chips with a copy-friendly text mode.
+- Added HTTP expected-header and redirect-follow checks.
+
 ## 0.3.0 - 2026-05-17
 
 - Added SSL Labs-style TLS security grading and displayed grades in the dashboard and monitor detail view.

@@ -1,4 +1,4 @@
-import { Activity, Bell, Boxes, Download, Moon, Plus, Sun, Upload, Users } from "lucide-react";
+import { Activity, BarChart3, Bell, Boxes, Download, Moon, Plus, Settings, Sun, Upload, Users } from "lucide-react";
 
 export function Layout({ children, page, onNew, theme, setTheme, onPage, version }: any) {
   return (
@@ -8,6 +8,8 @@ export function Layout({ children, page, onNew, theme, setTheme, onPage, version
         <button className={page === "dashboard" ? "active" : ""} onClick={() => onPage("dashboard")}>Dashboard</button>
         <button className={page === "applications" ? "active" : ""} onClick={() => onPage("applications")}><Boxes size={16} /> Applications</button>
         <button className={page === "settings" ? "active" : ""} onClick={() => onPage("settings")}><Bell size={16} /> Alerts</button>
+        <button className={page === "operations" ? "active" : ""} onClick={() => onPage("operations")}><Settings size={16} /> Operations</button>
+        <button className={page === "reports" ? "active" : ""} onClick={() => onPage("reports")}><BarChart3 size={16} /> Reports</button>
         <button className={page === "import" ? "active" : ""} onClick={() => onPage("import")}><Upload size={16} /> Import</button>
         <button className={page === "users" ? "active" : ""} onClick={() => onPage("users")}><Users size={16} /> Users</button>
         <a className="navlink" href="/api/export/monitors.json"><Download size={16} /> Export</a>
@@ -17,7 +19,7 @@ export function Layout({ children, page, onNew, theme, setTheme, onPage, version
         <header className="topbar">
           <div>
             <span className="eyebrow">Selfhosted TLS monitoring</span>
-            <h1>{page === "settings" ? "Notification Channels" : page === "users" ? "Users" : page === "import" ? "Bulk Import" : page === "applications" ? "Applications" : "Certificate Operations"}</h1>
+            <h1>{titleFor(page)}</h1>
           </div>
           <div className="actions">
             <button className="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} title="Toggle theme">
@@ -31,3 +33,12 @@ export function Layout({ children, page, onNew, theme, setTheme, onPage, version
     </div>
   );
 }
+
+const titleFor = (page: string) => ({
+  settings: "Notification Channels",
+  operations: "Operations",
+  reports: "Reports",
+  users: "Users",
+  import: "Bulk Import",
+  applications: "Applications"
+}[page] ?? "Certificate Operations");

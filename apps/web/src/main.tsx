@@ -10,6 +10,8 @@ import { Settings } from "./pages/Settings";
 import { BulkImport } from "./pages/BulkImport";
 import { UsersPage } from "./pages/Users";
 import { Applications } from "./pages/Applications";
+import { Operations } from "./pages/Operations";
+import { Reports } from "./pages/Reports";
 import "./styles/app.css";
 
 function App() {
@@ -176,8 +178,22 @@ function App() {
         <UsersPage users={users} onCreate={async (data: any) => { await api.request("/users", { method: "POST", body: JSON.stringify(data) }); await refresh(); }} onDelete={async (id: string) => { await api.request(`/users/${id}`, { method: "DELETE" }); await refresh(); }} />
       ) : page === "applications" ? (
         <Applications monitors={monitors} onSelect={(id) => navigate("dashboard", id)} />
+      ) : page === "operations" ? (
+        <Operations />
+      ) : page === "reports" ? (
+        <Reports />
       ) : selectedMonitor ? (
-        <MonitorDetail monitor={selectedMonitor} results={results} incidents={incidents} onBack={backToOverview} onEdit={() => setEditing(selectedMonitor)} onCheck={() => checkNow(selectedMonitor.id)} onDelete={() => deleteMonitor(selectedMonitor.id)} />
+        <MonitorDetail
+          monitor={selectedMonitor}
+          results={results}
+          incidents={incidents}
+          onBack={backToOverview}
+          onEdit={() => setEditing(selectedMonitor)}
+          onCheck={() => checkNow(selectedMonitor.id)}
+          onDelete={() => deleteMonitor(selectedMonitor.id)}
+          onAck={async (id: string, assignee: string) => { await api.request(`/incidents/${id}/ack`, { method: "POST", body: JSON.stringify({ assignee }) }); await loadMonitorData(selectedMonitor.id); }}
+          onNote={async (id: string, text: string) => { await api.request(`/incidents/${id}/notes`, { method: "POST", body: JSON.stringify({ text }) }); await loadMonitorData(selectedMonitor.id); }}
+        />
       ) : (
         <Dashboard monitors={monitors} stats={stats} query={query} setQuery={setQuery} onSelect={(id: string) => navigate("dashboard", id)} onCheck={checkNow} />
       )}

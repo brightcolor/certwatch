@@ -41,6 +41,13 @@ This stack keeps the application easy to self-host while still supporting real T
 - Global and per-monitor warning and critical expiry thresholds
 - Notification channels for SMTP email, Pushover, generic webhooks, Discord, Slack, Telegram, Gotify, ntfy-compatible endpoints, Microsoft Teams, Mattermost, Matrix, PagerDuty, and Opsgenie
 - Alert deduplication with resend interval, route-specific escalation delay, recovery messages, quiet hours, and per-monitor grace periods
+- Enforced monitor and label-based maintenance windows that keep checks running while suppressing notifications
+- Incident acknowledgement, assignment, notes, and delivery visibility for alert troubleshooting
+- API tokens with read-only or read/write scopes for automation
+- Custom public status pages with slugs, titles, descriptions, logos, hostname hiding, subscriptions, and incident timelines
+- Scheduled auto-discovery jobs for common web and mail endpoints
+- Availability reports with check counts, incident counts, availability percentage, and MTTR
+- Scheduled SQLite database backups with UI download and retention controls
 - Local user login with bcrypt password hashes, secure sessions, CSRF token header, and first-run admin setup
 - Encrypted storage for monitor login secrets, SMTP settings, and notification provider secrets using `SESSION_SECRET`
 - JSON monitor import/export and CSV exports for certificate summary and check history
@@ -174,9 +181,18 @@ All API routes require login session authentication except `/api/auth/login`.
 - `GET /api/subscriptions`
 - `POST /api/notification-channels/test`
 - `POST /api/discover`
+- `GET /api/reports/availability`
+- `GET /api/deliveries`
+- `GET /api/api-tokens`
 - `GET /api/settings/ct-watch`
 - `PUT /api/settings/ct-watch`
+- `GET /api/settings/maintenance`
+- `GET /api/settings/tls-policy`
+- `GET /api/settings/status-pages`
+- `GET /api/settings/discovery`
+- `GET /api/settings/backups`
 - `POST /api/ct-watch/check`
+- `POST /api/backups/run`
 - `GET /api/export/monitors.json`
 - `POST /api/export/monitors.json`
 - `GET /api/export/backup.json`
@@ -203,6 +219,21 @@ Monitor badges are SVG URLs:
 ```
 
 Status pages include the latest incident timeline and expose a simple email/webhook subscription form. Subscriptions are notified when an incident opens or resolves for matching labels.
+
+Custom status pages can be configured in the Operations page. A custom page maps a public slug to one or more labels and can set a title, description, logo URL, and hostname-hiding behavior.
+
+## Operations
+
+The Operations page contains production controls that are intentionally kept out of config files:
+
+- Maintenance windows for labels or individual monitors. Supported formats include `daily 22:00-23:00`, `mon-fri 01:00-02:00`, and ISO intervals such as `2026-06-01T20:00:00/2026-06-01T22:00:00`.
+- TLS policy profiles for grading, including minimum TLS version, weak cipher penalty, and SAN requirements.
+- Scheduled discovery for web and mail endpoints.
+- Scheduled SQLite backups with retention and downloadable backup files.
+- API tokens with read-only or read/write scopes.
+- Notification delivery log for sent and failed provider deliveries.
+
+Monitor labels are entered as chips in the monitor form. Press Enter to add a label, click a label to remove it, or switch to text mode when labels need to be copied or pasted in bulk.
 
 ## Prometheus
 
@@ -263,6 +294,8 @@ server {
 The Import page includes a backup and restore UI for portable JSON exports of monitor definitions, provider definitions, notification routes, CT-watch settings, and non-secret settings. Secrets are masked in this export by design and must be re-entered after restore.
 
 SQLite data is stored in the Docker volume mounted at `/data`. For a full secret-bearing backup, back up `certwatch.sqlite` and its WAL files while the container is stopped, or use a SQLite online backup command from a maintenance shell.
+
+The Operations page can also create and retain full SQLite backup files inside `/data/backups`. These backups can be downloaded from the UI and are controlled by a keep-count retention setting.
 
 ## Updates
 
