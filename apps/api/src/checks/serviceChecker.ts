@@ -326,6 +326,9 @@ const result = (monitor: Monitor, status: CheckResult["status"], severity: Check
   fingerprintSha256: null,
   tlsVersion: null,
   cipherSuite: null,
+  tlsGrade: null,
+  tlsScore: null,
+  flapping: false,
   chain: [],
   problems: status === "OK" ? [] : [message],
   rawError: status === "OK" ? null : message

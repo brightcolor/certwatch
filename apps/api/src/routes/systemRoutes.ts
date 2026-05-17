@@ -1,9 +1,10 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+import dns from "node:dns/promises";
 import { z } from "zod";
 import { id } from "../utils/id.js";
 import { nowIso } from "../utils/time.js";
-import { alerts, appSettings, channels, monitors, results, users } from "../storage/repositories.js";
+import { alerts, appSettings, channels, incidents, monitors, results, subscriptions, users } from "../storage/repositories.js";
 import { testChannel } from "../notifications/service.js";
 import { requireAdmin } from "../auth/auth.js";
 import rootPackage from "../../../../package.json" with { type: "json" };
@@ -29,8 +30,27 @@ systemRoutes.get("/status", (_req, res) => {
 });
 
 systemRoutes.get("/alerts", (_req, res) => res.json(alerts.list()));
+systemRoutes.get("/incidents", (_req, res) => res.json(incidents.list()));
+systemRoutes.get("/subscriptions", (_req, res) => res.json(subscriptions.list()));
+systemRoutes.delete("/subscriptions/:id", (req, res) => {
+  subscriptions.delete(req.params.id);
+  res.status(204).end();
+});
 systemRoutes.get("/health", (_req, res) => res.json({ ok: true }));
 systemRoutes.get("/version", (_req, res) => res.json({ name: rootPackage.name, version: rootPackage.version }));
+systemRoutes.get("/settings/ct-watch", (_req, res) => res.json(appSettings.ctWatch()));
+systemRoutes.put("/settings/ct-watch", (req, res) => {
+  const parsed = ctWatchSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid CT watch settings." });
+  appSettings.set("ctWatch", parsed.data);
+  res.json(parsed.data);
+});
+systemRoutes.post("/ct-watch/check", async (_req, res) => res.json(await checkCtWatch()));
+systemRoutes.post("/discover", async (req, res) => {
+  const parsed = discoverSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid discovery request." });
+  res.json({ monitors: await discoverMonitors(parsed.data.domain) });
+});
 systemRoutes.get("/settings/alerting", (_req, res) => res.json(appSettings.alerting()));
 systemRoutes.put("/settings/alerting", (req, res) => {
   const parsed = alertingSchema.safeParse(req.body);
@@ -127,10 +147,12 @@ const channelSchema = z.object({
 const alertingSchema = z.object({
   resendAfterHours: z.number().int().min(1).max(720),
   recoveryEnabled: z.boolean(),
+  certificateChangeAlerts: z.boolean().default(true),
   quietHoursEnabled: z.boolean(),
   quietStart: z.string().regex(/^\d{2}:\d{2}$/),
   quietEnd: z.string().regex(/^\d{2}:\d{2}$/),
-  quietSuppressCritical: z.boolean()
+  quietSuppressCritical: z.boolean(),
+  flappingThreshold: z.number().int().min(2).max(20).default(4)
 });
 
 const retentionSchema = z.object({
@@ -145,7 +167,18 @@ const routeSchema = z.object({
   severities: z.array(z.enum(["info", "warning", "critical", "recovery"])),
   channelIds: z.array(z.string()),
   recipients: z.record(z.string().max(2000)).default({}),
+  delayMinutes: z.number().int().min(0).max(10_080).default(0),
   enabled: z.boolean()
+});
+
+const ctWatchSchema = z.object({
+  enabled: z.boolean(),
+  domains: z.array(z.string().trim().min(1).max(253)).default([]),
+  lastSeen: z.record(z.string()).default({})
+});
+
+const discoverSchema = z.object({
+  domain: z.string().trim().min(1).max(253)
 });
 
 const userSchema = z.object({
@@ -186,3 +219,45 @@ const redactChannel = (channel: any) => ({
 });
 
 const publicUser = (user: any) => ({ id: user.id, email: user.email, role: user.role, createdAt: user.createdAt });
+
+const discoverMonitors = async (domain: string) => {
+  const clean = domain.toLowerCase().replace(/^https?:\/\//, "").split("/")[0];
+  const suggestions = [
+    { name: `${clean} HTTPS`, host: clean, port: 443, type: "https", tags: ["discovered", clean] },
+    { name: `www.${clean} HTTPS`, host: `www.${clean}`, port: 443, type: "https", tags: ["discovered", clean] }
+  ];
+  try {
+    const mx = await dns.resolveMx(clean);
+    for (const record of mx.slice(0, 3)) {
+      suggestions.push(
+        { name: `${record.exchange} SMTP STARTTLS`, host: record.exchange, port: 587, type: "smtp_starttls", tags: ["discovered", "mail", clean] },
+        { name: `${record.exchange} IMAPS`, host: record.exchange, port: 993, type: "imaps", tags: ["discovered", "mail", clean] }
+      );
+    }
+  } catch {
+    // MX discovery is best effort.
+  }
+  return suggestions;
+};
+
+const checkCtWatch = async () => {
+  const settings = appSettings.ctWatch();
+  const next = { ...settings, lastSeen: { ...settings.lastSeen } };
+  const changes: Array<{ domain: string; newest: string; previous: string }> = [];
+  if (!settings.enabled) return { enabled: false, changes };
+  for (const domain of settings.domains) {
+    const entries = await fetchCtEntries(domain);
+    const newest = entries[0]?.id ?? "";
+    if (newest && settings.lastSeen[domain] && settings.lastSeen[domain] !== newest) changes.push({ domain, newest, previous: settings.lastSeen[domain] });
+    if (newest) next.lastSeen[domain] = newest;
+  }
+  appSettings.set("ctWatch", next);
+  return { enabled: true, changes, lastSeen: next.lastSeen };
+};
+
+const fetchCtEntries = async (domain: string) => {
+  const response = await fetch(`https://crt.sh/?q=${encodeURIComponent(domain)}&output=json`);
+  if (!response.ok) return [];
+  const data = await response.json().catch(() => []);
+  return Array.isArray(data) ? data.map((item: any) => ({ id: String(item.id ?? ""), name: String(item.name_value ?? ""), notBefore: String(item.not_before ?? "") })).sort((a, b) => b.id.localeCompare(a.id)) : [];
+};

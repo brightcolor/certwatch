@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { api, Monitor, CheckResult } from "./api/client";
+import { api, Monitor, CheckResult, Incident, StatusSubscription } from "./api/client";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./pages/Dashboard";
 import { Login } from "./pages/Login";
@@ -23,10 +23,13 @@ function App() {
   const [smtp, setSmtp] = useState<any>(null);
   const [retention, setRetention] = useState<any>(null);
   const [routes, setRoutes] = useState<any[]>([]);
+  const [ctWatch, setCtWatch] = useState<any>(null);
+  const [subscriptions, setSubscriptions] = useState<StatusSubscription[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [version, setVersion] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [results, setResults] = useState<CheckResult[]>([]);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
   const [editing, setEditing] = useState<Monitor | null | "new">(null);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState("dashboard");
@@ -45,7 +48,7 @@ function App() {
       .finally(() => setBooted(true));
   }, []);
   useEffect(() => { if (user) void refresh(); }, [user]);
-  useEffect(() => { if (selected) void loadResults(selected); }, [selected]);
+  useEffect(() => { if (selected) void loadMonitorData(selected); }, [selected]);
   useEffect(() => {
     if (!user) return;
     if (!window.history.state?.certwatch) window.history.replaceState({ certwatch: true, page: "dashboard", selected: null }, "");
@@ -53,7 +56,10 @@ function App() {
       const state = window.history.state?.certwatch ? window.history.state : { page: "dashboard", selected: null };
       setPage(state.page ?? "dashboard");
       setSelected(state.selected ?? null);
-      if (!state.selected) setResults([]);
+      if (!state.selected) {
+        setResults([]);
+        setIncidents([]);
+      }
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -65,11 +71,13 @@ function App() {
       api.request<any>("/status"),
       api.request<any[]>("/notification-channels")
     ]);
-    const [alertingData, smtpData, retentionData, routesData] = await Promise.all([
+    const [alertingData, smtpData, retentionData, routesData, ctWatchData, subscriptionData] = await Promise.all([
       api.request<any>("/settings/alerting"),
       api.request<any>("/settings/smtp"),
       api.request<any>("/settings/retention"),
-      api.request<any[]>("/notification-routes")
+      api.request<any[]>("/notification-routes"),
+      api.request<any>("/settings/ct-watch"),
+      api.request<StatusSubscription[]>("/subscriptions")
     ]);
     setMonitors(monitorData);
     setStats(statusData);
@@ -78,11 +86,20 @@ function App() {
     setSmtp(smtpData);
     setRetention(retentionData);
     setRoutes(routesData);
+    setCtWatch(ctWatchData);
+    setSubscriptions(subscriptionData);
     setVersion((await api.request<any>("/version")).version);
     if (user?.role === "admin") setUsers(await api.request<any[]>("/users"));
   };
 
-  const loadResults = async (id: string) => setResults(await api.request<CheckResult[]>(`/monitors/${id}/results`));
+  const loadMonitorData = async (id: string) => {
+    const [resultData, incidentData] = await Promise.all([
+      api.request<CheckResult[]>(`/monitors/${id}/results`),
+      api.request<Incident[]>(`/monitors/${id}/incidents`)
+    ]);
+    setResults(resultData);
+    setIncidents(incidentData);
+  };
   const saveMonitor = async (data: any) => {
     const path = editing && editing !== "new" ? `/monitors/${editing.id}` : "/monitors";
     const method = editing && editing !== "new" ? "PUT" : "POST";
@@ -99,7 +116,7 @@ function App() {
     setToast("Check started");
     await api.request(`/monitors/${id}/check`, { method: "POST", body: "{}" });
     await refresh();
-    if (selected === id) await loadResults(id);
+    if (selected === id) await loadMonitorData(id);
     setToast("Check completed");
   };
   const deleteMonitor = async (id: string) => {
@@ -111,7 +128,10 @@ function App() {
   const navigate = (nextPage: string, nextSelected: string | null = null) => {
     setPage(nextPage);
     setSelected(nextSelected);
-    if (!nextSelected) setResults([]);
+    if (!nextSelected) {
+      setResults([]);
+      setIncidents([]);
+    }
     window.history.pushState({ certwatch: true, page: nextPage, selected: nextSelected }, "");
   };
   const backToOverview = () => {
@@ -133,6 +153,8 @@ function App() {
           smtp={smtp}
           retention={retention}
           routes={routes}
+          ctWatch={ctWatch}
+          subscriptions={subscriptions}
           onSaveChannel={async (channel: any) => { await api.request("/notification-channels", { method: "POST", body: JSON.stringify(channel) }); await refresh(); }}
           onDeleteChannel={async (id: string) => { await api.request(`/notification-channels/${id}`, { method: "DELETE" }); await refresh(); }}
           onTest={(id: string) => api.request("/notification-channels/test", { method: "POST", body: JSON.stringify({ id }) })}
@@ -140,15 +162,22 @@ function App() {
           onSaveSmtp={async (data: any) => { await api.request("/settings/smtp", { method: "PUT", body: JSON.stringify(data) }); await refresh(); }}
           onSaveRetention={async (data: any) => { await api.request("/settings/retention", { method: "PUT", body: JSON.stringify(data) }); await refresh(); }}
           onSaveRoutes={async (data: any) => { await api.request("/notification-routes", { method: "PUT", body: JSON.stringify(data) }); await refresh(); }}
+          onSaveCtWatch={async (data: any) => { await api.request("/settings/ct-watch", { method: "PUT", body: JSON.stringify(data) }); await refresh(); }}
+          onCheckCtWatch={async () => api.request("/ct-watch/check", { method: "POST", body: "{}" })}
+          onDeleteSubscription={async (id: string) => { await api.request(`/subscriptions/${id}`, { method: "DELETE" }); await refresh(); }}
         />
       ) : page === "import" ? (
-        <BulkImport onImport={async (text) => { const result = await api.request("/monitors/bulk", { method: "POST", body: JSON.stringify({ text }) }); await refresh(); return result; }} />
+        <BulkImport
+          onImport={async (text) => { const result = await api.request("/monitors/bulk", { method: "POST", body: JSON.stringify({ text }) }); await refresh(); return result; }}
+          onDiscover={async (domain: string) => api.request("/discover", { method: "POST", body: JSON.stringify({ domain }) })}
+          onRestore={async (backup: any) => { const result = await api.request("/export/restore", { method: "POST", body: JSON.stringify(backup) }); await refresh(); return result; }}
+        />
       ) : page === "users" ? (
         <UsersPage users={users} onCreate={async (data: any) => { await api.request("/users", { method: "POST", body: JSON.stringify(data) }); await refresh(); }} onDelete={async (id: string) => { await api.request(`/users/${id}`, { method: "DELETE" }); await refresh(); }} />
       ) : page === "applications" ? (
         <Applications monitors={monitors} onSelect={(id) => navigate("dashboard", id)} />
       ) : selectedMonitor ? (
-        <MonitorDetail monitor={selectedMonitor} results={results} onBack={backToOverview} onEdit={() => setEditing(selectedMonitor)} onCheck={() => checkNow(selectedMonitor.id)} onDelete={() => deleteMonitor(selectedMonitor.id)} />
+        <MonitorDetail monitor={selectedMonitor} results={results} incidents={incidents} onBack={backToOverview} onEdit={() => setEditing(selectedMonitor)} onCheck={() => checkNow(selectedMonitor.id)} onDelete={() => deleteMonitor(selectedMonitor.id)} />
       ) : (
         <Dashboard monitors={monitors} stats={stats} query={query} setQuery={setQuery} onSelect={(id: string) => navigate("dashboard", id)} onCheck={checkNow} />
       )}

@@ -30,7 +30,7 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck 
             <span><StatusPill status={monitor.lastStatus} /></span>
             <span><strong>{monitor.name}</strong><small>{monitor.tags.join(", ") || "unlabeled"}</small></span>
             <span>{monitor.host}:{monitor.port}<small>{monitor.type}</small></span>
-            <span>{monitor.latestResult?.daysRemaining ?? "-"} days<small>{shortDate(monitor.latestResult?.validUntil)}</small></span>
+            <span>{monitor.latestResult?.daysRemaining ?? "-"} days<small>{[shortDate(monitor.latestResult?.validUntil), monitor.latestResult?.tlsGrade ? `grade ${monitor.latestResult.tlsGrade}` : ""].filter(Boolean).join(" - ")}</small></span>
             <span>{monitor.latestResult?.message ?? "No result yet"}<small>{monitor.latestResult?.tlsVersion ?? ""}</small></span>
             <span><button onClick={(e) => { e.stopPropagation(); onCheck(monitor.id); }}>Check now</button></span>
           </div>

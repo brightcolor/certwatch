@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0 - 2026-05-17
+
+- Added SSL Labs-style TLS security grading and displayed grades in the dashboard and monitor detail view.
+- Added flapping detection with a configurable global transition threshold.
+- Added incident timelines for monitor details and public status pages.
+- Added public status page subscriptions with email and webhook delivery for incident open and recovery events.
+- Added route-level escalation delay controls for configurable notification policies.
+- Added Certificate Transparency watch settings with manual check support.
+- Added auto-discovery suggestions for common web and mail monitors.
+- Added backup and restore UI for portable non-secret JSON exports.
+
 ## 0.2.2 - 2026-05-17
 
 - Added browser history support for monitor details so mouse/browser Back returns to the monitor overview.

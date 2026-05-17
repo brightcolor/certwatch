@@ -1,7 +1,7 @@
-import { db, rowToChannel, rowToMonitor, rowToResult, rowToUser } from "./db.js";
+import { db, rowToChannel, rowToIncident, rowToMonitor, rowToResult, rowToSubscription, rowToUser } from "./db.js";
 import { id } from "../utils/id.js";
 import { addSecondsIso, nowIso } from "../utils/time.js";
-import type { AlertingSettings, CheckResult, Monitor, NotificationChannel, NotificationRoute, RetentionSettings, SmtpSettings, User } from "../types.js";
+import type { AlertingSettings, CheckResult, CtWatchSettings, Incident, Monitor, NotificationChannel, NotificationRoute, RetentionSettings, StatusSubscription, SmtpSettings, User } from "../types.js";
 import { decryptConfigSecrets, encryptConfigSecrets } from "../utils/secrets.js";
 
 export const users = {
@@ -138,9 +138,10 @@ export const results = {
       INSERT INTO check_results VALUES (@id, @monitorId, @status, @severity, @message,
       @checkedAt, @durationMs, @daysRemaining, @validFrom, @validUntil, @commonName,
       @subjectAltNamesJson, @issuer, @serialNumber, @fingerprintSha256, @tlsVersion,
-      @cipherSuite, @chainJson, @problemsJson, @rawError)
+      @cipherSuite, @tlsGrade, @tlsScore, @flapping, @chainJson, @problemsJson, @rawError)
     `).run({
       ...result,
+      flapping: result.flapping ? 1 : 0,
       subjectAltNamesJson: JSON.stringify(result.subjectAltNames),
       chainJson: JSON.stringify(result.chain),
       problemsJson: JSON.stringify(result.problems)
@@ -155,8 +156,52 @@ export const results = {
     }
     return failures.at(-1)?.checked_at ?? null;
   },
+  listRecent(monitorId: string, limit = 10): CheckResult[] {
+    return db.prepare("SELECT * FROM check_results WHERE monitor_id = ? ORDER BY checked_at DESC LIMIT ?").all(monitorId, limit).map(rowToResult);
+  },
   prune(days: number) {
     db.prepare("DELETE FROM check_results WHERE checked_at < ?").run(new Date(Date.now() - days * 86_400_000).toISOString());
+  }
+};
+
+export const incidents = {
+  list(limit = 100): Incident[] {
+    return db.prepare("SELECT * FROM incidents ORDER BY started_at DESC LIMIT ?").all(limit).map(rowToIncident);
+  },
+  listForMonitor(monitorId: string, limit = 50): Incident[] {
+    return db.prepare("SELECT * FROM incidents WHERE monitor_id = ? ORDER BY started_at DESC LIMIT ?").all(monitorId, limit).map(rowToIncident);
+  },
+  openForMonitor(monitorId: string): Incident | null {
+    const row = db.prepare("SELECT * FROM incidents WHERE monitor_id = ? AND resolved_at IS NULL ORDER BY started_at DESC LIMIT 1").get(monitorId);
+    return row ? rowToIncident(row) : null;
+  },
+  sync(monitor: Monitor, result: CheckResult): Incident | null {
+    const open = this.openForMonitor(monitor.id);
+    if (result.status === "OK") {
+      if (open) db.prepare("UPDATE incidents SET resolved_at = ? WHERE id = ?").run(result.checkedAt, open.id);
+      return open ? { ...open, resolvedAt: result.checkedAt } : null;
+    }
+    if (open) {
+      db.prepare("UPDATE incidents SET status = ?, severity = ?, message = ? WHERE id = ?").run(result.status, result.severity, result.message, open.id);
+      return { ...open, status: result.status, severity: result.severity, message: result.message };
+    }
+    const incident = { id: id(), monitorId: monitor.id, status: result.status, severity: result.severity, message: result.message, startedAt: result.checkedAt, resolvedAt: null };
+    db.prepare("INSERT INTO incidents VALUES (?, ?, ?, ?, ?, ?, ?)").run(incident.id, incident.monitorId, incident.status, incident.severity, incident.message, incident.startedAt, incident.resolvedAt);
+    return incident;
+  }
+};
+
+export const subscriptions = {
+  list(): StatusSubscription[] {
+    return db.prepare("SELECT * FROM status_subscriptions ORDER BY created_at DESC").all().map(rowToSubscription);
+  },
+  create(tags: string[], type: "email" | "webhook", target: string): StatusSubscription {
+    const subscription = { id: id(), tags, type, target, enabled: true, createdAt: nowIso() };
+    db.prepare("INSERT INTO status_subscriptions VALUES (?, ?, ?, ?, ?, ?)").run(subscription.id, JSON.stringify(tags), type, target, 1, subscription.createdAt);
+    return subscription;
+  },
+  delete(subscriptionId: string) {
+    db.prepare("DELETE FROM status_subscriptions WHERE id = ?").run(subscriptionId);
   }
 };
 
@@ -215,7 +260,8 @@ export const appSettings = {
       quietHoursEnabled: false,
       quietStart: "22:00",
       quietEnd: "07:00",
-      quietSuppressCritical: false
+      quietSuppressCritical: false,
+      flappingThreshold: 4
     });
   },
   smtp(): SmtpSettings {
@@ -234,6 +280,9 @@ export const appSettings = {
   },
   notificationRoutes(): NotificationRoute[] {
     return this.get("notificationRoutes", []);
+  },
+  ctWatch(): CtWatchSettings {
+    return this.get("ctWatch", { enabled: false, domains: [], lastSeen: {} });
   },
   get<T>(key: string, fallback: T): T {
     const row = db.prepare("SELECT value_json FROM settings WHERE key = ?").get(key) as { value_json?: string } | undefined;

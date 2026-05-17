@@ -19,6 +19,7 @@ if (env.trustProxy) app.set("trust proxy", 1);
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: false, limit: "64kb" }));
 app.use(cookieParser(env.sessionSecret));
 app.use(morgan(env.nodeEnv === "production" ? "combined" : "dev"));
 app.use(attachSession);

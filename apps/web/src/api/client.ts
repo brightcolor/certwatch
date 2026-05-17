@@ -42,8 +42,30 @@ export interface CheckResult {
   fingerprintSha256?: string | null;
   tlsVersion?: string | null;
   cipherSuite?: string | null;
+  tlsGrade?: string | null;
+  tlsScore?: number | null;
+  flapping?: boolean;
   chain: Array<{ subject: string; issuer: string; validFrom?: string; validUntil?: string; fingerprintSha256?: string }>;
   problems: string[];
+}
+
+export interface Incident {
+  id: string;
+  monitorId: string;
+  status: string;
+  severity: string;
+  message: string;
+  startedAt: string;
+  resolvedAt?: string | null;
+}
+
+export interface StatusSubscription {
+  id: string;
+  tags: string[];
+  type: "email" | "webhook";
+  target: string;
+  enabled: boolean;
+  createdAt: string;
 }
 
 let csrfToken = localStorage.getItem("csrfToken") ?? "";

@@ -27,14 +27,21 @@ This stack keeps the application easy to self-host while still supporting real T
 - Per-monitor alert grace period before failed checks create notifications
 - Label-based application rollups where one service can contain multiple checks
 - Prometheus-compatible metrics at `/metrics`
+- SSL Labs-style TLS security grading with a compact A-F score per TLS result
+- Flapping detection for monitors that repeatedly bounce between healthy and failed states
+- Incident timelines for monitors and public status pages
+- Public status page subscriptions through email or webhook callbacks
+- Certificate Transparency watch for detecting newly issued certificates on watched domains
+- Auto-discovery suggestions for common web and mail endpoints from a domain
+- Backup and restore UI for portable, non-secret JSON exports
 - Certificate detail view with CN, SANs, issuer, serial number, SHA256 fingerprint, validity, chain, TLS version, and cipher suite
 - Hostname mismatch, self-signed, expiry, weak TLS protocol, chain trust, and fingerprint-change detection
 - Historical check results per monitor
 - Manual "check now" action and automatic periodic scheduler
 - Global and per-monitor warning and critical expiry thresholds
-- Notification channels for SMTP email, Pushover, generic webhooks, Discord, Slack, Telegram, Gotify, and ntfy-compatible endpoints
-- Alert deduplication with resend interval and recovery messages
-- Local user login with bcrypt password hashes, secure sessions, CSRF token header, and admin seed user
+- Notification channels for SMTP email, Pushover, generic webhooks, Discord, Slack, Telegram, Gotify, ntfy-compatible endpoints, Microsoft Teams, Mattermost, Matrix, PagerDuty, and Opsgenie
+- Alert deduplication with resend interval, route-specific escalation delay, recovery messages, quiet hours, and per-monitor grace periods
+- Local user login with bcrypt password hashes, secure sessions, CSRF token header, and first-run admin setup
 - Encrypted storage for monitor login secrets, SMTP settings, and notification provider secrets using `SESSION_SECRET`
 - JSON monitor import/export and CSV exports for certificate summary and check history
 - REST API under `/api`
@@ -144,32 +151,11 @@ Monitor JSON exports mask stored secrets and are suitable for moving monitor def
 
 ## Notification Setup
 
-Notification channels are configured in the Alerts page as JSON.
+Notification providers are configured in the Settings page. Global SMTP settings live in the UI, while recipients are assigned per monitor or through notification routes. This keeps server/provider credentials separate from the people, rooms, chat IDs, or webhook targets that should receive a specific alert.
 
-Email SMTP example:
+Routes can match labels, severity, and provider targets. Each route can also define an escalation delay, so a route can notify a primary recipient immediately and a second recipient only after the problem remains unresolved for a configured time.
 
-```json
-{
-  "host": "smtp.example.com",
-  "port": 587,
-  "username": "alerts@example.com",
-  "password": "secret",
-  "from": "certwatch@example.com",
-  "to": "ops@example.com",
-  "starttls": true,
-  "secure": false
-}
-```
-
-Webhook example:
-
-```json
-{
-  "url": "https://example.com/certwatch-webhook"
-}
-```
-
-Webhook payloads include monitor ID, monitor name, host, port, status, severity, message, days remaining, validity dates, issuer, SHA256 fingerprint, and check time.
+Webhook payloads include monitor ID, monitor name, host, port, status, severity, message, days remaining, validity dates, issuer, SHA256 fingerprint, check time, and the monitor URL.
 
 ## REST API
 
@@ -184,9 +170,17 @@ All API routes require login session authentication except `/api/auth/login`.
 - `GET /api/monitors/{id}/results`
 - `GET /api/status`
 - `GET /api/alerts`
+- `GET /api/incidents`
+- `GET /api/subscriptions`
 - `POST /api/notification-channels/test`
+- `POST /api/discover`
+- `GET /api/settings/ct-watch`
+- `PUT /api/settings/ct-watch`
+- `POST /api/ct-watch/check`
 - `GET /api/export/monitors.json`
 - `POST /api/export/monitors.json`
+- `GET /api/export/backup.json`
+- `POST /api/export/restore`
 - `GET /api/export/certificates.csv`
 - `GET /api/export/history.csv`
 
@@ -207,6 +201,8 @@ Monitor badges are SVG URLs:
 /public/badge/{monitorId}.svg
 /public/badge/tags/prod+mail.svg
 ```
+
+Status pages include the latest incident timeline and expose a simple email/webhook subscription form. Subscriptions are notified when an incident opens or resolves for matching labels.
 
 ## Prometheus
 
@@ -264,7 +260,9 @@ server {
 
 ## Backups
 
-SQLite data is stored in the Docker volume mounted at `/data`. Back up `certwatch.sqlite` and its WAL files while the container is stopped, or use a SQLite online backup command from a maintenance shell.
+The Import page includes a backup and restore UI for portable JSON exports of monitor definitions, provider definitions, notification routes, CT-watch settings, and non-secret settings. Secrets are masked in this export by design and must be re-entered after restore.
+
+SQLite data is stored in the Docker volume mounted at `/data`. For a full secret-bearing backup, back up `certwatch.sqlite` and its WAL files while the container is stopped, or use a SQLite online backup command from a maintenance shell.
 
 ## Updates
 
@@ -288,5 +286,4 @@ The schema migration currently creates missing tables only. Back up the database
 
 - Add API token management
 - Add full quiet-hours and maintenance-window enforcement
-- Add Prometheus metrics endpoint
 - Add OIDC, LDAP, and reverse-proxy-auth integrations

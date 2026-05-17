@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
-import type { CheckResult, Monitor, NotificationChannel, NotificationRoute, Severity, SmtpSettings } from "../types.js";
+import type { CheckResult, Monitor, NotificationChannel, NotificationRoute, Severity, SmtpSettings, StatusSubscription } from "../types.js";
 import { alerts, appSettings, results as checkResults } from "../storage/repositories.js";
 import { alertFingerprint } from "../checks/status.js";
 
@@ -25,6 +25,11 @@ export const testChannel = async (channel: NotificationChannel) => {
   await sendChannel(channel, { id: "test", name: "Test Monitor", host: "example.com", port: 443 } as Monitor, sampleResult());
 };
 
+export const dispatchStatusSubscriptions = async (monitor: Monitor, result: CheckResult, event: "opened" | "resolved", configured: StatusSubscription[]) => {
+  const targets = configured.filter((subscription) => subscription.enabled && subscription.tags.every((tag) => monitor.tags.includes(tag)));
+  await Promise.allSettled(targets.map((subscription) => sendStatusSubscription(subscription, monitor, result, event)));
+};
+
 export const buildPayload = (monitor: Monitor, result: CheckResult) => ({
   monitor_id: monitor.id,
   monitor_name: monitor.name,
@@ -41,6 +46,29 @@ export const buildPayload = (monitor: Monitor, result: CheckResult) => ({
   checked_at: result.checkedAt,
   url: `${env.baseUrl}/monitors/${monitor.id}`
 });
+
+const sendStatusSubscription = async (subscription: StatusSubscription, monitor: Monitor, result: CheckResult, event: "opened" | "resolved") => {
+  const payload = {
+    ...buildPayload(monitor, result),
+    event,
+    status_page: `${env.baseUrl}/public/status/${encodeURIComponent(subscription.tags.join("+"))}.html`
+  };
+  if (subscription.type === "webhook") return postJson(subscription.target, payload);
+  const smtp = appSettings.smtp();
+  const transport = nodemailer.createTransport({
+    host: smtp.host,
+    port: smtp.port,
+    secure: smtp.secure,
+    auth: smtp.username ? { user: smtp.username, pass: smtp.password } : undefined,
+    requireTLS: smtp.starttls
+  });
+  await transport.sendMail({
+    from: smtp.from || "certwatch@localhost",
+    to: subscription.target,
+    subject: `[CertWatch Status] ${event === "resolved" ? "Resolved" : "Incident"}: ${monitor.name}`,
+    text: `${monitor.name}: ${result.message}\n\nStatus: ${result.status}\nChecked at: ${result.checkedAt}\nStatus page: ${payload.status_page}\n`
+  });
+};
 
 const sendToChannels = async (monitor: Monitor, result: CheckResult, configured: NotificationChannel[]) => {
   const selected = selectedChannelIds(monitor, result, appSettings.notificationRoutes(), configured.map((channel) => channel.id));
@@ -65,10 +93,18 @@ const selectedChannelIds = (monitor: Monitor, result: CheckResult, routes: Notif
     if (!route.enabled) continue;
     const tagMatch = !route.tags.length || route.tags.some((tag) => monitor.tags.includes(tag));
     const severityMatch = !route.severities.length || route.severities.includes(result.severity);
+    const delayed = (route.delayMinutes ?? 0) > 0 && result.status !== "OK" && !delayElapsed(monitor.id, route.delayMinutes ?? 0);
+    if (delayed) continue;
     if (tagMatch && severityMatch) route.channelIds.forEach((channelId) => explicit.set(channelId, route.recipients[channelId] ?? explicit.get(channelId) ?? ""));
   }
   if (!explicit.size) return new Map(fallback.map((channelId) => [channelId, ""]));
   return explicit;
+};
+
+const delayElapsed = (monitorId: string, delayMinutes: number) => {
+  const failureStartedAt = checkResults.consecutiveFailureStartedAt(monitorId);
+  if (!failureStartedAt) return false;
+  return Date.now() - new Date(failureStartedAt).getTime() >= delayMinutes * 60_000;
 };
 
 const sendChannel = async (channel: NotificationChannel, monitor: Monitor, result: CheckResult, recipient = "") => {

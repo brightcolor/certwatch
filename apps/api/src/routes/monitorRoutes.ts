@@ -1,12 +1,13 @@
 import { Router } from "express";
-import { appSettings, channels, monitors, results } from "../storage/repositories.js";
+import { appSettings, channels, incidents, monitors, results, subscriptions } from "../storage/repositories.js";
 import { monitorInputSchema } from "./monitorSchemas.js";
 import { runTlsCheck } from "../checks/tlsChecker.js";
-import { dispatchAlerts } from "../notifications/service.js";
+import { dispatchAlerts, dispatchStatusSubscriptions } from "../notifications/service.js";
 import { applyCertificateChangeWatch } from "../checks/changeWatch.js";
 import { isServiceMonitor, runServiceCheck } from "../checks/serviceChecker.js";
 import type { Monitor } from "../types.js";
 import { redactConfigSecrets } from "../utils/secrets.js";
+import { markFlapping } from "../checks/flapping.js";
 
 export const monitorRoutes = Router();
 
@@ -94,15 +95,24 @@ monitorRoutes.post("/:id/check", async (req, res) => {
   if (!monitor.enabled) return res.status(409).json({ error: "Monitor is paused." });
   const previous = results.list(monitor.id, 1)[0];
   const checked = isServiceMonitor(monitor.type) ? await runServiceCheck(monitor) : await runTlsCheck(monitor, previous?.fingerprintSha256);
-  const result = isServiceMonitor(monitor.type) ? checked : applyCertificateChangeWatch(checked, previous, appSettings.alerting());
+  const classified = isServiceMonitor(monitor.type) ? checked : applyCertificateChangeWatch(checked, previous, appSettings.alerting());
+  const result = markFlapping(classified, results.listRecent(monitor.id, 10), appSettings.alerting().flappingThreshold);
+  const openIncident = incidents.openForMonitor(monitor.id);
   results.insert(result);
+  const statusEvent = result.status === "OK" ? (openIncident ? "resolved" : null) : (!openIncident ? "opened" : null);
+  incidents.sync(monitor, result);
   monitors.markChecked(monitor, result);
   await dispatchAlerts(monitor, result, channels.list());
+  if (statusEvent) await dispatchStatusSubscriptions(monitor, result, statusEvent, subscriptions.list());
   res.json(result);
 });
 
 monitorRoutes.get("/:id/results", (req, res) => {
   res.json(results.list(req.params.id, Number(req.query.limit ?? 100)));
+});
+
+monitorRoutes.get("/:id/incidents", (req, res) => {
+  res.json(incidents.listForMonitor(req.params.id, Number(req.query.limit ?? 50)));
 });
 
 const publicMonitor = (monitor: Monitor) => ({ ...monitor, config: redactConfigSecrets(monitor.config ?? {}) });

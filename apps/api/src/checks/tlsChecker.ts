@@ -7,6 +7,7 @@ import { nowIso } from "../utils/time.js";
 import { classifyResult } from "./status.js";
 import { assertPublicResolution } from "./validation.js";
 import { prepareStartTls } from "./starttls.js";
+import { gradeTls } from "./tlsGrade.js";
 
 export const runTlsCheck = async (monitor: Monitor, previousFingerprint?: string | null): Promise<CheckResult> => {
   const started = Date.now();
@@ -39,7 +40,7 @@ export const runTlsCheck = async (monitor: Monitor, previousFingerprint?: string
       chainProblems: chain.length <= 1 ? ["Certificate chain contains no intermediate certificates."] : []
     });
 
-    const result = makeResult(monitor, classified.status, classified.severity, started, classified.problems, {
+    const result = withTlsGrade(makeResult(monitor, classified.status, classified.severity, started, classified.problems, {
       daysRemaining: classified.daysRemaining,
       validFrom: validFrom?.toISOString(),
       validUntil: validUntil?.toISOString(),
@@ -51,13 +52,13 @@ export const runTlsCheck = async (monitor: Monitor, previousFingerprint?: string
       tlsVersion: connection.socket.getProtocol(),
       cipherSuite: connection.socket.getCipher()?.name,
       chain
-    });
+    }));
     connection.socket.destroy();
     return result;
   } catch (error) {
-    return makeResult(monitor, "DOWN", "critical", started, [error instanceof Error ? error.message : "Check failed."], {
+    return withTlsGrade(makeResult(monitor, "DOWN", "critical", started, [error instanceof Error ? error.message : "Check failed."], {
       rawError: error instanceof Error ? error.message : String(error)
-    });
+    }));
   }
 };
 
@@ -110,6 +111,8 @@ const makeResult = (
   problems,
   rawError: data.rawError ?? null
 });
+
+const withTlsGrade = (result: CheckResult): CheckResult => ({ ...result, ...gradeTls(result) });
 
 const parseDn = (dn: string) =>
   Object.fromEntries(dn.split(/\n|, /).map((part) => {

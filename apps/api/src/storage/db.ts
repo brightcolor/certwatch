@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import initSqlJs, { Database as SqlJsDatabase, SqlValue } from "sql.js";
 import { env } from "../config/env.js";
-import type { CheckResult, Monitor, NotificationChannel, User } from "../types.js";
+import type { CheckResult, Incident, Monitor, NotificationChannel, StatusSubscription, User } from "../types.js";
 import { decryptConfigSecrets } from "../utils/secrets.js";
 
 fs.mkdirSync(path.dirname(env.databasePath), { recursive: true });
@@ -142,6 +142,9 @@ export const migrate = () => {
       fingerprint_sha256 TEXT,
       tls_version TEXT,
       cipher_suite TEXT,
+      tls_grade TEXT,
+      tls_score INTEGER,
+      flapping INTEGER NOT NULL DEFAULT 0,
       chain_json TEXT NOT NULL,
       problems_json TEXT NOT NULL,
       raw_error TEXT
@@ -169,6 +172,23 @@ export const migrate = () => {
       key TEXT PRIMARY KEY,
       value_json TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS incidents (
+      id TEXT PRIMARY KEY,
+      monitor_id TEXT NOT NULL,
+      status TEXT NOT NULL,
+      severity TEXT NOT NULL,
+      message TEXT NOT NULL,
+      started_at TEXT NOT NULL,
+      resolved_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS status_subscriptions (
+      id TEXT PRIMARY KEY,
+      tags_json TEXT NOT NULL,
+      type TEXT NOT NULL,
+      target TEXT NOT NULL,
+      enabled INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS audit_log (
       id TEXT PRIMARY KEY,
       actor_user_id TEXT,
@@ -193,6 +213,17 @@ export const migrate = () => {
     db.exec("ALTER TABLE monitors ADD COLUMN grace_period_seconds INTEGER NOT NULL DEFAULT 0;");
   } catch {
     // Existing databases already have the column.
+  }
+  for (const sql of [
+    "ALTER TABLE check_results ADD COLUMN tls_grade TEXT;",
+    "ALTER TABLE check_results ADD COLUMN tls_score INTEGER;",
+    "ALTER TABLE check_results ADD COLUMN flapping INTEGER NOT NULL DEFAULT 0;"
+  ]) {
+    try {
+      db.exec(sql);
+    } catch {
+      // Existing databases already have the column.
+    }
   }
 };
 
@@ -252,6 +283,9 @@ export const rowToResult = (row: any): CheckResult => ({
   fingerprintSha256: row.fingerprint_sha256,
   tlsVersion: row.tls_version,
   cipherSuite: row.cipher_suite,
+  tlsGrade: row.tls_grade,
+  tlsScore: row.tls_score,
+  flapping: Boolean(row.flapping),
   chain: parse(row.chain_json, []),
   problems: parse<string[]>(row.problems_json, []),
   rawError: row.raw_error
@@ -272,5 +306,24 @@ export const rowToUser = (row: any): User => ({
   email: row.email,
   passwordHash: row.password_hash,
   role: row.role,
+  createdAt: row.created_at
+});
+
+export const rowToIncident = (row: any): Incident => ({
+  id: row.id,
+  monitorId: row.monitor_id,
+  status: row.status,
+  severity: row.severity,
+  message: row.message,
+  startedAt: row.started_at,
+  resolvedAt: row.resolved_at
+});
+
+export const rowToSubscription = (row: any): StatusSubscription => ({
+  id: row.id,
+  tags: parse<string[]>(row.tags_json, []),
+  type: row.type === "webhook" ? "webhook" : "email",
+  target: row.target,
+  enabled: Boolean(row.enabled),
   createdAt: row.created_at
 });

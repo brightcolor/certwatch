@@ -76,6 +76,9 @@ export interface CheckResult {
   fingerprintSha256?: string | null;
   tlsVersion?: string | null;
   cipherSuite?: string | null;
+  tlsGrade?: string | null;
+  tlsScore?: number | null;
+  flapping?: boolean;
   chain: CertificateChainItem[];
   problems: string[];
   rawError?: string | null;
@@ -116,6 +119,7 @@ export interface AlertingSettings {
   quietStart: string;
   quietEnd: string;
   quietSuppressCritical: boolean;
+  flappingThreshold: number;
 }
 
 export interface RetentionSettings {
@@ -130,7 +134,33 @@ export interface NotificationRoute {
   severities: Severity[];
   channelIds: string[];
   recipients: Record<string, string>;
+  delayMinutes?: number;
   enabled: boolean;
+}
+
+export interface Incident {
+  id: string;
+  monitorId: string;
+  status: MonitorStatus;
+  severity: Severity;
+  message: string;
+  startedAt: string;
+  resolvedAt?: string | null;
+}
+
+export interface StatusSubscription {
+  id: string;
+  tags: string[];
+  type: "email" | "webhook";
+  target: string;
+  enabled: boolean;
+  createdAt: string;
+}
+
+export interface CtWatchSettings {
+  enabled: boolean;
+  domains: string[];
+  lastSeen: Record<string, string>;
 }
 
 export interface SmtpSettings {

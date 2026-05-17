@@ -57,6 +57,20 @@ button {
   white-space: nowrap;
 }
 
+.button-link {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--bg);
+  padding: 8px 12px;
+  text-decoration: none;
+}
+
 button.ghost,
 button.icon {
   background: transparent;

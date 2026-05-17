@@ -1,7 +1,7 @@
-import type { CheckResult, Monitor } from "../api/client";
+import type { CheckResult, Incident, Monitor } from "../api/client";
 import { StatusPill } from "../components/StatusPill";
 
-export function MonitorDetail({ monitor, results, onBack, onEdit, onCheck, onDelete }: { monitor: Monitor; results: CheckResult[]; onBack: () => void; onEdit: () => void; onCheck: () => void; onDelete: () => void }) {
+export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onCheck, onDelete }: { monitor: Monitor; results: CheckResult[]; incidents: Incident[]; onBack: () => void; onEdit: () => void; onCheck: () => void; onDelete: () => void }) {
   const latest = results[0] ?? monitor.latestResult;
   const origin = window.location.origin;
   const statusTag = monitor.tags[0] ?? "all";
@@ -36,8 +36,10 @@ export function MonitorDetail({ monitor, results, onBack, onEdit, onCheck, onDel
           <Info label="SANs" value={latest?.subjectAltNames.join(", ")} />
         </Panel>
         <Panel title="TLS">
+          <Info label="Security Grade" value={latest?.tlsGrade ? `${latest.tlsGrade} (${latest.tlsScore ?? 0}/100)` : "-"} />
           <Info label="Version" value={latest?.tlsVersion} />
           <Info label="Cipher Suite" value={latest?.cipherSuite} />
+          <Info label="Flapping" value={latest?.flapping ? "Detected" : "No"} />
           <Info label="Last Check" value={dateTime(latest?.checkedAt)} />
           <Info label="Duration" value={latest ? `${latest.durationMs} ms` : ""} />
           <Info label="Problems" value={latest?.problems.join("; ") || "None"} />
@@ -50,6 +52,12 @@ export function MonitorDetail({ monitor, results, onBack, onEdit, onCheck, onDel
         <EmbedRow label="Badge URL" value={badgeUrl} />
         <EmbedRow label="Markdown" value={markdownBadge} />
         <EmbedRow label="HTML" value={htmlBadge} />
+      </Panel>
+      <Panel title="Incident Timeline">
+        <div className="stack-list">
+          {incidents.map((incident) => <div key={incident.id}><StatusPill status={incident.status} /><span>{incident.message}</span><small>{dateTime(incident.startedAt)} - {incident.resolvedAt ? dateTime(incident.resolvedAt) : "open"}</small></div>)}
+          {!incidents.length && <span className="muted">No incidents recorded for this monitor.</span>}
+        </div>
       </Panel>
       <Panel title="Check History">
         <div className="stack-list">{results.map((result) => <div key={result.id}><StatusPill status={result.status} /><span>{dateTime(result.checkedAt)}</span><span>{result.message}</span></div>)}</div>
