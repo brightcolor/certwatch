@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.3 - 2026-05-18
+
+- Switched Docker Compose service settings to compact list/string syntax where supported.
+- Changed the `/data` bind mount to the short Compose volume form while keeping the relative `DATA_DIR` default.
+- Removed the bundled Watchtower service while keeping the update label for external Watchtower instances.
+
 ## 0.4.2 - 2026-05-18
 
 - Removed `build: .` from the production Compose file so deployments and Watchtower use the published GHCR image.

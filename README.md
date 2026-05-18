@@ -248,24 +248,13 @@ Exported metrics include `certwatch_monitor_status`, `certwatch_cert_days_remain
 
 ## Watchtower Updates
 
-The Compose file uses the published image `ghcr.io/brightcolor/certwatch:latest` and includes an optional Watchtower service. Enable it during quickstart:
+The Compose file uses the published image `ghcr.io/brightcolor/certwatch:latest` and does not start its own Watchtower container. This keeps updates under your existing external Watchtower instance.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo CERTWATCH_ENABLE_WATCHTOWER=true bash
-```
-
-Or enable it later:
-
-```bash
-cd /opt/certwatch
-docker compose --profile watchtower up -d watchtower
-```
-
-Watchtower updates containers that have `com.centurylinklabs.watchtower.enable=true`.
+The CertWatch service keeps `com.centurylinklabs.watchtower.enable=true`, so an external Watchtower running with `--label-enable` can update it automatically.
 
 ## Local Image Builds
 
-The production Compose file intentionally does not contain `build:` so self-hosted installs and Watchtower always use the published GHCR image. To build locally from the repository, use the development override:
+The production Compose file intentionally does not contain `build:` so self-hosted installs and external Watchtower deployments always use the published GHCR image. It uses compact Compose syntax and a relative bind mount by default. To build locally from the repository, use the development override:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build

@@ -4,38 +4,28 @@ services:
     container_name: certwatch
     restart: unless-stopped
     environment:
-      NODE_ENV: ${NODE_ENV:-production}
-      TZ: ${TZ:-Europe/Berlin}
-      PORT: ${PORT:-8080}
-      BASE_URL: ${BASE_URL:-http://localhost:${HOST_PORT:-8080}}
-      DATABASE_PATH: ${DATABASE_PATH:-/data/certwatch.sqlite}
-      SESSION_SECRET: ${SESSION_SECRET:-change-this-long-random-secret}
-      TRUST_PROXY: ${TRUST_PROXY:-true}
-      COOKIE_SECURE: ${COOKIE_SECURE:-false}
-      ALLOW_PRIVATE_TARGETS: ${ALLOW_PRIVATE_TARGETS:-false}
-      CHECK_CONCURRENCY: ${CHECK_CONCURRENCY:-4}
-      DEFAULT_INTERVAL_SECONDS: ${DEFAULT_INTERVAL_SECONDS:-3600}
-      DEFAULT_WARNING_DAYS: ${DEFAULT_WARNING_DAYS:-30}
-      DEFAULT_CRITICAL_DAYS: ${DEFAULT_CRITICAL_DAYS:-7}
+      - "NODE_ENV=${NODE_ENV:-production}"
+      - "TZ=${TZ:-Europe/Berlin}"
+      - "PORT=${PORT:-8080}"
+      - "BASE_URL=${BASE_URL:-http://localhost:${HOST_PORT:-8080}}"
+      - "DATABASE_PATH=${DATABASE_PATH:-/data/certwatch.sqlite}"
+      - "SESSION_SECRET=${SESSION_SECRET:-change-this-long-random-secret}"
+      - "TRUST_PROXY=${TRUST_PROXY:-true}"
+      - "COOKIE_SECURE=${COOKIE_SECURE:-false}"
+      - "ALLOW_PRIVATE_TARGETS=${ALLOW_PRIVATE_TARGETS:-false}"
+      - "CHECK_CONCURRENCY=${CHECK_CONCURRENCY:-4}"
+      - "DEFAULT_INTERVAL_SECONDS=${DEFAULT_INTERVAL_SECONDS:-3600}"
+      - "DEFAULT_WARNING_DAYS=${DEFAULT_WARNING_DAYS:-30}"
+      - "DEFAULT_CRITICAL_DAYS=${DEFAULT_CRITICAL_DAYS:-7}"
     ports:
       - "${HOST_PORT:-8080}:${PORT:-8080}"
     volumes:
-      - type: bind
-        source: ${DATA_DIR:-./data}
-        target: /data
+      - "${DATA_DIR:-./data}:/data"
     labels:
-      com.centurylinklabs.watchtower.enable: "true"
+      - "com.centurylinklabs.watchtower.enable=true"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:$${PORT:-8080}/api/health || exit 1"]
+      test: "curl -fsS http://localhost:$${PORT:-8080}/api/health || exit 1"
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 20s
-
-  watchtower:
-    image: containrrr/watchtower:latest
-    restart: unless-stopped
-    profiles: ["watchtower"]
-    command: --label-enable --cleanup --interval 300
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
