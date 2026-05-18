@@ -1,11 +1,17 @@
 import { Router } from "express";
 import { appSettings, incidents, monitors, results, subscriptions } from "../storage/repositories.js";
+import { sendStatusSubscriptionOptIn } from "../notifications/service.js";
+import { escapeHtml, renderPublicStatusPage } from "./publicStatusPage.js";
+import type { MonitorStatus } from "../types.js";
 
 export const publicRoutes = Router();
 
 publicRoutes.get("/status/:tags.html", (req, res) => {
   const status = publicStatus(req.params.tags);
-  res.type("html").send(`<!doctype html><html><head><title>${escapeHtml(status.title)}</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:system-ui;margin:32px;background:#0d1117;color:#e6edf3}.logo{max-height:54px}.item{border:1px solid #30363d;border-radius:8px;padding:14px;margin:10px 0}.OK{color:#3fb950}.WARNING{color:#d29922}.CRITICAL,.DOWN{color:#f85149}.PAUSED,.UNKNOWN{color:#8b949e}input,select,button{padding:8px;margin:4px 0}</style></head><body>${status.logoUrl ? `<img class="logo" src="${escapeHtml(status.logoUrl)}" alt="">` : ""}<h1>${escapeHtml(status.title)}</h1><p>${escapeHtml(status.description || status.summary)}</p><p>${escapeHtml(status.summary)}</p>${status.monitors.map((monitor) => `<div class="item"><strong>${escapeHtml(monitor.name)}</strong> <span class="${monitor.status}">${monitor.status}</span><br><small>${status.hideHostnames ? "" : `${escapeHtml(monitor.host)}:${monitor.port} - `}${escapeHtml(monitor.message)}</small></div>`).join("")}<h2>Incident timeline</h2>${status.incidents.map((incident) => `<div class="item"><strong>${escapeHtml(incident.status)}</strong> ${escapeHtml(incident.message)}<br><small>${escapeHtml(incident.startedAt)}${incident.resolvedAt ? ` - ${escapeHtml(incident.resolvedAt)}` : " - open"}</small></div>`).join("") || "<p>No incidents.</p>"}<h2>Subscribe</h2><form method="post" action="/public/status/${encodeURIComponent(rawTags(req.params.tags))}/subscribe"><select name="type"><option value="email">Email</option><option value="webhook">Webhook</option></select><input name="target" placeholder="email@example.com or webhook URL" required><button>Subscribe</button></form></body></html>`);
+  res.type("html").send(renderPublicStatusPage(status, {
+    subscriptionState: subscriptionState(req.query.subscription),
+    subscribePath: `/public/status/${encodeURIComponent(rawTags(req.params.tags))}/subscribe`
+  }));
 });
 
 publicRoutes.get("/badge/:id.svg", (req, res) => {
@@ -27,15 +33,28 @@ publicRoutes.get("/badge/tags/:tags.svg", (req, res) => {
 });
 
 publicRoutes.get("/status/:tags", (req, res) => res.json(publicStatus(req.params.tags)));
-publicRoutes.post("/status/:tags/subscribe", (req, res) => {
+publicRoutes.post("/status/:tags/subscribe", async (req, res) => {
   const page = appSettings.statusPages().pages.find((item) => item.enabled && item.slug === req.params.tags);
   const tags = page?.tags ?? parseTags(req.params.tags);
   const type = req.body?.type === "webhook" ? "webhook" : "email";
   const target = String(req.body?.target ?? "").trim();
   if (!target || target.length > 2000) return res.status(400).json({ error: "Valid target is required." });
-  const subscription = subscriptions.create(tags, type, target);
-  if (req.accepts("html") && !req.is("application/json")) return res.redirect(303, `/public/status/${encodeURIComponent(rawTags(req.params.tags))}.html?subscribed=1`);
-  res.status(201).json(subscription);
+  const subscription = subscriptions.create(tags, type, target, false);
+  try {
+    await sendStatusSubscriptionOptIn(subscription);
+    if (req.accepts("html") && !req.is("application/json")) return res.redirect(303, `/public/status/${encodeURIComponent(rawTags(req.params.tags))}.html?subscription=pending`);
+    return res.status(202).json({ ...subscription, optInRequired: true });
+  } catch (error) {
+    subscriptions.delete(subscription.id);
+    if (req.accepts("html") && !req.is("application/json")) return res.redirect(303, `/public/status/${encodeURIComponent(rawTags(req.params.tags))}.html?subscription=failed`);
+    return res.status(502).json({ error: error instanceof Error ? error.message : "Opt-in delivery failed." });
+  }
+});
+
+publicRoutes.get("/subscriptions/:id/confirm", (req, res) => {
+  const subscription = subscriptions.confirm(req.params.id);
+  if (!subscription) return res.status(404).type("text").send("Subscription not found.");
+  res.redirect(303, `/public/status/${encodeURIComponent(subscription.tags.join("+"))}.html?subscription=confirmed`);
 });
 
 const publicStatus = (rawTags: string) => {
@@ -61,6 +80,7 @@ const publicStatus = (rawTags: string) => {
     logoUrl: page?.logoUrl ?? "",
     hideHostnames: page?.hideHostnames ?? false,
     rollupStatus,
+    counts,
     summary: `${counts.OK ?? 0} OK, ${counts.WARNING ?? 0} warning, ${(counts.CRITICAL ?? 0) + (counts.DOWN ?? 0)} critical/down`,
     monitors: selected.map((monitor) => ({
       id: monitor.id,
@@ -76,9 +96,9 @@ const publicStatus = (rawTags: string) => {
   };
 };
 
-const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]!));
 const encodeXml = escapeHtml;
 const parseTags = (value: string) => value.split(/[,+]/).map((tag) => decodeURIComponent(tag).trim()).filter(Boolean);
 const rawTags = (value: string) => value;
-const rollup = (counts: Record<string, number>) => (counts.DOWN || counts.CRITICAL ? "CRITICAL" : counts.WARNING ? "WARNING" : counts.PAUSED ? "PAUSED" : counts.UNKNOWN ? "UNKNOWN" : "OK");
+const rollup = (counts: Record<string, number>): MonitorStatus => (counts.DOWN || counts.CRITICAL ? "CRITICAL" : counts.WARNING ? "WARNING" : counts.PAUSED ? "PAUSED" : counts.UNKNOWN ? "UNKNOWN" : "OK");
 const colorFor = (status: string) => status === "OK" ? "#3fb950" : status === "WARNING" ? "#d29922" : status === "CRITICAL" || status === "DOWN" ? "#f85149" : "#8b949e";
+const subscriptionState = (value: unknown) => value === "pending" || value === "confirmed" || value === "failed" ? value : undefined;

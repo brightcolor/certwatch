@@ -47,6 +47,7 @@ This stack keeps the application easy to self-host while still supporting real T
 - Incident acknowledgement, assignment, notes, and delivery visibility for alert troubleshooting
 - API tokens with read-only or read/write scopes for automation
 - Custom public status pages with slugs, titles, descriptions, logos, hostname hiding, subscriptions, and incident timelines
+- Public status page subscriptions require double opt-in before email or webhook incident updates are enabled
 - Scheduled auto-discovery jobs for common web and mail endpoints
 - Availability reports with check counts, incident counts, availability percentage, and MTTR
 - Scheduled SQLite database backups with UI download and retention controls
@@ -225,6 +226,8 @@ Monitor badges are SVG URLs:
 Status pages include the latest incident timeline and expose a simple email/webhook subscription form. Subscriptions are notified when an incident opens or resolves for matching labels.
 
 Custom status pages can be configured in the Operations page. A custom page maps a public slug to one or more labels and can set a title, description, logo URL, and hostname-hiding behavior.
+
+Public status page subscriptions are inactive until the recipient confirms the opt-in link. Email subscriptions receive a confirmation email through the global SMTP settings. Webhook subscriptions receive a JSON opt-in payload with `confirm_url`.
 
 ## Operations
 

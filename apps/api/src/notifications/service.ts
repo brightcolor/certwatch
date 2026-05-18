@@ -33,6 +33,40 @@ export const dispatchStatusSubscriptions = async (monitor: Monitor, result: Chec
   await Promise.allSettled(targets.map((subscription) => sendStatusSubscription(subscription, monitor, result, event)));
 };
 
+export const sendStatusSubscriptionOptIn = async (subscription: StatusSubscription) => {
+  const confirmUrl = `${env.baseUrl}/public/subscriptions/${encodeURIComponent(subscription.id)}/confirm`;
+  const statusPage = `${env.baseUrl}/public/status/${encodeURIComponent(subscription.tags.join("+"))}.html`;
+  if (subscription.type === "webhook") {
+    return postJson(subscription.target, {
+      event: "subscription_opt_in",
+      message: "Confirm this CertWatch status page subscription before incident updates are sent.",
+      confirm_url: confirmUrl,
+      status_page: statusPage,
+      tags: subscription.tags
+    });
+  }
+  const smtp = appSettings.smtp();
+  const transport = nodemailer.createTransport({
+    host: smtp.host,
+    port: smtp.port,
+    secure: smtp.secure,
+    auth: smtp.username ? { user: smtp.username, pass: smtp.password } : undefined,
+    requireTLS: smtp.starttls
+  });
+  await transport.sendMail({
+    from: smtp.from || "certwatch@localhost",
+    to: subscription.target,
+    subject: "[CertWatch Status] Confirm your subscription",
+    text: `Confirm your CertWatch status page subscription before incident updates are sent.
+
+Status page: ${statusPage}
+Confirm subscription: ${confirmUrl}
+
+If you did not request this subscription, ignore this message.
+`
+  });
+};
+
 export const buildPayload = (monitor: Monitor, result: CheckResult) => ({
   monitor_id: monitor.id,
   monitor_name: monitor.name,

@@ -256,10 +256,15 @@ export const subscriptions = {
   list(): StatusSubscription[] {
     return db.prepare("SELECT * FROM status_subscriptions ORDER BY created_at DESC").all().map(rowToSubscription);
   },
-  create(tags: string[], type: "email" | "webhook", target: string): StatusSubscription {
-    const subscription = { id: id(), tags, type, target, enabled: true, createdAt: nowIso() };
-    db.prepare("INSERT INTO status_subscriptions VALUES (?, ?, ?, ?, ?, ?)").run(subscription.id, JSON.stringify(tags), type, target, 1, subscription.createdAt);
+  create(tags: string[], type: "email" | "webhook", target: string, enabled = false): StatusSubscription {
+    const subscription = { id: id(), tags, type, target, enabled, createdAt: nowIso() };
+    db.prepare("INSERT INTO status_subscriptions VALUES (?, ?, ?, ?, ?, ?)").run(subscription.id, JSON.stringify(tags), type, target, enabled ? 1 : 0, subscription.createdAt);
     return subscription;
+  },
+  confirm(subscriptionId: string): StatusSubscription | null {
+    db.prepare("UPDATE status_subscriptions SET enabled = 1 WHERE id = ?").run(subscriptionId);
+    const row = db.prepare("SELECT * FROM status_subscriptions WHERE id = ?").get(subscriptionId);
+    return row ? rowToSubscription(row) : null;
   },
   delete(subscriptionId: string) {
     db.prepare("DELETE FROM status_subscriptions WHERE id = ?").run(subscriptionId);

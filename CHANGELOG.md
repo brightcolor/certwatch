@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.7 - 2026-05-18
+
+- Redesigned public status pages with a polished customer-facing layout, summary cards, monitor list, incident timeline, and responsive styling.
+- Changed public status page subscriptions to double opt-in so email and webhook targets must confirm before alerts are enabled.
+- Added tests for public status page rendering, escaping, hostname hiding, and opt-in copy.
+
 ## 0.4.6 - 2026-05-18
 
 - Fixed label blur commits with synchronous state updates so typed labels remain when moving into another field or saving.

@@ -126,7 +126,7 @@ export function Settings(props: any) {
         </div>
         <div className="panel">
           <h3>Status page subscriptions</h3>
-          {(subscriptions ?? []).map((item: any) => <div className="channel" key={item.id}><strong>{item.tags.join(" + ") || "all"}</strong><span>{item.type} - {item.target}</span><button onClick={() => props.onDeleteSubscription(item.id)}>Delete</button></div>)}
+          {(subscriptions ?? []).map((item: any) => <div className="channel" key={item.id}><strong>{item.tags.join(" + ") || "all"}</strong><span>{item.type} - {item.enabled ? "active" : "pending opt-in"} - {item.target}</span><button onClick={() => props.onDeleteSubscription(item.id)}>Delete</button></div>)}
           {!(subscriptions ?? []).length && <span className="muted">No public status page subscriptions yet.</span>}
         </div>
       </div>
