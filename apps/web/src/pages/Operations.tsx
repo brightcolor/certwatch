@@ -55,9 +55,9 @@ export function Operations() {
       <div className="grid two">
         <div className="panel">
           <h3>Maintenance windows</h3>
-          <label>Name<input value={route.name} onChange={(e) => setRoute({ ...route, name: e.target.value })} /></label>
-          <TagInput value={route.tags} onChange={(tags) => setRoute({ ...route, tags })} />
-          <label>Window<input value={route.window} onChange={(e) => setRoute({ ...route, window: e.target.value })} placeholder="daily 22:00-23:00" /></label>
+          <label>Name<input value={route.name} onChange={(e) => setRoute((current) => ({ ...current, name: e.target.value }))} /></label>
+          <TagInput value={route.tags} onChange={(tags) => setRoute((current) => ({ ...current, tags }))} />
+          <label>Window<input value={route.window} onChange={(e) => setRoute((current) => ({ ...current, window: e.target.value }))} placeholder="daily 22:00-23:00" /></label>
           <button onClick={addMaintenance}>Add window</button>
           {maintenance.windows.map((item: any) => <Row key={item.id} title={item.name} detail={`${item.tags.join(", ")} - ${item.window}`} onDelete={() => save("/settings/maintenance", { windows: maintenance.windows.filter((entry: any) => entry.id !== item.id) })} />)}
         </div>
@@ -73,12 +73,12 @@ export function Operations() {
       <div className="grid two">
         <div className="panel">
           <h3>Status pages</h3>
-          <label>Slug<input value={page.slug} onChange={(e) => setPage({ ...page, slug: e.target.value.toLowerCase() })} placeholder="public-prod" /></label>
-          <label>Title<input value={page.title} onChange={(e) => setPage({ ...page, title: e.target.value })} /></label>
-          <label>Description<input value={page.description} onChange={(e) => setPage({ ...page, description: e.target.value })} /></label>
-          <label>Logo URL<input value={page.logoUrl} onChange={(e) => setPage({ ...page, logoUrl: e.target.value })} /></label>
-          <TagInput value={page.tags} onChange={(tags) => setPage({ ...page, tags })} />
-          <label><input type="checkbox" checked={page.hideHostnames} onChange={(e) => setPage({ ...page, hideHostnames: e.target.checked })} /> Hide hostnames</label>
+          <label>Slug<input value={page.slug} onChange={(e) => setPage((current) => ({ ...current, slug: e.target.value.toLowerCase() }))} placeholder="public-prod" /></label>
+          <label>Title<input value={page.title} onChange={(e) => setPage((current) => ({ ...current, title: e.target.value }))} /></label>
+          <label>Description<input value={page.description} onChange={(e) => setPage((current) => ({ ...current, description: e.target.value }))} /></label>
+          <label>Logo URL<input value={page.logoUrl} onChange={(e) => setPage((current) => ({ ...current, logoUrl: e.target.value }))} /></label>
+          <TagInput value={page.tags} onChange={(tags) => setPage((current) => ({ ...current, tags }))} />
+          <label><input type="checkbox" checked={page.hideHostnames} onChange={(e) => setPage((current) => ({ ...current, hideHostnames: e.target.checked }))} /> Hide hostnames</label>
           <button onClick={addStatusPage}>Add status page</button>
           {statusPages.pages.map((item: any) => <Row key={item.id} title={item.title} detail={`/public/status/${item.slug}.html - ${item.tags.join(", ")}`} onDelete={() => save("/settings/status-pages", { pages: statusPages.pages.filter((entry: any) => entry.id !== item.id) })} />)}
         </div>

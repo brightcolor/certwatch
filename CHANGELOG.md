@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.5 - 2026-05-18
+
+- Fixed label inputs so a typed label is committed when the field loses focus instead of being discarded.
+- Kept Enter/comma label entry and text-mode switching behavior intact.
+
 ## 0.4.4 - 2026-05-18
 
 - Added a dynamic browser favicon that glows green when no actionable problems exist.

@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 export function TagInput({ value, onChange, placeholder = "Add label and press Enter" }: { value: string[]; onChange: (tags: string[]) => void; placeholder?: string }) {
   const [draft, setDraft] = useState("");
   const [textMode, setTextMode] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const text = value.join(", ");
 
   if (textMode) {
@@ -15,9 +16,11 @@ export function TagInput({ value, onChange, placeholder = "Add label and press E
   }
 
   const addDraft = () => {
-    const tags = parseTags(draft);
+    const currentDraft = inputRef.current?.value ?? draft;
+    const tags = parseTags(currentDraft);
     if (tags.length) onChange([...new Set([...value, ...tags])]);
     setDraft("");
+    if (inputRef.current) inputRef.current.value = "";
   };
 
   return (
@@ -25,6 +28,7 @@ export function TagInput({ value, onChange, placeholder = "Add label and press E
       <div className="tag-input">
         {value.map((tag) => <button type="button" className="tag-chip" key={tag} onClick={() => onChange(value.filter((item) => item !== tag))}>{tag}</button>)}
         <input
+          ref={inputRef}
           value={draft}
           placeholder={placeholder}
           onChange={(event) => setDraft(event.target.value)}
