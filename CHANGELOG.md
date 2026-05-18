@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.2 - 2026-05-18
+
+- Removed `build: .` from the production Compose file so deployments and Watchtower use the published GHCR image.
+- Added `docker-compose.dev.yml` for explicit local image builds.
+- Updated quickstart and update docs to pull and run the published container image.
+
 ## 0.4.1 - 2026-05-18
 
 - Changed Docker Compose persistence to an explicit relative bind mount using `DATA_DIR=./data`.

@@ -1,7 +1,6 @@
 services:
   certwatch:
     image: ghcr.io/brightcolor/certwatch:latest
-    build: .
     container_name: certwatch
     restart: unless-stopped
     environment:

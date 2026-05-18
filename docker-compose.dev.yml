@@ -1,0 +1,4 @@
+services:
+  certwatch:
+    image: certwatch-local:dev
+    build: .

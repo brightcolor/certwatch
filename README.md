@@ -72,7 +72,7 @@ For a fresh Linux server with Docker already installed, run:
 curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo bash
 ```
 
-The script clones the repository into `/opt/certwatch`, creates `/opt/certwatch/.env` with generated secrets, creates a local `data` bind-mount directory, builds the image, and starts the stack with Docker Compose.
+The script clones the repository into `/opt/certwatch`, creates `/opt/certwatch/.env` with generated secrets, creates a local `data` bind-mount directory, pulls the published GHCR image, and starts the stack with Docker Compose.
 
 If the repository is private, use a GitHub token that can read the repository:
 
@@ -263,6 +263,14 @@ docker compose --profile watchtower up -d watchtower
 
 Watchtower updates containers that have `com.centurylinklabs.watchtower.enable=true`.
 
+## Local Image Builds
+
+The production Compose file intentionally does not contain `build:` so self-hosted installs and Watchtower always use the published GHCR image. To build locally from the repository, use the development override:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+```
+
 ## Reverse Proxy
 
 Set:
@@ -302,7 +310,6 @@ The Operations page can also create and retain full SQLite backup files inside `
 
 ```bash
 docker compose pull
-docker compose build
 docker compose up -d
 ```
 
