@@ -27,7 +27,7 @@ This stack keeps the application easy to self-host while still supporting real T
 - Optional service login checks for HTTP Basic/Form, SSH password auth, FTP, SMTP AUTH LOGIN, IMAP LOGIN, and POP3 USER/PASS
 - Per-monitor alert grace period before failed checks create notifications
 - Label-based application rollups where one service can contain multiple checks
-- Label inputs support chip mode, paste-friendly text mode, Enter/comma commits, and blur commits before moving to another field
+- Label inputs support chip mode, paste-friendly text mode, Enter/comma commits, and reliable blur commits before moving to another field
 - Prometheus-compatible metrics at `/metrics`
 - SSL Labs-style TLS security grading with a compact A-F score per TLS result
 - Flapping detection for monitors that repeatedly bounce between healthy and failed states
@@ -55,6 +55,7 @@ This stack keeps the application easy to self-host while still supporting real T
 - JSON monitor import/export and CSV exports for certificate summary and check history
 - REST API under `/api`
 - Dark and light mode
+- Cleaner responsive form layouts with aligned labels and controls
 - Reverse-proxy aware deployment settings
 
 ## Screenshots

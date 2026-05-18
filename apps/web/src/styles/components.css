@@ -1,7 +1,6 @@
 .metric,
 .panel,
 .login-panel,
-.form-section,
 .detail-hero {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -31,7 +30,6 @@
 }
 
 .panel,
-.form-section,
 .detail-hero {
   display: grid;
   gap: 14px;
@@ -198,7 +196,63 @@
 }
 
 .form-section {
-  background: transparent;
+  display: grid;
+  gap: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+
+.modal-head + .form-section {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.form-section h3 {
+  color: var(--text);
+  font-size: 14px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.form-section .grid.two,
+.panel > .grid.two {
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.form-section .grid > label:not(:has(input[type="checkbox"])),
+.panel > label:not(:has(input[type="checkbox"])),
+.panel > .grid > label:not(:has(input[type="checkbox"])),
+.login-panel > label:not(:has(input[type="checkbox"])) {
+  display: grid;
+  grid-template-columns: minmax(150px, 210px) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.form-section .grid > label:has(textarea),
+.form-section .grid > label:has(.tag-input),
+.panel > label:has(textarea),
+.panel > label:has(.tag-input),
+.panel > .grid > label:has(textarea),
+.login-panel > label:has(textarea) {
+  align-items: start;
+}
+
+.panel.compact > label:not(:has(input[type="checkbox"])) {
+  grid-template-columns: 1fr;
+  gap: 7px;
+}
+
+.form-section input,
+.form-section select,
+.form-section textarea,
+.form-section .tag-input,
+.panel input,
+.panel select,
+.panel textarea,
+.panel .tag-input {
+  min-width: 0;
 }
 
 .checks {
@@ -210,6 +264,7 @@
 .tag-input {
   display: flex;
   min-height: 42px;
+  width: 100%;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
@@ -219,8 +274,13 @@
   padding: 6px;
 }
 
+.tag-input:focus-within {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
 .tag-input input {
-  min-width: 160px;
+  min-width: 120px;
   flex: 1;
   border: 0;
   background: transparent;

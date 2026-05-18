@@ -46,4 +46,11 @@
   .modal-head {
     flex-direction: column;
   }
+
+  .form-section .grid > label:not(:has(input[type="checkbox"])),
+  .panel > label:not(:has(input[type="checkbox"])),
+  .panel > .grid > label:not(:has(input[type="checkbox"])),
+  .login-panel > label:not(:has(input[type="checkbox"])) {
+    grid-template-columns: 1fr;
+  }
 }

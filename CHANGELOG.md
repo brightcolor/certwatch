@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.6 - 2026-05-18
+
+- Fixed label blur commits with synchronous state updates so typed labels remain when moving into another field or saving.
+- Improved monitor, operations, settings, and login form layout with aligned label/control rows.
+- Simplified form section styling to reduce nested card clutter and improve scanability.
+
 ## 0.4.5 - 2026-05-18
 
 - Fixed label inputs so a typed label is committed when the field loses focus instead of being discarded.

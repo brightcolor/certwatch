@@ -1,4 +1,6 @@
 import { useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { mergeTags, parseTags } from "../utils/tags";
 
 export function TagInput({ value, onChange, placeholder = "Add label and press Enter" }: { value: string[]; onChange: (tags: string[]) => void; placeholder?: string }) {
   const [draft, setDraft] = useState("");
@@ -15,10 +17,9 @@ export function TagInput({ value, onChange, placeholder = "Add label and press E
     );
   }
 
-  const addDraft = () => {
-    const currentDraft = inputRef.current?.value ?? draft;
-    const tags = parseTags(currentDraft);
-    if (tags.length) onChange([...new Set([...value, ...tags])]);
+  const addDraft = (input = inputRef.current?.value ?? draft) => {
+    const next = mergeTags(value, input);
+    if (next.length !== value.length) flushSync(() => onChange(next));
     setDraft("");
     if (inputRef.current) inputRef.current.value = "";
   };
@@ -32,11 +33,11 @@ export function TagInput({ value, onChange, placeholder = "Add label and press E
           value={draft}
           placeholder={placeholder}
           onChange={(event) => setDraft(event.target.value)}
-          onBlur={addDraft}
+          onBlur={(event) => addDraft(event.currentTarget.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === ",") {
               event.preventDefault();
-              addDraft();
+              addDraft(event.currentTarget.value);
             }
             if (event.key === "Backspace" && !draft && value.length) onChange(value.slice(0, -1));
           }}
@@ -46,5 +47,3 @@ export function TagInput({ value, onChange, placeholder = "Add label and press E
     </label>
   );
 }
-
-const parseTags = (input: string) => input.split(/[,\n]/).map((tag) => tag.trim()).filter(Boolean);
