@@ -6,6 +6,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: ${NODE_ENV:-production}
+      TZ: ${TZ:-Europe/Berlin}
       PORT: ${PORT:-8080}
       BASE_URL: ${BASE_URL:-http://localhost:${HOST_PORT:-8080}}
       DATABASE_PATH: ${DATABASE_PATH:-/data/certwatch.sqlite}
@@ -14,10 +15,15 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       ALLOW_PRIVATE_TARGETS: ${ALLOW_PRIVATE_TARGETS:-false}
       CHECK_CONCURRENCY: ${CHECK_CONCURRENCY:-4}
+      DEFAULT_INTERVAL_SECONDS: ${DEFAULT_INTERVAL_SECONDS:-3600}
+      DEFAULT_WARNING_DAYS: ${DEFAULT_WARNING_DAYS:-30}
+      DEFAULT_CRITICAL_DAYS: ${DEFAULT_CRITICAL_DAYS:-7}
     ports:
       - "${HOST_PORT:-8080}:${PORT:-8080}"
     volumes:
-      - ${DATA_DIR:-./data}:/data
+      - type: bind
+        source: ${DATA_DIR:-./data}
+        target: /data
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     healthcheck:

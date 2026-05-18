@@ -93,6 +93,7 @@ curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/
 ```
 
 For manual installs, use `HOST_PORT=8888` in `.env` and keep `PORT=8080` unless you intentionally want to change the internal application port too.
+Persistent data is mounted from `DATA_DIR`, which defaults to `./data` relative to the Compose project directory.
 
 Manual setup:
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.1 - 2026-05-18
+
+- Changed Docker Compose persistence to an explicit relative bind mount using `DATA_DIR=./data`.
+- Removed the image-level `/data` volume declaration to avoid implicit anonymous Docker volumes.
+- Added missing runtime environment variables to Compose for scheduler defaults and timezone-sensitive windows.
+- Added `.dockerignore` entries so local data and `.env` files are not copied into Docker build context.
+
 ## 0.4.0 - 2026-05-17
 
 - Added monitor and label-based maintenance windows that suppress notifications while checks continue to run.

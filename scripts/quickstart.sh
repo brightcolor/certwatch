@@ -51,6 +51,7 @@ if [[ ! -f .env ]]; then
   SESSION_SECRET="${CERTWATCH_SESSION_SECRET:-$(random_secret)}"
   cat > .env <<ENV
 NODE_ENV=production
+TZ=${CERTWATCH_TZ:-Europe/Berlin}
 PORT=${CONTAINER_PORT}
 HOST_PORT=${APP_PORT}
 BASE_URL=http://localhost:${APP_PORT}
