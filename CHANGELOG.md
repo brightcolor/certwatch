@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.4 - 2026-05-18
+
+- Added a dynamic browser favicon that glows green when no actionable problems exist.
+- Made the favicon blink red when warning, critical, down, or unknown monitor states need attention.
+- Added periodic status polling so the favicon can update while the dashboard remains open.
+
 ## 0.4.3 - 2026-05-18
 
 - Switched Docker Compose service settings to compact list/string syntax where supported.

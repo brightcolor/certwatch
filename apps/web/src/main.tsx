@@ -12,6 +12,7 @@ import { UsersPage } from "./pages/Users";
 import { Applications } from "./pages/Applications";
 import { Operations } from "./pages/Operations";
 import { Reports } from "./pages/Reports";
+import { applyStatusFavicon } from "./utils/favicon";
 import "./styles/app.css";
 
 function App() {
@@ -51,6 +52,7 @@ function App() {
   }, []);
   useEffect(() => { if (user) void refresh(); }, [user]);
   useEffect(() => { if (selected) void loadMonitorData(selected); }, [selected]);
+  useEffect(() => applyStatusFavicon(stats), [stats]);
   useEffect(() => {
     if (!user) return;
     if (!window.history.state?.certwatch) window.history.replaceState({ certwatch: true, page: "dashboard", selected: null }, "");
@@ -65,6 +67,13 @@ function App() {
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
+  }, [user]);
+  useEffect(() => {
+    if (!user) return;
+    const timer = window.setInterval(() => {
+      void api.request<any>("/status").then(setStats).catch(() => undefined);
+    }, 30_000);
+    return () => window.clearInterval(timer);
   }, [user]);
 
   const refresh = async () => {

@@ -21,6 +21,7 @@ This stack keeps the application easy to self-host while still supporting real T
 ## Features
 
 - Dashboard with OK, warning, critical, down, paused, and unknown status counts
+- Dynamic browser favicon that glows green when healthy and blinks red when attention is required
 - Monitor types for HTTPS, custom TCP TLS, SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, XMPP TLS, SMTP STARTTLS, IMAP STARTTLS, POP3 STARTTLS, and explicit FTP AUTH TLS
 - Service health checks for HTTP, HTTP login flows, raw TCP ports, DNS records, SSH, FTP, SMTP, IMAP, and POP3 banners
 - Optional service login checks for HTTP Basic/Form, SSH password auth, FTP, SMTP AUTH LOGIN, IMAP LOGIN, and POP3 USER/PASS
