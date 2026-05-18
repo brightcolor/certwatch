@@ -17,7 +17,7 @@ services:
     ports:
       - "${HOST_PORT:-8080}:${PORT:-8080}"
     volumes:
-      - certwatch-data:/data
+      - ${DATA_DIR:-./data}:/data
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     healthcheck:
@@ -34,6 +34,3 @@ services:
     command: --label-enable --cleanup --interval 300
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-
-volumes:
-  certwatch-data:

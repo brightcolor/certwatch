@@ -45,6 +45,7 @@ else
 fi
 
 cd "${INSTALL_DIR}"
+mkdir -p data
 
 if [[ ! -f .env ]]; then
   SESSION_SECRET="${CERTWATCH_SESSION_SECRET:-$(random_secret)}"
@@ -53,6 +54,7 @@ NODE_ENV=production
 PORT=${CONTAINER_PORT}
 HOST_PORT=${APP_PORT}
 BASE_URL=http://localhost:${APP_PORT}
+DATA_DIR=./data
 DATABASE_PATH=/data/certwatch.sqlite
 SESSION_SECRET=${SESSION_SECRET}
 TRUST_PROXY=true
@@ -79,7 +81,7 @@ echo
 echo "CertWatch is starting."
 echo "Open: http://localhost:${APP_PORT}"
 echo "First run: create the admin account in the browser."
-echo "Data volume: certwatch_certwatch-data"
+echo "Data bind mount: ${INSTALL_DIR}/data -> /data"
 echo
 echo "Useful commands:"
 echo "  cd ${INSTALL_DIR}"

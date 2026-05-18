@@ -72,7 +72,7 @@ For a fresh Linux server with Docker already installed, run:
 curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo bash
 ```
 
-The script clones the repository into `/opt/certwatch`, creates `/opt/certwatch/.env` with generated secrets, builds the image, and starts the stack with Docker Compose.
+The script clones the repository into `/opt/certwatch`, creates `/opt/certwatch/.env` with generated secrets, creates a local `data` bind-mount directory, builds the image, and starts the stack with Docker Compose.
 
 If the repository is private, use a GitHub token that can read the repository:
 
@@ -293,7 +293,7 @@ server {
 
 The Import page includes a backup and restore UI for portable JSON exports of monitor definitions, provider definitions, notification routes, CT-watch settings, and non-secret settings. Secrets are masked in this export by design and must be re-entered after restore.
 
-SQLite data is stored in the Docker volume mounted at `/data`. For a full secret-bearing backup, back up `certwatch.sqlite` and its WAL files while the container is stopped, or use a SQLite online backup command from a maintenance shell.
+SQLite data is stored in the host bind mount configured by `DATA_DIR` and mounted into the container at `/data`. The default is `./data`, so manual installs store the database under the repository checkout. For a full secret-bearing backup, back up `certwatch.sqlite` and its WAL files while the container is stopped, or use a SQLite online backup command from a maintenance shell.
 
 The Operations page can also create and retain full SQLite backup files inside `/data/backups`. These backups can be downloaded from the UI and are controlled by a keep-count retention setting.
 
@@ -309,7 +309,7 @@ The schema migration currently creates missing tables only. Back up the database
 
 ## Troubleshooting
 
-- Login fails on a fresh install: open the setup screen and create the first admin user. For an existing install, reset the password in the SQLite database or recreate the data volume if no data must be kept.
+- Login fails on a fresh install: open the setup screen and create the first admin user. For an existing install, reset the password in the SQLite database or recreate the bind-mounted data directory if no data must be kept.
 - Checks fail for private hosts: set `ALLOW_PRIVATE_TARGETS=true` if the instance is intentionally allowed to monitor internal networks.
 - Cookies fail behind HTTPS: set `COOKIE_SECURE=true` and ensure `X-Forwarded-Proto` is passed by the proxy.
 - STARTTLS fails: verify the service advertises STARTTLS and that firewalls allow the configured port.
