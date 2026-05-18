@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.8 - 2026-05-18
+
+- Clarified plain service checks versus TLS/STARTTLS certificate checks in monitor details, dashboard rows, and monitor type labels.
+- Hid empty certificate-chain sections for plain service checks and replaced blank certificate fields with actionable guidance.
+- Limited TLS validation options in the monitor form to monitor types that actually collect certificate data.
+- Added per-service transport security modes for TCP, FTP, SMTP, IMAP, and POP3: Auto, STARTTLS where supported, SSL/TLS, and Plain.
+- Added certificate collection, TLS grading, certificate-change watch, and secure login checks to service monitors when a secure transport mode is active.
+- Grouped the dashboard monitor list by primary label and surfaced TLS grades directly in overview rows.
+
 ## 0.4.7 - 2026-05-18
 
 - Redesigned public status pages with a polished customer-facing layout, summary cards, monitor list, incident timeline, and responsive styling.

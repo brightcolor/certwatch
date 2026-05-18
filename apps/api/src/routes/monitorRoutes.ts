@@ -72,6 +72,7 @@ const parseBulkLine = (line: string) => {
     owner: null,
     notificationChannelIds: [],
     notificationRecipients: {},
+    config: optionMap.security || optionMap.securitymode ? { securityMode: optionMap.security || optionMap.securitymode } : {},
     maintenanceWindows: null
   };
 };
@@ -94,8 +95,8 @@ monitorRoutes.post("/:id/check", async (req, res) => {
   if (!monitor) return res.status(404).json({ error: "Monitor not found." });
   if (!monitor.enabled) return res.status(409).json({ error: "Monitor is paused." });
   const previous = results.list(monitor.id, 1)[0];
-  const checked = isServiceMonitor(monitor.type) ? await runServiceCheck(monitor) : await runTlsCheck(monitor, previous?.fingerprintSha256, appSettings.tlsPolicy());
-  const classified = isServiceMonitor(monitor.type) ? checked : applyCertificateChangeWatch(checked, previous, appSettings.alerting());
+  const checked = isServiceMonitor(monitor.type) ? await runServiceCheck(monitor, previous?.fingerprintSha256, appSettings.tlsPolicy()) : await runTlsCheck(monitor, previous?.fingerprintSha256, appSettings.tlsPolicy());
+  const classified = checked.fingerprintSha256 ? applyCertificateChangeWatch(checked, previous, appSettings.alerting()) : checked;
   const result = markFlapping(classified, results.listRecent(monitor.id, 10), appSettings.alerting().flappingThreshold);
   const openIncident = incidents.openForMonitor(monitor.id);
   results.insert(result);

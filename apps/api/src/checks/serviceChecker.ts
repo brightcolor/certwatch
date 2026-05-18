@@ -1,24 +1,41 @@
 import dns from "node:dns/promises";
 import net from "node:net";
 import { Client } from "ssh2";
-import type { CheckResult, Monitor } from "../types.js";
+import type { CheckResult, Monitor, TlsPolicySettings } from "../types.js";
 import { id } from "../utils/id.js";
 import { nowIso } from "../utils/time.js";
+import { runSecureServiceCheck } from "./serviceSecurity.js";
+import { runTlsCheck } from "./tlsChecker.js";
 import { assertPublicResolution } from "./validation.js";
 
 export const isServiceMonitor = (type: string) => ["http", "tcp", "dns", "http_login", "ssh", "ftp", "smtp", "imap", "pop3"].includes(type);
 
-export const runServiceCheck = async (monitor: Monitor): Promise<CheckResult> => {
+export const runServiceCheck = async (monitor: Monitor, previousFingerprint?: string | null, tlsPolicy?: TlsPolicySettings): Promise<CheckResult> => {
   const started = Date.now();
   try {
+    if (monitor.type === "http" || monitor.type === "http_login") return await checkHttpWithOptionalTls(monitor, started, previousFingerprint, tlsPolicy);
+    const secureResult = await runSecureServiceCheck(monitor, previousFingerprint, tlsPolicy);
+    if (secureResult) return secureResult;
     if (monitor.type === "tcp") return ok(monitor, started, await checkTcp(monitor));
     if (monitor.type === "dns") return ok(monitor, started, await checkDns(monitor));
-    if (monitor.type === "http" || monitor.type === "http_login") return ok(monitor, started, await checkHttp(monitor));
     if (monitor.type === "ssh" && loginEnabled(monitor)) return ok(monitor, started, await checkSshLogin(monitor));
     if (["ssh", "ftp", "smtp", "imap", "pop3"].includes(monitor.type)) return ok(monitor, started, await checkBannerProtocol(monitor));
     throw new Error(`Unsupported service monitor type: ${monitor.type}`);
   } catch (error) {
     return result(monitor, "DOWN", "critical", started, error instanceof Error ? error.message : String(error));
+  }
+};
+
+const checkHttpWithOptionalTls = async (monitor: Monitor, started: number, previousFingerprint?: string | null, tlsPolicy?: TlsPolicySettings) => {
+  const tlsResult = httpUsesTls(monitor) ? await runTlsCheck({ ...monitor, type: "https" }, previousFingerprint, tlsPolicy) : null;
+  if (tlsResult?.status === "DOWN" && !tlsResult.fingerprintSha256) return tlsResult;
+  try {
+    const message = await checkHttp(monitor);
+    return tlsResult ? mergeServiceSuccess(tlsResult, message) : ok(monitor, started, message);
+  } catch (error) {
+    if (!tlsResult) throw error;
+    const message = error instanceof Error ? error.message : String(error);
+    return { ...tlsResult, status: "DOWN" as const, severity: "critical" as const, message, problems: [message, ...tlsResult.problems], rawError: message };
   }
 };
 
@@ -316,6 +333,11 @@ const buildUrl = (monitor: Monitor) => {
 };
 
 const ok = (monitor: Monitor, started: number, message: string) => result(monitor, "OK", "info", started, message);
+
+const httpUsesTls = (monitor: Monitor) => String(monitor.config.scheme ?? (monitor.port === 443 ? "https" : "http")).toLowerCase() === "https";
+
+const mergeServiceSuccess = (tlsResult: CheckResult, message: string): CheckResult =>
+  tlsResult.problems.length ? { ...tlsResult, problems: [...tlsResult.problems, message] } : { ...tlsResult, message: `${message} Certificate and TLS configuration look healthy.` };
 
 const result = (monitor: Monitor, status: CheckResult["status"], severity: CheckResult["severity"], started: number, message: string): CheckResult => ({
   id: id(),

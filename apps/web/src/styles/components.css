@@ -83,11 +83,42 @@
   border-bottom: 0;
 }
 
+.group-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 82%, var(--blue) 8%);
+  padding: 12px 16px;
+}
+
+.group-row > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.group-row strong,
+.group-row span,
+.group-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .empty-row,
 .empty-state {
   display: grid;
   gap: 6px;
   padding: 28px 18px;
+}
+
+.empty-state.compact {
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 18px;
 }
 
 .row span,
@@ -101,6 +132,38 @@
   display: block;
   margin-top: 4px;
   white-space: nowrap;
+}
+
+.grade-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  margin-left: 8px;
+  border-radius: 999px;
+  background: #8b949e22;
+  color: var(--muted);
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
+.grade-a,
+.grade-b {
+  background: #23863622;
+  color: var(--accent);
+}
+
+.grade-c,
+.grade-d {
+  background: #d2992222;
+  color: var(--warn);
+}
+
+.grade-e,
+.grade-f {
+  background: #f8514922;
+  color: var(--crit);
 }
 
 .status {

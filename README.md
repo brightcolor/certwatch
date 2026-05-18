@@ -24,12 +24,14 @@ This stack keeps the application easy to self-host while still supporting real T
 - Dynamic browser favicon that glows green when healthy and blinks red when attention is required
 - Monitor types for HTTPS, custom TCP TLS, SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, XMPP TLS, SMTP STARTTLS, IMAP STARTTLS, POP3 STARTTLS, and explicit FTP AUTH TLS
 - Service health checks for HTTP, HTTP login flows, raw TCP ports, DNS records, SSH, FTP, SMTP, IMAP, and POP3 banners
-- Optional service login checks for HTTP Basic/Form, SSH password auth, FTP, SMTP AUTH LOGIN, IMAP LOGIN, and POP3 USER/PASS
+- TCP, FTP, SMTP, IMAP, and POP3 service checks can use Auto, STARTTLS, SSL/TLS, or Plain transport security from the web UI
+- Plain service health checks are clearly separated from secure transport checks so certificate fields are only shown when certificate data is collected
+- Optional service login checks for HTTP Basic/Form, SSH password auth, and FTP, SMTP, IMAP, and POP3 credentials over STARTTLS, direct SSL/TLS, or explicitly allowed plaintext
 - Per-monitor alert grace period before failed checks create notifications
 - Label-based application rollups where one service can contain multiple checks
 - Label inputs support chip mode, paste-friendly text mode, Enter/comma commits, and reliable blur commits before moving to another field
 - Prometheus-compatible metrics at `/metrics`
-- SSL Labs-style TLS security grading with a compact A-F score per TLS result
+- SSL Labs-style TLS security grading with a compact A-F score per TLS result, including secure service checks on the dashboard overview
 - Flapping detection for monitors that repeatedly bounce between healthy and failed states
 - Incident timelines for monitors and public status pages
 - Public status page subscriptions through email or webhook callbacks
@@ -153,8 +155,14 @@ CertWatch can monitor certificate-focused targets and general service availabili
 - TCP checks validate that a port accepts connections.
 - DNS checks validate record resolution and can require an expected value.
 - SSH, FTP, SMTP, IMAP, and POP3 checks validate the protocol banner or capability response.
-- Service login checks can validate credentials. SSH uses the SSH protocol; plain FTP, SMTP, IMAP, and POP3 login tests require explicit plaintext approval on the monitor. Prefer TLS or STARTTLS variants for credential-bearing checks.
+- Service login checks can validate credentials. SSH uses the SSH protocol; plain FTP, SMTP, IMAP, and POP3 login tests require explicit plaintext approval on the monitor and do not collect X.509 certificate data. Prefer TLS or STARTTLS variants for credential-bearing checks and certificate details.
 - STARTTLS checks for SMTP, IMAP, and POP3 can optionally validate login credentials after the TLS upgrade.
+- FTP, SMTP, IMAP, POP3, and TCP service monitors have a Transport Security selector.
+- `Auto` tries the best secure transport for the selected port, keeps certificate details when successful, and falls back to plain checks only when no secure transport works.
+- `STARTTLS / explicit TLS` requires a protocol upgrade and fails the check if the server does not offer it.
+- `SSL/TLS` requires an implicit TLS handshake on the configured port.
+- `Plain` verifies availability or credentials only and never collects X.509 certificate details.
+- STARTTLS and direct SSL/TLS FTP, SMTP, IMAP, and POP3 checks can optionally validate login credentials after the TLS session is established.
 - Direct SSL/TLS checks remain available for SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, and custom TLS ports.
 - Explicit TLS upgrade checks are available for SMTP, IMAP, POP3, and FTP.
 

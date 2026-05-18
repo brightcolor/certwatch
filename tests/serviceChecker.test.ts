@@ -45,7 +45,7 @@ describe("service checks", () => {
         if (/PASS secret/i.test(command)) socket.write("230 Login successful\r\n");
       });
     });
-    const result = await runServiceCheck(monitor({ type: "ftp", port, config: { loginEnabled: true, allowInsecureLogin: true, username: "alice", password: "secret" } }));
+    const result = await runServiceCheck(monitor({ type: "ftp", port, config: { securityMode: "plain", loginEnabled: true, allowInsecureLogin: true, username: "alice", password: "secret" } }));
 
     expect(result.status).toBe("OK");
     expect(result.message).toContain("login succeeded");
@@ -53,7 +53,7 @@ describe("service checks", () => {
 
   it("blocks plaintext protocol login checks unless explicitly allowed", async () => {
     const port = await startTcpServer((socket) => socket.write("220 FTP ready\r\n"));
-    const result = await runServiceCheck(monitor({ type: "ftp", port, config: { loginEnabled: true, username: "alice", password: "secret" } }));
+    const result = await runServiceCheck(monitor({ type: "ftp", port, config: { securityMode: "plain", loginEnabled: true, username: "alice", password: "secret" } }));
 
     expect(result.status).toBe("DOWN");
     expect(result.message).toContain("plaintext is disabled");

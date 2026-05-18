@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import type { Monitor } from "../api/client";
 import { TagInput } from "../components/TagInput";
+import { collectsCertificate, serviceSecurityMode, transportSecurityProtocols } from "../utils/monitorTypes";
 
 const blank = {
   name: "",
@@ -46,13 +47,13 @@ const protocolOptions = [
   { group: "Service health", options: [
     { value: "http", label: "HTTP healthcheck", port: 80 },
     { value: "http_login", label: "HTTP login check", port: 443 },
-    { value: "tcp", label: "TCP port check", port: 80 },
+    { value: "tcp", label: "TCP or TLS port check", port: 443 },
     { value: "dns", label: "DNS record check", port: 53 },
     { value: "ssh", label: "SSH login/banner", port: 22 },
-    { value: "ftp", label: "FTP login/banner", port: 21 },
-    { value: "smtp", label: "SMTP login/banner", port: 25 },
-    { value: "imap", label: "IMAP login/banner", port: 143 },
-    { value: "pop3", label: "POP3 login/banner", port: 110 }
+    { value: "ftp", label: "FTP service/login", port: 21 },
+    { value: "smtp", label: "SMTP service/login", port: 587 },
+    { value: "imap", label: "IMAP service/login", port: 143 },
+    { value: "pop3", label: "POP3 service/login", port: 110 }
   ] }
 ];
 const flatProtocolOptions = protocolOptions.flatMap((group) => group.options);
@@ -62,13 +63,22 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
   const data = () => ({ ...form, port: Number(form.port), intervalSeconds: Number(form.intervalSeconds), timeoutSeconds: Number(form.timeoutSeconds), warningDays: Number(form.warningDays), criticalDays: Number(form.criticalDays), gracePeriodSeconds: Number(form.gracePeriodSeconds), sniHost: form.sniHost || null });
   const set = (key: string, value: unknown) => setForm((current: any) => ({ ...current, [key]: value }));
   const setConfig = (key: string, value: unknown) => set("config", { ...(form.config ?? {}), [key]: value });
+  const transportMode = serviceSecurityMode(form.type, form.config);
   const setProtocol = (type: string) => {
     const option = flatProtocolOptions.find((item) => item.value === type);
+    const config = defaultsForType(type, form.config ?? {});
     setForm((current: any) => ({
       ...current,
       type,
-      port: option?.port ?? current.port,
-      config: defaultsForType(type, current.config ?? {})
+      port: defaultPortFor(type, serviceSecurityMode(type, config), option?.port ?? current.port),
+      config
+    }));
+  };
+  const setTransportSecurity = (mode: string) => {
+    setForm((current: any) => ({
+      ...current,
+      port: defaultPortFor(current.type, mode, current.port),
+      config: { ...(current.config ?? {}), securityMode: mode }
     }));
   };
   const toggleChannel = (id: string) => {
@@ -91,6 +101,12 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
         <FormSection title="Target">
           <label>Name<input value={form.name} onChange={(e) => set("name", e.target.value)} required /></label>
           <label>Type<select value={form.type} onChange={(e) => setProtocol(e.target.value)}>{protocolOptions.map((group) => <optgroup key={group.group} label={group.group}>{group.options.map((option) => <option value={option.value} key={option.value}>{option.label} ({option.port})</option>)}</optgroup>)}</select></label>
+          {supportsTransportSecurity(form.type) && <label>Transport security<select value={transportMode} onChange={(e) => setTransportSecurity(e.target.value)}>
+            <option value="auto">Auto</option>
+            {form.type !== "tcp" && <option value="starttls">STARTTLS / explicit TLS</option>}
+            <option value="tls">SSL/TLS</option>
+            <option value="plain">Plain</option>
+          </select></label>}
           <label>Hostname<input value={form.host} onChange={(e) => set("host", e.target.value)} required /></label>
           <label>Port<input type="number" min="1" max="65535" value={form.port} onChange={(e) => set("port", e.target.value)} /></label>
           <TagInput value={form.tags ?? []} onChange={(tags) => set("tags", tags)} />
@@ -104,7 +120,7 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
           <label>Alert grace period seconds<input type="number" min="0" max="604800" value={form.gracePeriodSeconds ?? 0} onChange={(e) => set("gracePeriodSeconds", e.target.value)} /></label>
           <label>Maintenance windows<textarea value={form.maintenanceWindows ?? ""} placeholder="daily 22:00-23:00&#10;mon-fri 01:00-02:00&#10;2026-06-01T20:00:00/2026-06-01T22:00:00" onChange={(e) => set("maintenanceWindows", e.target.value)} /></label>
         </FormSection>
-        <FormSection title="TLS validation">
+        {collectsCertificate(form.type, form.config, Number(form.port)) && <FormSection title="TLS validation">
           <label>SNI hostname<input value={form.sniHost ?? ""} onChange={(e) => set("sniHost", e.target.value)} /></label>
           <div className="checks">
             <label><input type="checkbox" checked={form.enabled} onChange={(e) => set("enabled", e.target.checked)} /> Active</label>
@@ -112,7 +128,7 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
             <label><input type="checkbox" checked={form.validateCertificate} onChange={(e) => set("validateCertificate", e.target.checked)} /> Validate chain</label>
             <label><input type="checkbox" checked={form.allowSelfSigned} onChange={(e) => set("allowSelfSigned", e.target.checked)} /> Allow self-signed</label>
           </div>
-        </FormSection>
+        </FormSection>}
         {usesServiceConfig(form.type) && <FormSection title="Service and login check">
             {usesHttpConfig(form.type) && <>
               <label>Scheme<select value={String(form.config?.scheme ?? (form.port === 443 ? "https" : "http"))} onChange={(e) => setConfig("scheme", e.target.value)}><option value="https">HTTPS</option><option value="http">HTTP</option></select></label>
@@ -131,8 +147,8 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
                 <label>Password field<input value={String(form.config?.passwordField ?? "password")} onChange={(e) => setConfig("passwordField", e.target.value)} /></label>
               </>}
             </>}
-            {["smtp_starttls", "imap_starttls", "pop3_starttls"].includes(form.type) && <>
-              <label><input type="checkbox" checked={Boolean(form.config?.loginEnabled)} onChange={(e) => setConfig("loginEnabled", e.target.checked)} /> Test login after STARTTLS</label>
+            {usesTlsLogin(form.type) && <>
+              <label><input type="checkbox" checked={Boolean(form.config?.loginEnabled)} onChange={(e) => setConfig("loginEnabled", e.target.checked)} /> Test login over TLS</label>
               <label>Username<input value={String(form.config?.username ?? "")} onChange={(e) => setConfig("username", e.target.value)} autoComplete="off" /></label>
               <label>Password<input type="password" value={String(form.config?.password ?? "")} onChange={(e) => setConfig("password", e.target.value)} autoComplete="new-password" /></label>
             </>}
@@ -144,9 +160,9 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
               <label><input type="checkbox" checked={Boolean(form.config?.loginEnabled)} onChange={(e) => setConfig("loginEnabled", e.target.checked)} /> Test login</label>
               <label>Username<input value={String(form.config?.username ?? "")} onChange={(e) => setConfig("username", e.target.value)} autoComplete="off" /></label>
               <label>Password<input type="password" value={String(form.config?.password ?? "")} onChange={(e) => setConfig("password", e.target.value)} autoComplete="new-password" /></label>
-              {form.type !== "ssh" && <label><input type="checkbox" checked={Boolean(form.config?.allowInsecureLogin)} onChange={(e) => setConfig("allowInsecureLogin", e.target.checked)} /> Allow plaintext login test</label>}
+              {form.type !== "ssh" && transportMode !== "tls" && transportMode !== "starttls" && <label><input type="checkbox" checked={Boolean(form.config?.allowInsecureLogin)} onChange={(e) => setConfig("allowInsecureLogin", e.target.checked)} /> Allow plaintext fallback login</label>}
             </>}
-          {(form.type === "http_login" || usesProtocolLogin(form.type) || form.type.endsWith("_starttls")) && <p className="muted">Login secrets are encrypted at rest and masked after saving. Plain FTP, SMTP, IMAP and POP3 login tests require explicit plaintext approval.</p>}
+          {(form.type === "http_login" || usesProtocolLogin(form.type) || usesTlsLogin(form.type)) && <p className="muted">Login secrets are encrypted at rest and masked after saving. FTP, SMTP, IMAP, POP3, and TCP can collect certificate details when transport security is Auto, STARTTLS, or SSL/TLS. Plain mode verifies availability or credentials only.</p>}
         </FormSection>}
         <div className="form-section">
           <h3>Notifications</h3>
@@ -177,10 +193,23 @@ function FormSection({ title, children }: { title: string; children: ReactNode }
 
 const usesHttpConfig = (type: string) => type === "http" || type === "http_login";
 const usesProtocolLogin = (type: string) => ["ssh", "ftp", "smtp", "imap", "pop3"].includes(type);
-const usesServiceConfig = (type: string) => usesHttpConfig(type) || type === "dns" || usesProtocolLogin(type) || ["smtp_starttls", "imap_starttls", "pop3_starttls"].includes(type);
+const usesTlsLogin = (type: string) => ["smtp_starttls", "imap_starttls", "pop3_starttls", "ftp_starttls", "smtps", "imaps", "pop3s", "ftps"].includes(type);
+const usesServiceConfig = (type: string) => usesHttpConfig(type) || type === "dns" || usesProtocolLogin(type) || usesTlsLogin(type);
+const supportsTransportSecurity = (type: string) => transportSecurityProtocols.has(type);
 const defaultsForType = (type: string, current: Record<string, unknown>) => {
   if (type === "http") return { scheme: "http", path: "/", expectedStatus: 200, ...current };
   if (type === "http_login") return { scheme: "https", path: "/login", expectedStatus: 200, authType: "form", usernameField: "username", passwordField: "password", ...current };
   if (type === "dns") return { recordType: "A", ...current };
+  if (supportsTransportSecurity(type)) return { securityMode: "auto", ...current };
   return current;
 };
+
+const defaultPorts: Record<string, Partial<Record<string, number>>> = {
+  tcp: { auto: 443, tls: 443 },
+  ftp: { auto: 21, starttls: 21, tls: 990, plain: 21 },
+  smtp: { auto: 587, starttls: 587, tls: 465, plain: 25 },
+  imap: { auto: 143, starttls: 143, tls: 993, plain: 143 },
+  pop3: { auto: 110, starttls: 110, tls: 995, plain: 110 }
+};
+
+const defaultPortFor = (type: string, mode: string, fallback: number) => defaultPorts[type]?.[mode] ?? fallback;
