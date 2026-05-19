@@ -4,7 +4,7 @@ import { TagInput } from "../components/TagInput";
 
 export function Operations() {
   const [maintenance, setMaintenance] = useState<any>({ windows: [] });
-  const [tlsPolicy, setTlsPolicy] = useState<any>({ profile: "modern", minimumTlsVersion: "TLSv1.2", weakCipherPenalty: 40, requireSan: true });
+  const [tlsPolicy, setTlsPolicy] = useState<any>({ profile: "modern", minimumTlsVersion: "TLSv1.2", weakCipherPenalty: 40, requireSan: true, intensiveScan: true });
   const [statusPages, setStatusPages] = useState<any>({ pages: [] });
   const [discovery, setDiscovery] = useState<any>({ enabled: false, intervalHours: 24, domains: [], suggestions: [] });
   const [backupSettings, setBackupSettings] = useState<any>({ enabled: false, intervalHours: 24, keep: 7 });
@@ -67,6 +67,7 @@ export function Operations() {
           <label>Minimum TLS<select value={tlsPolicy.minimumTlsVersion} onChange={(e) => setTlsPolicy({ ...tlsPolicy, minimumTlsVersion: e.target.value })}>{["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"].map((item) => <option key={item}>{item}</option>)}</select></label>
           <label>Weak cipher penalty<input type="number" min="0" max="80" value={tlsPolicy.weakCipherPenalty} onChange={(e) => setTlsPolicy({ ...tlsPolicy, weakCipherPenalty: Number(e.target.value) })} /></label>
           <label><input type="checkbox" checked={tlsPolicy.requireSan} onChange={(e) => setTlsPolicy({ ...tlsPolicy, requireSan: e.target.checked })} /> Require SAN extension</label>
+          <label><input type="checkbox" checked={tlsPolicy.intensiveScan ?? true} onChange={(e) => setTlsPolicy({ ...tlsPolicy, intensiveScan: e.target.checked })} /> Probe supported TLS versions</label>
           <button onClick={() => save("/settings/tls-policy", tlsPolicy)}>Save TLS policy</button>
         </div>
       </div>

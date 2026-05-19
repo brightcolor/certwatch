@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0 - 2026-05-19
+
+- Added an intensive TLS assessment that can probe supported TLS versions and flag deprecated protocol support, weak cipher patterns, missing forward secrecy, small certificate keys, and incomplete chains.
+- Persisted supported TLS versions in check history and displayed them in monitor details.
+- Added configurable alerting when a monitor's TLS grade or score deteriorates compared with the previous check.
+- Extended webhook payloads with TLS grade, score, and supported protocol versions.
+
 ## 0.4.9 - 2026-05-19
 
 - Fixed user creation feedback in the Users page by adding client-side validation, submit state, and visible API error messages.

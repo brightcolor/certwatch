@@ -80,6 +80,9 @@ export const buildPayload = (monitor: Monitor, result: CheckResult) => ({
   valid_until: result.validUntil,
   issuer: result.issuer,
   fingerprint_sha256: result.fingerprintSha256,
+  tls_grade: result.tlsGrade,
+  tls_score: result.tlsScore,
+  tls_supported_versions: result.tlsSupportedVersions ?? [],
   checked_at: result.checkedAt,
   url: `${env.baseUrl}/monitors/${monitor.id}`
 });
@@ -244,6 +247,7 @@ const sampleResult = (): CheckResult => ({
   fingerprintSha256: "test",
   tlsVersion: "TLSv1.3",
   cipherSuite: null,
+  tlsSupportedVersions: ["TLSv1.2", "TLSv1.3"],
   chain: [],
   problems: [],
   rawError: null

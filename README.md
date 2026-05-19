@@ -32,6 +32,8 @@ This stack keeps the application easy to self-host while still supporting real T
 - Label inputs support chip mode, paste-friendly text mode, Enter/comma commits, and reliable blur commits before moving to another field
 - Prometheus-compatible metrics at `/metrics`
 - SSL Labs-style TLS security grading with a compact A-F score per TLS result, including secure service checks on the dashboard overview
+- Optional intensive TLS assessment that probes supported TLS versions and flags deprecated protocol support, weak cipher patterns, missing forward secrecy, small certificate keys, and incomplete chains
+- Configurable notifications when a monitor's TLS grade or score deteriorates compared with the previous check
 - Flapping detection for monitors that repeatedly bounce between healthy and failed states
 - Incident timelines for monitors and public status pages
 - Public status page subscriptions through email or webhook callbacks
@@ -244,6 +246,8 @@ The Operations page contains production controls that are intentionally kept out
 
 - Maintenance windows for labels or individual monitors. Supported formats include `daily 22:00-23:00`, `mon-fri 01:00-02:00`, and ISO intervals such as `2026-06-01T20:00:00/2026-06-01T22:00:00`.
 - TLS policy profiles for grading, including minimum TLS version, weak cipher penalty, and SAN requirements.
+- Intensive TLS probing can be enabled in Operations. It performs additional handshakes to detect supported TLS versions and feeds those findings into the grade.
+- Alert policy can notify on TLS grade or score deterioration. The score-drop threshold controls how sensitive these alerts are.
 - Scheduled discovery for web and mail endpoints.
 - Scheduled SQLite backups with retention and downloadable backup files.
 - API tokens with read-only or read/write scopes.

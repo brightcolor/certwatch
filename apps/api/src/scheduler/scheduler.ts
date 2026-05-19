@@ -2,7 +2,7 @@ import { env } from "../config/env.js";
 import { runTlsCheck } from "../checks/tlsChecker.js";
 import { alerts, appSettings, channels, deliveries, incidents, monitors, results, subscriptions } from "../storage/repositories.js";
 import { dispatchAlerts, dispatchStatusSubscriptions } from "../notifications/service.js";
-import { applyCertificateChangeWatch } from "../checks/changeWatch.js";
+import { applyResultWatches } from "../checks/changeWatch.js";
 import { isServiceMonitor, runServiceCheck } from "../checks/serviceChecker.js";
 import { markFlapping } from "../checks/flapping.js";
 import { discoverMonitors } from "../checks/discovery.js";
@@ -59,7 +59,7 @@ const runMonitor = async (monitor: ReturnType<typeof monitors.list>[number]) => 
   try {
     const previous = results.list(monitor.id, 1)[0];
     const checked = isServiceMonitor(monitor.type) ? await runServiceCheck(monitor, previous?.fingerprintSha256, appSettings.tlsPolicy()) : await runTlsCheck(monitor, previous?.fingerprintSha256, appSettings.tlsPolicy());
-    const classified = checked.fingerprintSha256 ? applyCertificateChangeWatch(checked, previous, appSettings.alerting()) : checked;
+    const classified = checked.fingerprintSha256 ? applyResultWatches(checked, previous, appSettings.alerting()) : checked;
     const result = markFlapping(classified, results.listRecent(monitor.id, 10), appSettings.alerting().flappingThreshold);
     const openIncident = incidents.openForMonitor(monitor.id);
     results.insert(result);

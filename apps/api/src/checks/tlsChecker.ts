@@ -9,6 +9,7 @@ import { assertPublicResolution } from "./validation.js";
 import { prepareStartTls } from "./starttls.js";
 import { gradeTls } from "./tlsGrade.js";
 import { checkTlsLogin, tlsLoginEnabled, tlsLoginSuccessMessage } from "./tlsLogin.js";
+import { assessTlsSecurity, probeSupportedTlsVersions } from "./tlsSecurity.js";
 
 export const runTlsCheck = async (monitor: Monitor, previousFingerprint?: string | null, tlsPolicy?: TlsPolicySettings): Promise<CheckResult> => {
   const started = Date.now();
@@ -28,6 +29,16 @@ export const runTlsCheck = async (monitor: Monitor, previousFingerprint?: string
     const selfSigned = Boolean(x509 && x509.subject === x509.issuer);
     const hostnameMatch = matchHostname(monitor.sniHost || monitor.host, commonName, subjectAltNames);
     const chain = buildChain(cert);
+    const tlsVersion = connection.socket.getProtocol();
+    const cipherSuite = connection.socket.getCipher()?.name;
+    const supportedVersions = await probeSupportedTlsVersions(monitor, tlsPolicy ?? defaultTlsPolicy);
+    const assessment = assessTlsSecurity({
+      tlsVersion,
+      cipherSuite,
+      chainLength: chain.length,
+      supportedVersions,
+      ...certificateKeyInfo(x509)
+    }, tlsPolicy ?? defaultTlsPolicy);
     const classified = classifyResult(monitor, {
       validUntil,
       validFrom,
@@ -36,14 +47,17 @@ export const runTlsCheck = async (monitor: Monitor, previousFingerprint?: string
       selfSigned,
       handshakeOk: true,
       reachable: true,
-      tlsVersion: connection.socket.getProtocol() ?? undefined,
+      tlsVersion: tlsVersion ?? undefined,
       previousFingerprint,
       fingerprint,
       chainProblems: chain.length <= 1 ? ["Certificate chain contains no intermediate certificates."] : []
     });
-    const problems = loginProblem ? [loginProblem, ...classified.problems] : classified.problems;
-    const status = loginProblem ? "CRITICAL" : classified.status;
-    const severity = loginProblem ? "critical" : classified.severity;
+    const assessmentProblems = assessment.map((finding) => finding.message);
+    const problems = [...(loginProblem ? [loginProblem] : []), ...classified.problems, ...assessmentProblems];
+    const assessmentCritical = assessment.some((finding) => finding.severity === "critical");
+    const assessmentWarning = assessment.length > 0;
+    const status = loginProblem || assessmentCritical ? "CRITICAL" : classified.status === "OK" && assessmentWarning ? "WARNING" : classified.status;
+    const severity = status === "CRITICAL" ? "critical" : status === "WARNING" && classified.severity === "info" ? "warning" : classified.severity;
 
     const result = withTlsGrade(makeResult(monitor, status, severity, started, problems, {
       message: !problems.length && tlsLoginEnabled(monitor) ? tlsLoginSuccessMessage(monitor) : undefined,
@@ -55,8 +69,9 @@ export const runTlsCheck = async (monitor: Monitor, previousFingerprint?: string
       issuer: parseDn(x509?.issuer ?? "").O ?? x509?.issuer ?? null,
       serialNumber: x509?.serialNumber ?? cert.serialNumber ?? null,
       fingerprintSha256: fingerprint,
-      tlsVersion: connection.socket.getProtocol(),
-      cipherSuite: connection.socket.getCipher()?.name,
+      tlsVersion,
+      cipherSuite,
+      tlsSupportedVersions: supportedVersions,
       chain
     }), tlsPolicy);
     return result;
@@ -114,12 +129,14 @@ const makeResult = (
   fingerprintSha256: data.fingerprintSha256 ?? null,
   tlsVersion: data.tlsVersion ?? null,
   cipherSuite: data.cipherSuite ?? null,
+  tlsSupportedVersions: data.tlsSupportedVersions ?? [],
   chain: data.chain ?? [],
   problems,
   rawError: data.rawError ?? null
 });
 
 const withTlsGrade = (result: CheckResult, tlsPolicy?: TlsPolicySettings): CheckResult => ({ ...result, ...gradeTls(result, tlsPolicy) });
+const defaultTlsPolicy: TlsPolicySettings = { profile: "modern", minimumTlsVersion: "TLSv1.2", weakCipherPenalty: 40, requireSan: true, intensiveScan: true };
 
 const parseDn = (dn: string) =>
   Object.fromEntries(dn.split(/\n|, /).map((part) => {
@@ -165,4 +182,14 @@ const getTlsLoginProblem = async (socket: tls.TLSSocket, monitor: Monitor) => {
   } catch (error) {
     return error instanceof Error ? error.message : String(error);
   }
+};
+
+const certificateKeyInfo = (x509: X509Certificate | null) => {
+  const publicKey = x509?.publicKey;
+  const details = publicKey?.asymmetricKeyDetails as { modulusLength?: number; namedCurve?: string } | undefined;
+  return {
+    keyType: publicKey?.asymmetricKeyType ?? null,
+    keySize: details?.modulusLength ?? null,
+    namedCurve: details?.namedCurve ?? null
+  };
 };

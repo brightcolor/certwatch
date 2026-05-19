@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { markFlapping } from "../apps/api/src/checks/flapping.js";
 import { gradeTls } from "../apps/api/src/checks/tlsGrade.js";
+import { assessTlsSecurity } from "../apps/api/src/checks/tlsSecurity.js";
+import { applyResultWatches } from "../apps/api/src/checks/changeWatch.js";
 import { isInMaintenance, windowActive } from "../apps/api/src/checks/maintenance.js";
-import type { CheckResult } from "../apps/api/src/types.js";
+import type { AlertingSettings, CheckResult } from "../apps/api/src/types.js";
 
 describe("TLS security grading", () => {
   it("keeps modern healthy TLS in the A range", () => {
@@ -17,6 +19,32 @@ describe("TLS security grading", () => {
 
     expect(grade.tlsGrade).toBe("F");
     expect(grade.tlsScore).toBeLessThan(50);
+  });
+
+  it("reports intensive TLS assessment findings", () => {
+    const findings = assessTlsSecurity({
+      tlsVersion: "TLSv1.2",
+      cipherSuite: "TLS_RSA_WITH_AES_128_CBC_SHA",
+      keyType: "rsa",
+      keySize: 1024,
+      namedCurve: null,
+      chainLength: 1,
+      supportedVersions: ["TLSv1", "TLSv1.2"]
+    }, { profile: "modern", minimumTlsVersion: "TLSv1.2", weakCipherPenalty: 40, requireSan: true, intensiveScan: true });
+
+    expect(findings.map((finding) => finding.message).join(" ")).toContain("deprecated protocols");
+    expect(findings.some((finding) => finding.severity === "critical")).toBe(true);
+  });
+
+  it("warns when the TLS grade deteriorates", () => {
+    const result = applyResultWatches(
+      { ...resultFor("OK"), tlsGrade: "C", tlsScore: 70, fingerprintSha256: "abc" },
+      { ...resultFor("OK"), tlsGrade: "A", tlsScore: 95, fingerprintSha256: "abc" },
+      alertingSettings()
+    );
+
+    expect(result.status).toBe("WARNING");
+    expect(result.message).toContain("TLS security deteriorated");
   });
 });
 
@@ -52,4 +80,17 @@ const resultFor = (status: CheckResult["status"]): CheckResult => ({
   subjectAltNames: [],
   chain: [],
   problems: []
+});
+
+const alertingSettings = (): AlertingSettings => ({
+  resendAfterHours: 24,
+  recoveryEnabled: true,
+  certificateChangeAlerts: true,
+  tlsDeteriorationAlerts: true,
+  tlsDeteriorationThreshold: 5,
+  quietHoursEnabled: false,
+  quietStart: "22:00",
+  quietEnd: "07:00",
+  quietSuppressCritical: false,
+  flappingThreshold: 4
 });

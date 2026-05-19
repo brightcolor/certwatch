@@ -66,10 +66,12 @@ export function Settings(props: any) {
             <div className="checks">
               <label><input type="checkbox" checked={alertForm.recoveryEnabled} onChange={(e) => setAlertForm({ ...alertForm, recoveryEnabled: e.target.checked })} /> Send recovery alerts</label>
               <label><input type="checkbox" checked={alertForm.certificateChangeAlerts} onChange={(e) => setAlertForm({ ...alertForm, certificateChangeAlerts: e.target.checked })} /> Alert on certificate changes</label>
+              <label><input type="checkbox" checked={alertForm.tlsDeteriorationAlerts ?? true} onChange={(e) => setAlertForm({ ...alertForm, tlsDeteriorationAlerts: e.target.checked })} /> Alert on TLS grade deterioration</label>
               <label><input type="checkbox" checked={alertForm.quietHoursEnabled} onChange={(e) => setAlertForm({ ...alertForm, quietHoursEnabled: e.target.checked })} /> Enable quiet hours</label>
               <label><input type="checkbox" checked={alertForm.quietSuppressCritical} onChange={(e) => setAlertForm({ ...alertForm, quietSuppressCritical: e.target.checked })} /> Also silence critical alerts</label>
             </div>
             <div className="grid two">
+              <label>TLS score drop threshold<input type="number" min="1" max="50" value={alertForm.tlsDeteriorationThreshold ?? 5} onChange={(e) => setAlertForm({ ...alertForm, tlsDeteriorationThreshold: Number(e.target.value) })} /></label>
               <label>Quiet start<input type="time" value={alertForm.quietStart} onChange={(e) => setAlertForm({ ...alertForm, quietStart: e.target.value })} /></label>
               <label>Quiet end<input type="time" value={alertForm.quietEnd} onChange={(e) => setAlertForm({ ...alertForm, quietEnd: e.target.value })} /></label>
             </div>

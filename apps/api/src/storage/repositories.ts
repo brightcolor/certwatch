@@ -156,14 +156,19 @@ export const results = {
   },
   insert(result: CheckResult) {
     db.prepare(`
-      INSERT INTO check_results VALUES (@id, @monitorId, @status, @severity, @message,
-      @checkedAt, @durationMs, @daysRemaining, @validFrom, @validUntil, @commonName,
-      @subjectAltNamesJson, @issuer, @serialNumber, @fingerprintSha256, @tlsVersion,
-      @cipherSuite, @tlsGrade, @tlsScore, @flapping, @chainJson, @problemsJson, @rawError)
+      INSERT INTO check_results (id, monitor_id, status, severity, message, checked_at,
+      duration_ms, days_remaining, valid_from, valid_until, common_name, subject_alt_names_json,
+      issuer, serial_number, fingerprint_sha256, tls_version, cipher_suite, tls_grade, tls_score,
+      tls_supported_versions_json, flapping, chain_json, problems_json, raw_error)
+      VALUES (@id, @monitorId, @status, @severity, @message, @checkedAt, @durationMs,
+      @daysRemaining, @validFrom, @validUntil, @commonName, @subjectAltNamesJson, @issuer,
+      @serialNumber, @fingerprintSha256, @tlsVersion, @cipherSuite, @tlsGrade, @tlsScore,
+      @tlsSupportedVersionsJson, @flapping, @chainJson, @problemsJson, @rawError)
     `).run({
       ...result,
       flapping: result.flapping ? 1 : 0,
       subjectAltNamesJson: JSON.stringify(result.subjectAltNames),
+      tlsSupportedVersionsJson: JSON.stringify(result.tlsSupportedVersions ?? []),
       chainJson: JSON.stringify(result.chain),
       problemsJson: JSON.stringify(result.problems)
     });
@@ -323,6 +328,8 @@ export const appSettings = {
       resendAfterHours: 24,
       recoveryEnabled: true,
       certificateChangeAlerts: true,
+      tlsDeteriorationAlerts: true,
+      tlsDeteriorationThreshold: 5,
       quietHoursEnabled: false,
       quietStart: "22:00",
       quietEnd: "07:00",
@@ -354,7 +361,7 @@ export const appSettings = {
     return this.get("maintenance", { windows: [] });
   },
   tlsPolicy(): TlsPolicySettings {
-    return this.get("tlsPolicy", { profile: "modern", minimumTlsVersion: "TLSv1.2", weakCipherPenalty: 40, requireSan: true });
+    return this.get("tlsPolicy", { profile: "modern", minimumTlsVersion: "TLSv1.2", weakCipherPenalty: 40, requireSan: true, intensiveScan: true });
   },
   statusPages(): StatusPageSettings {
     return this.get("statusPages", { pages: [] });

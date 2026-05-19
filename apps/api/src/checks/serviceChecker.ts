@@ -359,6 +359,7 @@ const result = (monitor: Monitor, status: CheckResult["status"], severity: Check
   cipherSuite: null,
   tlsGrade: null,
   tlsScore: null,
+  tlsSupportedVersions: [],
   flapping: false,
   chain: [],
   problems: status === "OK" ? [] : [message],

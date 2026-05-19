@@ -45,6 +45,7 @@ export interface CheckResult {
   cipherSuite?: string | null;
   tlsGrade?: string | null;
   tlsScore?: number | null;
+  tlsSupportedVersions?: string[];
   flapping?: boolean;
   chain: Array<{ subject: string; issuer: string; validFrom?: string; validUntil?: string; fingerprintSha256?: string }>;
   problems: string[];

@@ -153,6 +153,7 @@ export const migrate = () => {
       cipher_suite TEXT,
       tls_grade TEXT,
       tls_score INTEGER,
+      tls_supported_versions_json TEXT NOT NULL DEFAULT '[]',
       flapping INTEGER NOT NULL DEFAULT 0,
       chain_json TEXT NOT NULL,
       problems_json TEXT NOT NULL,
@@ -244,6 +245,7 @@ export const migrate = () => {
   for (const sql of [
     "ALTER TABLE check_results ADD COLUMN tls_grade TEXT;",
     "ALTER TABLE check_results ADD COLUMN tls_score INTEGER;",
+    "ALTER TABLE check_results ADD COLUMN tls_supported_versions_json TEXT NOT NULL DEFAULT '[]';",
     "ALTER TABLE check_results ADD COLUMN flapping INTEGER NOT NULL DEFAULT 0;"
   ]) {
     try {
@@ -324,6 +326,7 @@ export const rowToResult = (row: any): CheckResult => ({
   cipherSuite: row.cipher_suite,
   tlsGrade: row.tls_grade,
   tlsScore: row.tls_score,
+  tlsSupportedVersions: parse<string[]>(row.tls_supported_versions_json, []),
   flapping: Boolean(row.flapping),
   chain: parse(row.chain_json, []),
   problems: parse<string[]>(row.problems_json, []),

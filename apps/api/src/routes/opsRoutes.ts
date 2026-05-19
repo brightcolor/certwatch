@@ -93,7 +93,8 @@ const tlsPolicySchema = z.object({
   profile: z.enum(["modern", "strict", "legacy"]),
   minimumTlsVersion: z.enum(["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]),
   weakCipherPenalty: z.number().int().min(0).max(80),
-  requireSan: z.boolean()
+  requireSan: z.boolean(),
+  intensiveScan: z.boolean().default(true)
 });
 
 const statusPagesSchema = z.object({

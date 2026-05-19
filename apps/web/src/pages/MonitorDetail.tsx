@@ -84,6 +84,7 @@ function ResultPanel({ latest, title }: { latest?: CheckResult | null; title: st
   return <Panel title={title}>
     <Info label="Security Grade" value={latest?.tlsGrade ? `${latest.tlsGrade} (${latest.tlsScore ?? 0}/100)` : "-"} />
     <Info label="Version" value={latest?.tlsVersion} />
+    <Info label="Supported Versions" value={(latest?.tlsSupportedVersions ?? []).join(", ")} />
     <Info label="Cipher Suite" value={latest?.cipherSuite} />
     <Info label="Flapping" value={latest?.flapping ? "Detected" : "No"} />
     <Info label="Last Check" value={dateTime(latest?.checkedAt)} />

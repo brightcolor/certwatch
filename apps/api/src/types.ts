@@ -78,6 +78,7 @@ export interface CheckResult {
   cipherSuite?: string | null;
   tlsGrade?: string | null;
   tlsScore?: number | null;
+  tlsSupportedVersions?: string[];
   flapping?: boolean;
   chain: CertificateChainItem[];
   problems: string[];
@@ -115,6 +116,8 @@ export interface AlertingSettings {
   resendAfterHours: number;
   recoveryEnabled: boolean;
   certificateChangeAlerts: boolean;
+  tlsDeteriorationAlerts: boolean;
+  tlsDeteriorationThreshold: number;
   quietHoursEnabled: boolean;
   quietStart: string;
   quietEnd: string;
@@ -191,6 +194,7 @@ export interface TlsPolicySettings {
   minimumTlsVersion: "TLSv1" | "TLSv1.1" | "TLSv1.2" | "TLSv1.3";
   weakCipherPenalty: number;
   requireSan: boolean;
+  intensiveScan: boolean;
 }
 
 export interface StatusPageConfig {

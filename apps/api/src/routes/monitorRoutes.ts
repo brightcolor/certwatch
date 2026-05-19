@@ -3,7 +3,7 @@ import { appSettings, channels, incidents, monitors, results, subscriptions } fr
 import { monitorInputSchema } from "./monitorSchemas.js";
 import { runTlsCheck } from "../checks/tlsChecker.js";
 import { dispatchAlerts, dispatchStatusSubscriptions } from "../notifications/service.js";
-import { applyCertificateChangeWatch } from "../checks/changeWatch.js";
+import { applyResultWatches } from "../checks/changeWatch.js";
 import { isServiceMonitor, runServiceCheck } from "../checks/serviceChecker.js";
 import type { Monitor } from "../types.js";
 import { redactConfigSecrets } from "../utils/secrets.js";
@@ -96,7 +96,7 @@ monitorRoutes.post("/:id/check", async (req, res) => {
   if (!monitor.enabled) return res.status(409).json({ error: "Monitor is paused." });
   const previous = results.list(monitor.id, 1)[0];
   const checked = isServiceMonitor(monitor.type) ? await runServiceCheck(monitor, previous?.fingerprintSha256, appSettings.tlsPolicy()) : await runTlsCheck(monitor, previous?.fingerprintSha256, appSettings.tlsPolicy());
-  const classified = checked.fingerprintSha256 ? applyCertificateChangeWatch(checked, previous, appSettings.alerting()) : checked;
+  const classified = checked.fingerprintSha256 ? applyResultWatches(checked, previous, appSettings.alerting()) : checked;
   const result = markFlapping(classified, results.listRecent(monitor.id, 10), appSettings.alerting().flappingThreshold);
   const openIncident = incidents.openForMonitor(monitor.id);
   results.insert(result);
