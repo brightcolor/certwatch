@@ -5,6 +5,8 @@ import { createPlainApiToken, hashToken, requireAdmin } from "../auth/auth.js";
 import { discoverMonitors } from "../checks/discovery.js";
 import { apiTokens, appSettings, deliveries, incidents, monitors, results } from "../storage/repositories.js";
 import { id } from "../utils/id.js";
+import { monitorInputSchema, monitorTypes } from "./monitorSchemas.js";
+import type { DiscoveredMonitor, Monitor } from "../types.js";
 
 export const opsRoutes = Router();
 
@@ -12,6 +14,8 @@ opsRoutes.get("/settings/maintenance", (_req, res) => res.json(appSettings.maint
 opsRoutes.put("/settings/maintenance", (req, res) => saveSetting(req, res, "maintenance", maintenanceSchema));
 opsRoutes.get("/settings/tls-policy", (_req, res) => res.json(appSettings.tlsPolicy()));
 opsRoutes.put("/settings/tls-policy", (req, res) => saveSetting(req, res, "tlsPolicy", tlsPolicySchema));
+opsRoutes.get("/settings/ssl-labs", (_req, res) => res.json(appSettings.sslLabs()));
+opsRoutes.put("/settings/ssl-labs", (req, res) => saveSetting(req, res, "sslLabs", sslLabsSchema));
 opsRoutes.get("/settings/status-pages", (_req, res) => res.json(appSettings.statusPages()));
 opsRoutes.put("/settings/status-pages", (req, res) => saveSetting(req, res, "statusPages", statusPagesSchema));
 opsRoutes.get("/settings/discovery", (_req, res) => res.json(appSettings.discovery()));
@@ -25,6 +29,36 @@ opsRoutes.post("/discovery/run", async (_req, res) => {
   const next = { ...settings, suggestions, lastRunAt: new Date().toISOString() };
   appSettings.set("discovery", next);
   res.json(next);
+});
+
+opsRoutes.post("/discovery/import", (req, res) => {
+  const parsed = z.object({ monitors: z.array(discoveredMonitorSchema).optional() }).safeParse(req.body ?? {});
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid discovery import." });
+  const settings = appSettings.discovery();
+  const requested = parsed.data.monitors?.length ? parsed.data.monitors : settings.suggestions;
+  const existing = new Set(monitors.list().map(monitorKey));
+  const created: Monitor[] = [];
+  const skipped: DiscoveredMonitor[] = [];
+  const errors: Array<{ monitor: DiscoveredMonitor; error: string }> = [];
+  for (const suggestion of requested) {
+    if (existing.has(monitorKey(suggestion))) {
+      skipped.push(suggestion);
+      continue;
+    }
+    const parsedMonitor = monitorInputSchema.safeParse(monitorFromDiscovery(suggestion));
+    if (!parsedMonitor.success) {
+      errors.push({ monitor: suggestion, error: parsedMonitor.error.issues[0]?.message ?? "Invalid monitor." });
+      continue;
+    }
+    const monitor = monitors.create(parsedMonitor.data);
+    existing.add(monitorKey(monitor));
+    created.push(monitor);
+  }
+  if (created.length) {
+    const imported = new Set(created.map(monitorKey));
+    appSettings.set("discovery", { ...settings, suggestions: settings.suggestions.filter((item) => !imported.has(monitorKey(item))) });
+  }
+  res.status(errors.length ? 207 : 201).json({ imported: created.length, skipped: skipped.length, errors, monitors: created });
 });
 
 opsRoutes.get("/backups", (_req, res) => res.json(listBackups()));
@@ -97,6 +131,16 @@ const tlsPolicySchema = z.object({
   intensiveScan: z.boolean().default(true)
 });
 
+const sslLabsSchema = z.object({
+  enabled: z.boolean(),
+  registeredEmail: z.string().trim().email().or(z.literal("")),
+  intervalHours: z.number().int().min(24).max(720).default(24),
+  maxAgeHours: z.number().int().min(1).max(720).default(24),
+  timeoutSeconds: z.number().int().min(15).max(300).default(90),
+  startNewScans: z.boolean().default(false),
+  publishResults: z.boolean().default(false)
+});
+
 const statusPagesSchema = z.object({
   pages: z.array(z.object({
     id: z.string().default(() => id()),
@@ -116,6 +160,14 @@ const discoverySchema = z.object({
   domains: z.array(z.string().trim().min(1).max(253)),
   suggestions: z.array(z.any()).default([]),
   lastRunAt: z.string().nullable().optional()
+});
+
+const discoveredMonitorSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  host: z.string().trim().min(1).max(253),
+  port: z.number().int().min(1).max(65535),
+  type: z.enum(monitorTypes),
+  tags: z.array(z.string().trim().min(1).max(40)).default([])
 });
 
 const backupsSchema = z.object({
@@ -143,3 +195,30 @@ const availabilityReport = (days: number) => {
     return { monitorId: monitor.id, name: monitor.name, tags: monitor.tags, checks: checks.length, availability: checks.length ? Math.round((ok / checks.length) * 10_000) / 100 : null, incidents: monitorIncidents.length, mttrMinutes };
   });
 };
+
+const monitorKey = (monitor: Pick<Monitor | DiscoveredMonitor, "host" | "port" | "type">) =>
+  `${monitor.host.toLowerCase()}:${monitor.port}:${monitor.type}`;
+
+const monitorFromDiscovery = (item: DiscoveredMonitor) => ({
+  name: item.name,
+  host: item.host,
+  port: item.port,
+  type: item.type,
+  enabled: true,
+  intervalSeconds: 3600,
+  timeoutSeconds: 10,
+  warningDays: 30,
+  criticalDays: 7,
+  gracePeriodSeconds: 0,
+  sniEnabled: true,
+  sniHost: null,
+  validateCertificate: true,
+  allowSelfSigned: false,
+  tags: item.tags,
+  notes: null,
+  owner: null,
+  notificationChannelIds: [],
+  notificationRecipients: {},
+  config: item.type === "https" && item.port === 443 ? { sslLabsEnabled: false } : {},
+  maintenanceWindows: null
+});

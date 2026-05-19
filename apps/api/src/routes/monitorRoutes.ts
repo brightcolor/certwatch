@@ -8,6 +8,7 @@ import { isServiceMonitor, runServiceCheck } from "../checks/serviceChecker.js";
 import type { Monitor } from "../types.js";
 import { redactConfigSecrets } from "../utils/secrets.js";
 import { markFlapping } from "../checks/flapping.js";
+import { enrichWithSslLabs } from "../checks/sslLabs.js";
 
 export const monitorRoutes = Router();
 
@@ -96,7 +97,8 @@ monitorRoutes.post("/:id/check", async (req, res) => {
   if (!monitor.enabled) return res.status(409).json({ error: "Monitor is paused." });
   const previous = results.list(monitor.id, 1)[0];
   const checked = isServiceMonitor(monitor.type) ? await runServiceCheck(monitor, previous?.fingerprintSha256, appSettings.tlsPolicy()) : await runTlsCheck(monitor, previous?.fingerprintSha256, appSettings.tlsPolicy());
-  const classified = checked.fingerprintSha256 ? applyResultWatches(checked, previous, appSettings.alerting()) : checked;
+  const enriched = await enrichWithSslLabs(monitor, checked, previous, appSettings.sslLabs(), results.latestSslLabsForHost(monitor.host));
+  const classified = enriched.fingerprintSha256 ? applyResultWatches(enriched, previous, appSettings.alerting()) : enriched;
   const result = markFlapping(classified, results.listRecent(monitor.id, 10), appSettings.alerting().flappingThreshold);
   const openIncident = incidents.openForMonitor(monitor.id);
   results.insert(result);

@@ -79,6 +79,12 @@ export interface CheckResult {
   tlsGrade?: string | null;
   tlsScore?: number | null;
   tlsSupportedVersions?: string[];
+  sslLabsGrade?: string | null;
+  sslLabsScore?: number | null;
+  sslLabsStatus?: string | null;
+  sslLabsUrl?: string | null;
+  sslLabsCheckedAt?: string | null;
+  sslLabsFindings?: string[];
   flapping?: boolean;
   chain: CertificateChainItem[];
   problems: string[];
@@ -195,6 +201,16 @@ export interface TlsPolicySettings {
   weakCipherPenalty: number;
   requireSan: boolean;
   intensiveScan: boolean;
+}
+
+export interface SslLabsSettings {
+  enabled: boolean;
+  registeredEmail: string;
+  intervalHours: number;
+  maxAgeHours: number;
+  timeoutSeconds: number;
+  startNewScans: boolean;
+  publishResults: boolean;
 }
 
 export interface StatusPageConfig {

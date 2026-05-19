@@ -46,6 +46,12 @@ export interface CheckResult {
   tlsGrade?: string | null;
   tlsScore?: number | null;
   tlsSupportedVersions?: string[];
+  sslLabsGrade?: string | null;
+  sslLabsScore?: number | null;
+  sslLabsStatus?: string | null;
+  sslLabsUrl?: string | null;
+  sslLabsCheckedAt?: string | null;
+  sslLabsFindings?: string[];
   flapping?: boolean;
   chain: Array<{ subject: string; issuer: string; validFrom?: string; validUntil?: string; fingerprintSha256?: string }>;
   problems: string[];

@@ -4,6 +4,7 @@ import { gradeTls } from "../apps/api/src/checks/tlsGrade.js";
 import { assessTlsSecurity } from "../apps/api/src/checks/tlsSecurity.js";
 import { applyResultWatches } from "../apps/api/src/checks/changeWatch.js";
 import { isInMaintenance, windowActive } from "../apps/api/src/checks/maintenance.js";
+import { normalizeSslLabsReport, shouldRunSslLabs } from "../apps/api/src/checks/sslLabs.js";
 import type { AlertingSettings, CheckResult } from "../apps/api/src/types.js";
 
 describe("TLS security grading", () => {
@@ -45,6 +46,42 @@ describe("TLS security grading", () => {
 
     expect(result.status).toBe("WARNING");
     expect(result.message).toContain("TLS security deteriorated");
+  });
+
+  it("warns when the SSL Labs grade deteriorates", () => {
+    const result = applyResultWatches(
+      { ...resultFor("OK"), sslLabsGrade: "C", sslLabsScore: 65, fingerprintSha256: "abc" },
+      { ...resultFor("OK"), sslLabsGrade: "A", sslLabsScore: 95, fingerprintSha256: "abc" },
+      alertingSettings()
+    );
+
+    expect(result.status).toBe("WARNING");
+    expect(result.message).toContain("SSL Labs assessment deteriorated");
+  });
+});
+
+describe("SSL Labs assessment normalization", () => {
+  it("uses the worst endpoint grade and extracts findings", () => {
+    const result = normalizeSslLabsReport({
+      status: "READY",
+      testTime: Date.UTC(2026, 4, 19),
+      endpoints: [
+        { ipAddress: "203.0.113.10", grade: "A", statusMessage: "Ready" },
+        { ipAddress: "203.0.113.11", grade: "C", hasWarnings: true, details: { protocols: [{ name: "TLS", version: "1.0", q: 0 }] } }
+      ]
+    }, "example.com");
+
+    expect(result.sslLabsGrade).toBe("C");
+    expect(result.sslLabsScore).toBe(65);
+    expect(result.sslLabsFindings?.join(" ")).toContain("deprecated protocol");
+  });
+
+  it("limits fresh assessments to the configured host interval", () => {
+    const monitor = { host: "example.com", port: 443, type: "https", config: { sslLabsEnabled: true } } as any;
+    const settings = { enabled: true, registeredEmail: "ops@example.com", intervalHours: 24, maxAgeHours: 24, timeoutSeconds: 90, startNewScans: false, publishResults: false };
+    const previous = { ...resultFor("OK"), sslLabsCheckedAt: new Date().toISOString() };
+
+    expect(shouldRunSslLabs(monitor, previous, settings)).toBe(false);
   });
 });
 

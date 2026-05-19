@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.0 - 2026-05-19
+
+- Added optional Qualys SSL Labs v4 assessments for public HTTPS hosts on port `443`, configured from the Operations UI with a registered API email.
+- Cached SSL Labs assessments per host for at least 24 hours and carried the last external grade into regular check results between external scans.
+- Added SSL Labs grade, status, findings, URL, CSV export fields, webhook payload fields, dashboard badges, and monitor detail rows.
+- Added alert escalation when an SSL Labs grade deteriorates compared with the previous monitor result.
+- Added direct import for discovery suggestions, including one-click accept and accept-all actions in the UI.
+- Marked MX-derived discovery suggestions with `mail` and `mx` labels.
+- Fixed label chip entry so Enter, comma, and blur commits keep all labels until they are explicitly removed.
+- Standardized UI and public status dates to include leading zeroes for day and month.
+
 ## 0.5.0 - 2026-05-19
 
 - Added an intensive TLS assessment that can probe supported TLS versions and flag deprecated protocol support, weak cipher patterns, missing forward secrecy, small certificate keys, and incomplete chains.

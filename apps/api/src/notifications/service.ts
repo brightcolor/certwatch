@@ -83,6 +83,10 @@ export const buildPayload = (monitor: Monitor, result: CheckResult) => ({
   tls_grade: result.tlsGrade,
   tls_score: result.tlsScore,
   tls_supported_versions: result.tlsSupportedVersions ?? [],
+  ssl_labs_grade: result.sslLabsGrade,
+  ssl_labs_status: result.sslLabsStatus,
+  ssl_labs_url: result.sslLabsUrl,
+  ssl_labs_findings: result.sslLabsFindings ?? [],
   checked_at: result.checkedAt,
   url: `${env.baseUrl}/monitors/${monitor.id}`
 });

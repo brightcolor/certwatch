@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { TagInput } from "../components/TagInput";
+import { formatDateTime } from "../utils/date";
 
 export function Operations() {
   const [maintenance, setMaintenance] = useState<any>({ windows: [] });
   const [tlsPolicy, setTlsPolicy] = useState<any>({ profile: "modern", minimumTlsVersion: "TLSv1.2", weakCipherPenalty: 40, requireSan: true, intensiveScan: true });
+  const [sslLabs, setSslLabs] = useState<any>({ enabled: false, registeredEmail: "", intervalHours: 24, maxAgeHours: 24, timeoutSeconds: 90, startNewScans: false, publishResults: false });
   const [statusPages, setStatusPages] = useState<any>({ pages: [] });
   const [discovery, setDiscovery] = useState<any>({ enabled: false, intervalHours: 24, domains: [], suggestions: [] });
   const [backupSettings, setBackupSettings] = useState<any>({ enabled: false, intervalHours: 24, keep: 7 });
@@ -18,9 +20,10 @@ export function Operations() {
   const [tokenScope, setTokenScope] = useState("read");
 
   const load = async () => {
-    const [m, t, s, d, b, backupList, tokenList, deliveryList] = await Promise.all([
+    const [m, t, ssl, s, d, b, backupList, tokenList, deliveryList] = await Promise.all([
       api.request<any>("/settings/maintenance"),
       api.request<any>("/settings/tls-policy"),
+      api.request<any>("/settings/ssl-labs"),
       api.request<any>("/settings/status-pages"),
       api.request<any>("/settings/discovery"),
       api.request<any>("/settings/backups"),
@@ -28,7 +31,7 @@ export function Operations() {
       api.request<any[]>("/api-tokens").catch(() => []),
       api.request<any[]>("/deliveries")
     ]);
-    setMaintenance(m); setTlsPolicy(t); setStatusPages(s); setDiscovery(d); setBackupSettings(b); setBackups(backupList); setTokens(tokenList); setDeliveries(deliveryList);
+    setMaintenance(m); setTlsPolicy(t); setSslLabs(ssl); setStatusPages(s); setDiscovery(d); setBackupSettings(b); setBackups(backupList); setTokens(tokenList); setDeliveries(deliveryList);
   };
   useEffect(() => { void load(); }, []);
 
@@ -47,6 +50,10 @@ export function Operations() {
     const created = await api.request<any>("/api-tokens", { method: "POST", body: JSON.stringify({ name: tokenName, scopes: tokenScope === "write" ? ["read", "write"] : ["read"] }) });
     setTokenResult(created.token);
     setTokenName("");
+    await load();
+  };
+  const importDiscovery = async (items?: any[]) => {
+    await api.request("/discovery/import", { method: "POST", body: JSON.stringify({ monitors: items }) });
     await load();
   };
 
@@ -70,6 +77,18 @@ export function Operations() {
           <label><input type="checkbox" checked={tlsPolicy.intensiveScan ?? true} onChange={(e) => setTlsPolicy({ ...tlsPolicy, intensiveScan: e.target.checked })} /> Probe supported TLS versions</label>
           <button onClick={() => save("/settings/tls-policy", tlsPolicy)}>Save TLS policy</button>
         </div>
+        <div className="panel">
+          <h3>SSL Labs assessment</h3>
+          <p className="muted">Optional external SSL Labs v4 checks for public HTTPS hosts on port 443. CertWatch keeps local checks as the source of truth.</p>
+          <label><input type="checkbox" checked={sslLabs.enabled} onChange={(e) => setSslLabs({ ...sslLabs, enabled: e.target.checked })} /> Enabled</label>
+          <label>Registered email<input value={sslLabs.registeredEmail ?? ""} onChange={(e) => setSslLabs({ ...sslLabs, registeredEmail: e.target.value })} placeholder="ops@example.com" /></label>
+          <label>Interval hours<input type="number" min="24" value={sslLabs.intervalHours} onChange={(e) => setSslLabs({ ...sslLabs, intervalHours: Number(e.target.value) })} /></label>
+          <label>Cache max age hours<input type="number" min="1" value={sslLabs.maxAgeHours} onChange={(e) => setSslLabs({ ...sslLabs, maxAgeHours: Number(e.target.value) })} /></label>
+          <label>Timeout seconds<input type="number" min="15" max="300" value={sslLabs.timeoutSeconds} onChange={(e) => setSslLabs({ ...sslLabs, timeoutSeconds: Number(e.target.value) })} /></label>
+          <label><input type="checkbox" checked={sslLabs.startNewScans} onChange={(e) => setSslLabs({ ...sslLabs, startNewScans: e.target.checked })} /> Start fresh scans when due</label>
+          <label><input type="checkbox" checked={sslLabs.publishResults} onChange={(e) => setSslLabs({ ...sslLabs, publishResults: e.target.checked })} /> Publish on SSL Labs boards</label>
+          <button onClick={() => save("/settings/ssl-labs", sslLabs)}>Save SSL Labs</button>
+        </div>
       </div>
       <div className="grid two">
         <div className="panel">
@@ -89,7 +108,8 @@ export function Operations() {
           <label>Interval hours<input type="number" min="1" value={discovery.intervalHours} onChange={(e) => setDiscovery({ ...discovery, intervalHours: Number(e.target.value) })} /></label>
           <label>Domains<textarea value={(discovery.domains ?? []).join("\n")} onChange={(e) => setDiscovery({ ...discovery, domains: e.target.value.split(/\s+/).filter(Boolean) })} /></label>
           <div className="actions"><button onClick={() => save("/settings/discovery", discovery)}>Save discovery</button><button className="ghost" onClick={async () => { await api.request("/discovery/run", { method: "POST", body: "{}" }); await load(); }}>Run now</button></div>
-          <div className="stack-list">{(discovery.suggestions ?? []).slice(0, 8).map((item: any) => <div key={`${item.host}-${item.port}-${item.type}`}><strong>{item.name}</strong><span>{item.host}:{item.port}</span><small>{item.type}</small></div>)}</div>
+          {!!(discovery.suggestions ?? []).length && <button className="ghost" onClick={() => importDiscovery()}>Accept all found monitors</button>}
+          <div className="stack-list">{(discovery.suggestions ?? []).slice(0, 12).map((item: any) => <div key={`${item.host}-${item.port}-${item.type}`}><strong>{item.name}</strong><span>{item.host}:{item.port}</span><small>{item.type} - {item.tags.join(", ")}</small><button onClick={() => importDiscovery([item])}>Accept</button></div>)}</div>
         </div>
       </div>
       <div className="grid two">
@@ -122,4 +142,4 @@ function Row({ title, detail, onDelete }: { title: string; detail: string; onDel
   return <div className="channel"><strong>{title}</strong><span>{detail}</span><button onClick={onDelete}>Delete</button></div>;
 }
 
-const dateTime = (value?: string | null) => value ? new Date(value).toLocaleString() : "";
+const dateTime = formatDateTime;

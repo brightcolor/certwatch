@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { CheckResult, Incident, Monitor } from "../api/client";
 import { StatusPill } from "../components/StatusPill";
 import { certificateUnavailableMessage, collectsCertificate } from "../utils/monitorTypes";
+import { formatDateTime } from "../utils/date";
 
 export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onCheck, onDelete, onAck, onNote }: { monitor: Monitor; results: CheckResult[]; incidents: Incident[]; onBack: () => void; onEdit: () => void; onCheck: () => void; onDelete: () => void; onAck: (id: string, assignee: string) => Promise<void>; onNote: (id: string, text: string) => Promise<void> }) {
   const [assignee, setAssignee] = useState("");
@@ -83,13 +84,16 @@ function Panel({ title, children }: any) {
 function ResultPanel({ latest, title }: { latest?: CheckResult | null; title: string }) {
   return <Panel title={title}>
     <Info label="Security Grade" value={latest?.tlsGrade ? `${latest.tlsGrade} (${latest.tlsScore ?? 0}/100)` : "-"} />
+    <Info label="SSL Labs Grade" value={latest?.sslLabsGrade ? `${latest.sslLabsGrade} (${latest.sslLabsStatus ?? "ready"})` : latest?.sslLabsStatus} />
+    <Info label="SSL Labs Check" value={dateTime(latest?.sslLabsCheckedAt)} />
+    {latest?.sslLabsUrl && <Info label="SSL Labs URL" value={latest.sslLabsUrl} />}
     <Info label="Version" value={latest?.tlsVersion} />
     <Info label="Supported Versions" value={(latest?.tlsSupportedVersions ?? []).join(", ")} />
     <Info label="Cipher Suite" value={latest?.cipherSuite} />
     <Info label="Flapping" value={latest?.flapping ? "Detected" : "No"} />
     <Info label="Last Check" value={dateTime(latest?.checkedAt)} />
     <Info label="Duration" value={latest ? `${latest.durationMs} ms` : ""} />
-    <Info label="Problems" value={latest?.problems.join("; ") || "None"} />
+    <Info label="Problems" value={[...(latest?.problems ?? []), ...(latest?.sslLabsFindings ?? [])].join("; ") || "None"} />
   </Panel>;
 }
 
@@ -105,4 +109,4 @@ function EmbedRow({ label, value }: { label: string; value: string }) {
   return <div className="info embed-row"><span>{label}</span><code>{value}</code><button type="button" onClick={() => navigator.clipboard?.writeText(value)}>Copy</button></div>;
 }
 
-const dateTime = (value?: string | null) => value ? new Date(value).toLocaleString() : "";
+const dateTime = formatDateTime;

@@ -226,7 +226,7 @@
 
 .stack-list > div {
   display: grid;
-  grid-template-columns: 110px minmax(160px, .7fr) minmax(0, 1fr);
+  grid-template-columns: 110px minmax(160px, .7fr) minmax(0, 1fr) auto;
   gap: 14px;
   align-items: center;
   border-top: 1px solid var(--line);

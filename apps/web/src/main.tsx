@@ -181,6 +181,7 @@ function App() {
         <BulkImport
           onImport={async (text) => { const result = await api.request("/monitors/bulk", { method: "POST", body: JSON.stringify({ text }) }); await refresh(); return result; }}
           onDiscover={async (domain: string) => api.request("/discover", { method: "POST", body: JSON.stringify({ domain }) })}
+          onAcceptDiscovery={async (items: any[]) => { const result = await api.request("/discovery/import", { method: "POST", body: JSON.stringify({ monitors: items }) }); await refresh(); return result; }}
           onRestore={async (backup: any) => { const result = await api.request("/export/restore", { method: "POST", body: JSON.stringify(backup) }); await refresh(); return result; }}
         />
       ) : page === "users" ? (

@@ -3,10 +3,11 @@ import { useState } from "react";
 type Props = {
   onImport: (text: string) => Promise<any>;
   onDiscover: (domain: string) => Promise<any>;
+  onAcceptDiscovery: (items: any[]) => Promise<any>;
   onRestore: (backup: any) => Promise<any>;
 };
 
-export function BulkImport({ onImport, onDiscover, onRestore }: Props) {
+export function BulkImport({ onImport, onDiscover, onAcceptDiscovery, onRestore }: Props) {
   const [text, setText] = useState("example.com\nsmtp.example.com:587 starttls=smtp tags=mail,prod\nmail.example.com type=imaps");
   const [domain, setDomain] = useState("");
   const [backup, setBackup] = useState("");
@@ -20,6 +21,10 @@ export function BulkImport({ onImport, onDiscover, onRestore }: Props) {
   const addDiscoveryToImport = () => {
     const lines = discovery.map((item) => `${item.host}:${item.port} type=${item.type} tags=${item.tags.join(",")}`);
     setText((current) => [current, ...lines].filter(Boolean).join("\n"));
+  };
+  const acceptDiscovery = async (items: any[]) => {
+    setResult(await onAcceptDiscovery(items));
+    setDiscovery((current) => current.filter((item) => !items.some((accepted) => keyFor(accepted) === keyFor(item))));
   };
   const restore = async () => {
     setResult(await onRestore(JSON.parse(backup)));
@@ -38,8 +43,8 @@ export function BulkImport({ onImport, onDiscover, onRestore }: Props) {
         <div className="panel">
           <h3>Auto-discovery</h3>
           <label>Domain<input value={domain} placeholder="example.com" onChange={(e) => setDomain(e.target.value)} /></label>
-          <div className="actions"><button onClick={discover}>Discover</button>{!!discovery.length && <button className="ghost" onClick={addDiscoveryToImport}>Add to import</button>}</div>
-          <div className="stack-list">{discovery.map((item) => <div key={`${item.host}-${item.port}-${item.type}`}><strong>{item.name}</strong><span>{item.host}:{item.port}</span><small>{item.type}</small></div>)}</div>
+          <div className="actions"><button onClick={discover}>Discover</button>{!!discovery.length && <button className="ghost" onClick={addDiscoveryToImport}>Add to import</button>}{!!discovery.length && <button className="ghost" onClick={() => acceptDiscovery(discovery)}>Accept all</button>}</div>
+          <div className="stack-list">{discovery.map((item) => <div key={`${item.host}-${item.port}-${item.type}`}><strong>{item.name}</strong><span>{item.host}:{item.port}</span><small>{item.type} - {item.tags.join(", ")}</small><button onClick={() => acceptDiscovery([item])}>Accept</button></div>)}</div>
         </div>
       </div>
       <div className="grid two">
@@ -57,3 +62,5 @@ export function BulkImport({ onImport, onDiscover, onRestore }: Props) {
     </section>
   );
 }
+
+const keyFor = (item: any) => `${item.host}:${item.port}:${item.type}`;

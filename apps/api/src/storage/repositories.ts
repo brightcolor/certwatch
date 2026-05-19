@@ -1,7 +1,7 @@
 import { db, rowToApiToken, rowToChannel, rowToDelivery, rowToIncident, rowToMonitor, rowToResult, rowToSubscription, rowToUser } from "./db.js";
 import { id } from "../utils/id.js";
 import { addSecondsIso, nowIso } from "../utils/time.js";
-import type { AlertingSettings, ApiToken, BackupSettings, CheckResult, CtWatchSettings, DiscoverySettings, Incident, IncidentNote, MaintenanceSettings, Monitor, NotificationChannel, NotificationDelivery, NotificationRoute, RetentionSettings, StatusPageSettings, StatusSubscription, SmtpSettings, TlsPolicySettings, User } from "../types.js";
+import type { AlertingSettings, ApiToken, BackupSettings, CheckResult, CtWatchSettings, DiscoverySettings, Incident, IncidentNote, MaintenanceSettings, Monitor, NotificationChannel, NotificationDelivery, NotificationRoute, RetentionSettings, SslLabsSettings, StatusPageSettings, StatusSubscription, SmtpSettings, TlsPolicySettings, User } from "../types.js";
 import { decryptConfigSecrets, encryptConfigSecrets } from "../utils/secrets.js";
 
 export const users = {
@@ -154,21 +154,34 @@ export const results = {
     `).all();
     return Object.fromEntries(rows.map((row: any) => [row.monitor_id, rowToResult(row)]));
   },
+  latestSslLabsForHost(host: string): CheckResult | undefined {
+    const row = db.prepare(`
+      SELECT cr.* FROM check_results cr
+      JOIN monitors m ON m.id = cr.monitor_id
+      WHERE lower(m.host) = lower(?) AND cr.ssl_labs_checked_at IS NOT NULL
+      ORDER BY cr.ssl_labs_checked_at DESC
+      LIMIT 1
+    `).get(host);
+    return row ? rowToResult(row) : undefined;
+  },
   insert(result: CheckResult) {
     db.prepare(`
       INSERT INTO check_results (id, monitor_id, status, severity, message, checked_at,
       duration_ms, days_remaining, valid_from, valid_until, common_name, subject_alt_names_json,
       issuer, serial_number, fingerprint_sha256, tls_version, cipher_suite, tls_grade, tls_score,
-      tls_supported_versions_json, flapping, chain_json, problems_json, raw_error)
+      tls_supported_versions_json, ssl_labs_grade, ssl_labs_score, ssl_labs_status, ssl_labs_url,
+      ssl_labs_checked_at, ssl_labs_findings_json, flapping, chain_json, problems_json, raw_error)
       VALUES (@id, @monitorId, @status, @severity, @message, @checkedAt, @durationMs,
       @daysRemaining, @validFrom, @validUntil, @commonName, @subjectAltNamesJson, @issuer,
       @serialNumber, @fingerprintSha256, @tlsVersion, @cipherSuite, @tlsGrade, @tlsScore,
-      @tlsSupportedVersionsJson, @flapping, @chainJson, @problemsJson, @rawError)
+      @tlsSupportedVersionsJson, @sslLabsGrade, @sslLabsScore, @sslLabsStatus, @sslLabsUrl,
+      @sslLabsCheckedAt, @sslLabsFindingsJson, @flapping, @chainJson, @problemsJson, @rawError)
     `).run({
       ...result,
       flapping: result.flapping ? 1 : 0,
       subjectAltNamesJson: JSON.stringify(result.subjectAltNames),
       tlsSupportedVersionsJson: JSON.stringify(result.tlsSupportedVersions ?? []),
+      sslLabsFindingsJson: JSON.stringify(result.sslLabsFindings ?? []),
       chainJson: JSON.stringify(result.chain),
       problemsJson: JSON.stringify(result.problems)
     });
@@ -362,6 +375,9 @@ export const appSettings = {
   },
   tlsPolicy(): TlsPolicySettings {
     return this.get("tlsPolicy", { profile: "modern", minimumTlsVersion: "TLSv1.2", weakCipherPenalty: 40, requireSan: true, intensiveScan: true });
+  },
+  sslLabs(): SslLabsSettings {
+    return this.get("sslLabs", { enabled: false, registeredEmail: "", intervalHours: 24, maxAgeHours: 24, timeoutSeconds: 90, startNewScans: false, publishResults: false });
   },
   statusPages(): StatusPageSettings {
     return this.get("statusPages", { pages: [] });

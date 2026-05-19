@@ -33,12 +33,14 @@ This stack keeps the application easy to self-host while still supporting real T
 - Prometheus-compatible metrics at `/metrics`
 - SSL Labs-style TLS security grading with a compact A-F score per TLS result, including secure service checks on the dashboard overview
 - Optional intensive TLS assessment that probes supported TLS versions and flags deprecated protocol support, weak cipher patterns, missing forward secrecy, small certificate keys, and incomplete chains
+- Optional external Qualys SSL Labs v4 assessments for public HTTPS hosts on port `443`, cached per host for at least 24 hours
 - Configurable notifications when a monitor's TLS grade or score deteriorates compared with the previous check
 - Flapping detection for monitors that repeatedly bounce between healthy and failed states
 - Incident timelines for monitors and public status pages
 - Public status page subscriptions through email or webhook callbacks
 - Certificate Transparency watch for detecting newly issued certificates on watched domains
 - Auto-discovery suggestions for common web and mail endpoints from a domain
+- Discovery results can be accepted one by one or imported all at once; MX-derived suggestions receive `mail` and `mx` labels
 - Backup and restore UI for portable, non-secret JSON exports
 - Certificate detail view with CN, SANs, issuer, serial number, SHA256 fingerprint, validity, chain, TLS version, and cipher suite
 - Hostname mismatch, self-signed, expiry, weak TLS protocol, chain trust, and fingerprint-change detection
@@ -62,6 +64,7 @@ This stack keeps the application easy to self-host while still supporting real T
 - REST API under `/api`
 - Dark and light mode
 - Cleaner responsive form layouts with aligned labels and controls
+- UI and public status dates use leading zeroes for day and month
 - Reverse-proxy aware deployment settings
 
 ## Screenshots
@@ -168,6 +171,7 @@ CertWatch can monitor certificate-focused targets and general service availabili
 - STARTTLS and direct SSL/TLS FTP, SMTP, IMAP, and POP3 checks can optionally validate login credentials after the TLS session is established.
 - Direct SSL/TLS checks remain available for SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, and custom TLS ports.
 - Explicit TLS upgrade checks are available for SMTP, IMAP, POP3, and FTP.
+- External SSL Labs assessments are an optional extra for public HTTPS hosts on port `443`. SSL Labs does not replace the local TLS/STARTTLS checks and is not used for private hosts, SMTP, IMAP, POP3, FTP, or arbitrary STARTTLS ports.
 
 Keep `SESSION_SECRET` stable after first deployment. It is used to decrypt stored service-login passwords and provider secrets.
 Monitor JSON exports mask stored secrets and are suitable for moving monitor definitions, not for full secret-bearing backups.
@@ -178,7 +182,7 @@ Notification providers are configured in the Settings page. Global SMTP settings
 
 Routes can match labels, severity, and provider targets. Each route can also define an escalation delay, so a route can notify a primary recipient immediately and a second recipient only after the problem remains unresolved for a configured time.
 
-Webhook payloads include monitor ID, monitor name, host, port, status, severity, message, days remaining, validity dates, issuer, SHA256 fingerprint, check time, and the monitor URL.
+Webhook payloads include monitor ID, monitor name, host, port, status, severity, message, days remaining, validity dates, issuer, SHA256 fingerprint, local TLS grade, optional SSL Labs grade, check time, and the monitor URL.
 
 ## REST API
 
@@ -197,6 +201,7 @@ All API routes require login session authentication except `/api/auth/login`.
 - `GET /api/subscriptions`
 - `POST /api/notification-channels/test`
 - `POST /api/discover`
+- `POST /api/discovery/import`
 - `GET /api/reports/availability`
 - `GET /api/deliveries`
 - `GET /api/api-tokens`
@@ -204,6 +209,7 @@ All API routes require login session authentication except `/api/auth/login`.
 - `PUT /api/settings/ct-watch`
 - `GET /api/settings/maintenance`
 - `GET /api/settings/tls-policy`
+- `GET /api/settings/ssl-labs`
 - `GET /api/settings/status-pages`
 - `GET /api/settings/discovery`
 - `GET /api/settings/backups`
@@ -247,13 +253,14 @@ The Operations page contains production controls that are intentionally kept out
 - Maintenance windows for labels or individual monitors. Supported formats include `daily 22:00-23:00`, `mon-fri 01:00-02:00`, and ISO intervals such as `2026-06-01T20:00:00/2026-06-01T22:00:00`.
 - TLS policy profiles for grading, including minimum TLS version, weak cipher penalty, and SAN requirements.
 - Intensive TLS probing can be enabled in Operations. It performs additional handshakes to detect supported TLS versions and feeds those findings into the grade.
+- SSL Labs external assessment can be enabled in Operations with a registered SSL Labs API email. There is no API key field; SSL Labs v4 expects the registered organization email in the `email` header. CertWatch respects a minimum 24-hour per-host interval and can either use cached results or start fresh scans when due.
 - Alert policy can notify on TLS grade or score deterioration. The score-drop threshold controls how sensitive these alerts are.
-- Scheduled discovery for web and mail endpoints.
+- Scheduled discovery for web and mail endpoints, with direct accept buttons for individual suggestions or all suggestions.
 - Scheduled SQLite backups with retention and downloadable backup files.
 - API tokens with read-only or read/write scopes.
 - Notification delivery log for sent and failed provider deliveries.
 
-Monitor labels are entered as chips in the monitor form. Press Enter to add a label, click a label to remove it, or switch to text mode when labels need to be copied or pasted in bulk.
+Monitor labels are entered as chips in the monitor form. Press Enter or comma to add a label, move to another field to commit the current label on blur, click a label to remove it, or switch to text mode when labels need to be copied or pasted in bulk.
 
 ## Prometheus
 

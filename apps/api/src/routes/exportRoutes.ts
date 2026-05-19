@@ -36,6 +36,7 @@ exportRoutes.get("/backup.json", (_req, res) => {
       ctWatch: appSettings.ctWatch(),
       maintenance: appSettings.maintenance(),
       tlsPolicy: appSettings.tlsPolicy(),
+      sslLabs: appSettings.sslLabs(),
       statusPages: appSettings.statusPages(),
       discovery: { ...appSettings.discovery(), suggestions: [] },
       backups: appSettings.backups()
@@ -63,6 +64,7 @@ exportRoutes.post("/restore", (req, res) => {
   if (input.settings?.ctWatch) appSettings.set("ctWatch", input.settings.ctWatch);
   if (input.settings?.maintenance) appSettings.set("maintenance", input.settings.maintenance);
   if (input.settings?.tlsPolicy) appSettings.set("tlsPolicy", input.settings.tlsPolicy);
+  if (input.settings?.sslLabs) appSettings.set("sslLabs", input.settings.sslLabs);
   if (input.settings?.statusPages) appSettings.set("statusPages", input.settings.statusPages);
   if (input.settings?.discovery) appSettings.set("discovery", input.settings.discovery);
   if (input.settings?.backups) appSettings.set("backups", input.settings.backups);
@@ -72,19 +74,19 @@ exportRoutes.post("/restore", (req, res) => {
 
 exportRoutes.get("/certificates.csv", (_req, res) => {
   const latest = results.latestByMonitor();
-  const rows = [["name", "host", "port", "status", "days_remaining", "valid_until", "issuer", "fingerprint_sha256"]];
+  const rows = [["name", "host", "port", "status", "days_remaining", "valid_until", "issuer", "fingerprint_sha256", "tls_grade", "ssl_labs_grade"]];
   for (const monitor of monitors.list()) {
     const result = latest[monitor.id];
-    rows.push([monitor.name, monitor.host, String(monitor.port), monitor.lastStatus, String(result?.daysRemaining ?? ""), result?.validUntil ?? "", result?.issuer ?? "", result?.fingerprintSha256 ?? ""]);
+    rows.push([monitor.name, monitor.host, String(monitor.port), monitor.lastStatus, String(result?.daysRemaining ?? ""), result?.validUntil ?? "", result?.issuer ?? "", result?.fingerprintSha256 ?? "", result?.tlsGrade ?? "", result?.sslLabsGrade ?? ""]);
   }
   res.type("text/csv").attachment("certwatch-certificates.csv").send(toCsv(rows));
 });
 
 exportRoutes.get("/history.csv", (_req, res) => {
-  const rows = [["monitor_id", "checked_at", "status", "message", "days_remaining", "valid_until", "issuer"]];
+  const rows = [["monitor_id", "checked_at", "status", "message", "days_remaining", "valid_until", "issuer", "tls_grade", "ssl_labs_grade"]];
   for (const monitor of monitors.list()) {
     for (const result of results.list(monitor.id, 1000)) {
-      rows.push([monitor.id, result.checkedAt, result.status, result.message, String(result.daysRemaining ?? ""), result.validUntil ?? "", result.issuer ?? ""]);
+      rows.push([monitor.id, result.checkedAt, result.status, result.message, String(result.daysRemaining ?? ""), result.validUntil ?? "", result.issuer ?? "", result.tlsGrade ?? "", result.sslLabsGrade ?? ""]);
     }
   }
   res.type("text/csv").attachment("certwatch-history.csv").send(toCsv(rows));

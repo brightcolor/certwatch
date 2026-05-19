@@ -1,7 +1,7 @@
 import type { AlertingSettings, CheckResult } from "../types.js";
 
 export const applyResultWatches = (result: CheckResult, previous: CheckResult | undefined, settings: AlertingSettings): CheckResult =>
-  applyTlsDeteriorationWatch(applyCertificateChangeWatch(result, previous, settings), previous, settings);
+  applySslLabsDeteriorationWatch(applyTlsDeteriorationWatch(applyCertificateChangeWatch(result, previous, settings), previous, settings), previous, settings);
 
 export const applyCertificateChangeWatch = (result: CheckResult, previous: CheckResult | undefined, settings: AlertingSettings): CheckResult => {
   if (!settings.certificateChangeAlerts || !previous || result.status === "DOWN") return result;
@@ -42,3 +42,21 @@ const applyTlsDeteriorationWatch = (result: CheckResult, previous: CheckResult |
 
 const gradeRank = (grade?: string | null) => ({ A: 0, B: 1, C: 2, D: 3, F: 4 }[grade ?? ""] ?? 0);
 const formatGrade = (result: CheckResult) => `${result.tlsGrade ?? "-"} (${result.tlsScore ?? "-"} points)`;
+
+const applySslLabsDeteriorationWatch = (result: CheckResult, previous: CheckResult | undefined, settings: AlertingSettings): CheckResult => {
+  if (!settings.tlsDeteriorationAlerts || !previous || result.status === "DOWN") return result;
+  if (!previous.sslLabsGrade || !result.sslLabsGrade) return result;
+  const scoreDrop = (previous.sslLabsScore ?? 0) - (result.sslLabsScore ?? 0);
+  const gradeWorse = sslLabsRank(result.sslLabsGrade) > sslLabsRank(previous.sslLabsGrade);
+  if (scoreDrop < (settings.tlsDeteriorationThreshold ?? 5) && !gradeWorse) return result;
+  const message = `SSL Labs assessment deteriorated: ${previous.sslLabsGrade} -> ${result.sslLabsGrade}.`;
+  return {
+    ...result,
+    status: result.status === "OK" ? "WARNING" : result.status,
+    severity: result.severity === "info" ? "warning" : result.severity,
+    message,
+    problems: [...result.problems, message]
+  };
+};
+
+const sslLabsRank = (grade?: string | null) => ({ "A+": 0, A: 1, "A-": 2, B: 3, C: 4, D: 5, E: 6, F: 7, T: 8, M: 8 }[grade ?? ""] ?? 0);

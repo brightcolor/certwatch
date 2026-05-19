@@ -170,12 +170,13 @@ const formatDate = (value?: string | null) => {
   if (!value) return "not checked yet";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en", {
-    year: "numeric",
-    month: "short",
+  return new Intl.DateTimeFormat("de-DE", {
     day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    second: "2-digit",
     timeZone: "UTC",
     timeZoneName: "short"
   }).format(date);

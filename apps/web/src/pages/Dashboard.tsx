@@ -3,6 +3,7 @@ import { Search, ShieldCheck, Siren, TimerReset, TriangleAlert } from "lucide-re
 import type { Monitor } from "../api/client";
 import { StatusPill } from "../components/StatusPill";
 import { collectsCertificate } from "../utils/monitorTypes";
+import { formatDate } from "../utils/date";
 
 export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck }: any) {
   const filtered = monitors.filter((monitor: Monitor) =>
@@ -39,7 +40,7 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck 
                 <span><StatusPill status={monitor.lastStatus} /></span>
                 <span><strong>{monitor.name}</strong><small>{monitor.tags.join(", ") || "unlabeled"}</small></span>
                 <span>{monitor.host}:{monitor.port}<small>{monitor.type}</small></span>
-                <span>{certificateSummary(monitor)}{gradePill(monitor)}<small>{certificateDetail(monitor)}</small></span>
+                <span>{certificateSummary(monitor)}{gradePill(monitor)}{sslLabsPill(monitor)}<small>{certificateDetail(monitor)}</small></span>
                 <span>{monitor.latestResult?.message ?? "No result yet"}<small>{monitor.latestResult?.tlsVersion ?? ""}</small></span>
                 <span><button onClick={(e) => { e.stopPropagation(); onCheck(monitor.id); }}>Check now</button></span>
               </div>
@@ -55,18 +56,20 @@ function Metric({ icon, label, value }: any) {
   return <div className="metric">{icon}<div><span>{label}</span><strong>{value}</strong></div></div>;
 }
 
-const shortDate = (value?: string | null) => value ? new Date(value).toLocaleDateString() : "";
 const certificateSummary = (monitor: Monitor) => {
   if (!collectsCertificate(monitor.type, monitor.config, monitor.port)) return "Service check";
   return monitor.latestResult?.daysRemaining === null || monitor.latestResult?.daysRemaining === undefined ? "-" : `${monitor.latestResult.daysRemaining} days`;
 };
 const certificateDetail = (monitor: Monitor) => {
   if (!collectsCertificate(monitor.type, monitor.config, monitor.port)) return "no certificate collected";
-  return [shortDate(monitor.latestResult?.validUntil), monitor.latestResult?.tlsVersion].filter(Boolean).join(" - ");
+  return [formatDate(monitor.latestResult?.validUntil), monitor.latestResult?.tlsVersion].filter(Boolean).join(" - ");
 };
 
 const gradePill = (monitor: Monitor) =>
   monitor.latestResult?.tlsGrade ? <span className={`grade-pill grade-${monitor.latestResult.tlsGrade.toLowerCase().slice(0, 1)}`}>TLS {monitor.latestResult.tlsGrade}</span> : null;
+
+const sslLabsPill = (monitor: Monitor) =>
+  monitor.latestResult?.sslLabsGrade ? <span className={`grade-pill grade-${monitor.latestResult.sslLabsGrade.toLowerCase().slice(0, 1)}`}>SSL Labs {monitor.latestResult.sslLabsGrade}</span> : null;
 
 const groupMonitors = (monitors: Monitor[]) => {
   const buckets = new Map<string, Monitor[]>();

@@ -1,12 +1,12 @@
-import { useRef, useState } from "react";
-import { flushSync } from "react-dom";
+import { useEffect, useRef, useState } from "react";
 import { mergeTags, parseTags } from "../utils/tags";
 
 export function TagInput({ value, onChange, placeholder = "Add label and press Enter" }: { value: string[]; onChange: (tags: string[]) => void; placeholder?: string }) {
   const [draft, setDraft] = useState("");
   const [textMode, setTextMode] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const valueRef = useRef(value);
   const text = value.join(", ");
+  useEffect(() => { valueRef.current = value; }, [value]);
 
   if (textMode) {
     return (
@@ -17,11 +17,12 @@ export function TagInput({ value, onChange, placeholder = "Add label and press E
     );
   }
 
-  const addDraft = (input = inputRef.current?.value ?? draft) => {
-    const next = mergeTags(value, input);
-    if (next.length !== value.length) flushSync(() => onChange(next));
+  const addDraft = (input = draft) => {
+    const current = valueRef.current;
+    const next = mergeTags(current, input);
+    valueRef.current = next;
+    if (!sameTags(current, next)) onChange(next);
     setDraft("");
-    if (inputRef.current) inputRef.current.value = "";
   };
 
   return (
@@ -29,7 +30,6 @@ export function TagInput({ value, onChange, placeholder = "Add label and press E
       <div className="tag-input">
         {value.map((tag) => <button type="button" className="tag-chip" key={tag} onClick={() => onChange(value.filter((item) => item !== tag))}>{tag}</button>)}
         <input
-          ref={inputRef}
           value={draft}
           placeholder={placeholder}
           onChange={(event) => setDraft(event.target.value)}
@@ -39,7 +39,11 @@ export function TagInput({ value, onChange, placeholder = "Add label and press E
               event.preventDefault();
               addDraft(event.currentTarget.value);
             }
-            if (event.key === "Backspace" && !draft && value.length) onChange(value.slice(0, -1));
+            if (event.key === "Backspace" && !draft && valueRef.current.length) {
+              const next = valueRef.current.slice(0, -1);
+              valueRef.current = next;
+              onChange(next);
+            }
           }}
         />
       </div>
@@ -47,3 +51,6 @@ export function TagInput({ value, onChange, placeholder = "Add label and press E
     </label>
   );
 }
+
+const sameTags = (left: string[], right: string[]) =>
+  left.length === right.length && left.every((tag, index) => tag === right[index]);

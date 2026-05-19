@@ -127,7 +127,9 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
             <label><input type="checkbox" checked={form.sniEnabled} onChange={(e) => set("sniEnabled", e.target.checked)} /> Use SNI</label>
             <label><input type="checkbox" checked={form.validateCertificate} onChange={(e) => set("validateCertificate", e.target.checked)} /> Validate chain</label>
             <label><input type="checkbox" checked={form.allowSelfSigned} onChange={(e) => set("allowSelfSigned", e.target.checked)} /> Allow self-signed</label>
+            {sslLabsEligible(form.type, Number(form.port), form.config) && <label><input type="checkbox" checked={Boolean(form.config?.sslLabsEnabled)} onChange={(e) => setConfig("sslLabsEnabled", e.target.checked)} /> External SSL Labs check every 24h</label>}
           </div>
+          {!sslLabsEligible(form.type, Number(form.port), form.config) && <p className="muted">SSL Labs is available for public HTTPS hosts on port 443. STARTTLS, mail, and private targets continue to use CertWatch's local TLS checks.</p>}
         </FormSection>}
         {usesServiceConfig(form.type) && <FormSection title="Service and login check">
             {usesHttpConfig(form.type) && <>
@@ -196,6 +198,8 @@ const usesProtocolLogin = (type: string) => ["ssh", "ftp", "smtp", "imap", "pop3
 const usesTlsLogin = (type: string) => ["smtp_starttls", "imap_starttls", "pop3_starttls", "ftp_starttls", "smtps", "imaps", "pop3s", "ftps"].includes(type);
 const usesServiceConfig = (type: string) => usesHttpConfig(type) || type === "dns" || usesProtocolLogin(type) || usesTlsLogin(type);
 const supportsTransportSecurity = (type: string) => transportSecurityProtocols.has(type);
+const sslLabsEligible = (type: string, port: number, config?: Record<string, unknown>) =>
+  port === 443 && (type === "https" || type === "tls" || ((type === "http" || type === "http_login") && String(config?.scheme ?? "https") === "https"));
 const defaultsForType = (type: string, current: Record<string, unknown>) => {
   if (type === "http") return { scheme: "http", path: "/", expectedStatus: 200, ...current };
   if (type === "http_login") return { scheme: "https", path: "/login", expectedStatus: 200, authType: "form", usernameField: "username", passwordField: "password", ...current };
