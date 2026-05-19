@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.9 - 2026-05-19
+
+- Fixed user creation feedback in the Users page by adding client-side validation, submit state, and visible API error messages.
+- Added a clear password-length hint for new users.
+- Added duplicate-email handling for user creation with a readable API response.
+
 ## 0.4.8 - 2026-05-18
 
 - Clarified plain service checks versus TLS/STARTTLS certificate checks in monitor details, dashboard rows, and monitor type labels.

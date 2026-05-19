@@ -54,6 +54,7 @@ This stack keeps the application easy to self-host while still supporting real T
 - Availability reports with check counts, incident counts, availability percentage, and MTTR
 - Scheduled SQLite database backups with UI download and retention controls
 - Local user login with bcrypt password hashes, secure sessions, CSRF token header, and first-run admin setup
+- Admin-only user management with visible validation for password length and duplicate email addresses
 - Encrypted storage for monitor login secrets, SMTP settings, and notification provider secrets using `SESSION_SECRET`
 - JSON monitor import/export and CSV exports for certificate summary and check history
 - REST API under `/api`
@@ -321,6 +322,7 @@ The schema migration currently creates missing tables only. Back up the database
 ## Troubleshooting
 
 - Login fails on a fresh install: open the setup screen and create the first admin user. For an existing install, reset the password in the SQLite database or recreate the bind-mounted data directory if no data must be kept.
+- Creating a user fails: make sure the current account has the Admin role, the email address is not already used, and the password has at least 12 characters.
 - Checks fail for private hosts: set `ALLOW_PRIVATE_TARGETS=true` if the instance is intentionally allowed to monitor internal networks.
 - Cookies fail behind HTTPS: set `COOKIE_SECURE=true` and ensure `X-Forwarded-Proto` is passed by the proxy.
 - STARTTLS fails: verify the service advertises STARTTLS and that firewalls allow the configured port.

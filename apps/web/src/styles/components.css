@@ -258,6 +258,10 @@
   color: var(--crit);
 }
 
+.success {
+  color: var(--accent);
+}
+
 .form-section {
   display: grid;
   gap: 14px;

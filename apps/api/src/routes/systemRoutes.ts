@@ -118,6 +118,7 @@ systemRoutes.get("/users", requireAdmin, (_req, res) => {
 systemRoutes.post("/users", requireAdmin, async (req, res) => {
   const parsed = userSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid user." });
+  if (users.findByEmail(parsed.data.email)) return res.status(409).json({ error: "A user with this email already exists." });
   const user = users.create(parsed.data.email, await bcrypt.hash(parsed.data.password, 12), parsed.data.role);
   res.status(201).json(publicUser(user));
 });
@@ -182,8 +183,8 @@ const discoverSchema = z.object({
 });
 
 const userSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(12),
+  email: z.string().trim().email().transform((email) => email.toLowerCase()),
+  password: z.string().min(12, "Password must be at least 12 characters long."),
   role: z.enum(["admin", "viewer"])
 });
 
