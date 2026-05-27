@@ -1,6 +1,6 @@
 {
   "name": "certwatch",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -18,8 +18,9 @@
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
+    "esbuild": "^0.27.7",
     "npm-run-all": "^4.1.5",
     "typescript": "^5.4.5",
-    "vitest": "^1.6.0"
+    "vitest": "^4.1.7"
   }
 }

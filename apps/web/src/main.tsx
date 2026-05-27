@@ -37,9 +37,18 @@ function App() {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState("dashboard");
   const [theme, setTheme] = useState(localStorage.getItem("theme") ?? "dark");
+  const [uiTheme, setUiTheme] = useState(localStorage.getItem("uiTheme") ?? "certwatch");
   const [toast, setToast] = useState("");
 
-  useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem("theme", theme); }, [theme]);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.dataset.bsTheme = theme;
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+  useEffect(() => {
+    document.documentElement.dataset.uiTheme = uiTheme;
+    localStorage.setItem("uiTheme", uiTheme);
+  }, [uiTheme]);
   useEffect(() => {
     api.request<any>("/auth/setup-status")
       .then((status) => {
@@ -155,7 +164,7 @@ function App() {
   const selectedMonitor = monitors.find((monitor) => monitor.id === selected);
 
   return (
-    <Layout page={page} onPage={(nextPage: string) => navigate(nextPage)} onNew={() => setEditing("new")} theme={theme} setTheme={setTheme} version={version}>
+    <Layout page={page} onPage={(nextPage: string) => navigate(nextPage)} onNew={() => setEditing("new")} theme={theme} setTheme={setTheme} version={version} uiTheme={uiTheme}>
       {toast && <div className="toast" onAnimationEnd={() => setToast("")}>{toast}</div>}
       {page === "settings" ? (
         <Settings
@@ -166,6 +175,10 @@ function App() {
           routes={routes}
           ctWatch={ctWatch}
           subscriptions={subscriptions}
+          theme={theme}
+          setTheme={setTheme}
+          uiTheme={uiTheme}
+          setUiTheme={setUiTheme}
           onSaveChannel={async (channel: any) => { await api.request("/notification-channels", { method: "POST", body: JSON.stringify(channel) }); await refresh(); }}
           onDeleteChannel={async (id: string) => { await api.request(`/notification-channels/${id}`, { method: "DELETE" }); await refresh(); }}
           onTest={(id: string) => api.request("/notification-channels/test", { method: "POST", body: JSON.stringify({ id }) })}

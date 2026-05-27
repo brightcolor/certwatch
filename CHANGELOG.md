@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.0 - 2026-05-28
+
+- Added AdminLTE `4.0.0` as an optional frontend skin.
+- Added an Appearance panel in Settings to switch between the native CertWatch design and AdminLTE 4.
+- Reworked the main layout to use AdminLTE app wrapper, navbar, sidebar, content header, and content area classes when the AdminLTE skin is selected.
+- Mapped existing CertWatch dashboard cards, panels, tables, forms, and modals into the AdminLTE/Bootstrap visual system while preserving the existing React workflows.
+
 ## 0.6.0 - 2026-05-19
 
 - Added optional Qualys SSL Labs v4 assessments for public HTTPS hosts on port `443`, configured from the Operations UI with a registered API email.

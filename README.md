@@ -63,6 +63,7 @@ This stack keeps the application easy to self-host while still supporting real T
 - JSON monitor import/export and CSV exports for certificate summary and check history
 - REST API under `/api`
 - Dark and light mode
+- Switchable frontend skin: CertWatch native or AdminLTE 4.0.0 from the Settings page
 - Cleaner responsive form layouts with aligned labels and controls
 - UI and public status dates use leading zeroes for day and month
 - Reverse-proxy aware deployment settings
@@ -261,6 +262,8 @@ The Operations page contains production controls that are intentionally kept out
 - Notification delivery log for sent and failed provider deliveries.
 
 Monitor labels are entered as chips in the monitor form. Press Enter or comma to add a label, move to another field to commit the current label on blur, click a label to remove it, or switch to text mode when labels need to be copied or pasted in bulk.
+
+The Settings page includes an Appearance panel where users can switch between the native CertWatch interface and the AdminLTE 4 skin. The selection is stored locally in the browser so operators can choose their preferred frontend layout without changing server configuration.
 
 ## Prometheus
 
