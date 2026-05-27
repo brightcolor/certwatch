@@ -53,7 +53,15 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck 
 }
 
 function Metric({ icon, label, value }: any) {
-  return <div className="metric">{icon}<div><span>{label}</span><strong>{value}</strong></div></div>;
+  return (
+    <div className="info-box shadow-sm">
+      <span className="info-box-icon">{icon}</span>
+      <div className="info-box-content">
+        <span className="info-box-text">{label}</span>
+        <span className="info-box-number">{value}</span>
+      </div>
+    </div>
+  );
 }
 
 const certificateSummary = (monitor: Monitor) => {

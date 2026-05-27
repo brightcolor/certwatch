@@ -1,0 +1,87 @@
+.form-section {
+  display: grid;
+  gap: .9rem;
+  border-top: 1px solid var(--bs-border-color);
+  padding-top: 1rem;
+}
+
+.modal-head + .form-section {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.form-section h3 {
+  color: var(--bs-body-color);
+  font-size: .85rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.form-section .grid.two,
+.panel > .grid.two {
+  grid-template-columns: 1fr;
+}
+
+.form-section .grid > label:not(:has(input[type="checkbox"])),
+.panel > label:not(:has(input[type="checkbox"])),
+.panel > .grid > label:not(:has(input[type="checkbox"])),
+.login-panel > label:not(:has(input[type="checkbox"])) {
+  display: grid;
+  grid-template-columns: minmax(150px, 210px) minmax(0, 1fr);
+  align-items: center;
+  gap: .8rem;
+}
+
+.form-section .grid > label:has(textarea),
+.form-section .grid > label:has(.tag-input),
+.panel > label:has(textarea),
+.panel > label:has(.tag-input),
+.panel > .grid > label:has(textarea),
+.login-panel > label:has(textarea) {
+  align-items: start;
+}
+
+.panel.compact > label:not(:has(input[type="checkbox"])) {
+  grid-template-columns: 1fr;
+  gap: .45rem;
+}
+
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .9rem;
+}
+
+.tag-input {
+  display: flex;
+  min-height: 42px;
+  width: 100%;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-body-bg);
+  padding: .4rem;
+}
+
+.tag-input:focus-within {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
+}
+
+.tag-input input {
+  min-width: 120px;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: .35rem;
+}
+
+.tag-chip {
+  min-height: 1.75rem;
+  border-color: rgba(var(--bs-primary-rgb), .25);
+  background: rgba(var(--bs-primary-rgb), .12);
+  color: var(--bs-primary);
+  padding: .25rem .65rem;
+}

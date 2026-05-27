@@ -59,16 +59,15 @@ export function Settings(props: any) {
     <section className="content">
       <div className="grid two">
         <div className="panel">
-          <h3>Appearance</h3>
-          <label>Frontend theme<select value={props.uiTheme ?? "certwatch"} onChange={(e) => props.setUiTheme(e.target.value)}>
-            <option value="certwatch">CertWatch native</option>
-            <option value="adminlte">AdminLTE 4</option>
-          </select></label>
+          <h3>Interface</h3>
           <label>Color mode<select value={props.theme ?? "dark"} onChange={(e) => props.setTheme(e.target.value)}>
             <option value="dark">Dark</option>
             <option value="light">Light</option>
           </select></label>
-          <p className="muted">AdminLTE 4 uses the current AdminLTE layout and Bootstrap-based skin while keeping the same CertWatch workflows.</p>
+          <div className="callout callout-info mb-0">
+            <strong>AdminLTE 4 is the active interface.</strong>
+            <p className="mb-0">The previous native shell was removed so navigation, cards, alerts, and forms follow one consistent admin UI.</p>
+          </div>
         </div>
         <div className="panel">
           <h3><Bell size={18} /> Alert policy</h3>

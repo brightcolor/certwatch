@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0 - 2026-05-28
+
+- Made AdminLTE 4 the only frontend shell and removed the previous native/AdminLTE skin switch.
+- Rebuilt the main operator layout around AdminLTE navbar, sidebar, content header, footer, Bootstrap cards, info boxes, callouts, and responsive admin forms.
+- Added a global monitor quick search in the header so operators can jump directly to a monitor by name, host, type, or label.
+- Added a status center dropdown and sidebar health summary using the existing live status counts.
+- Kept dark and light mode as the remaining interface preference.
+
 ## 0.7.1 - 2026-05-28
 
 - Added a Vite development proxy for `/api`, `/metrics`, and `/public` so the frontend on `localhost:5173` can talk to the API on `localhost:8080`.

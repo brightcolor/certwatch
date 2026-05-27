@@ -1,6 +1,6 @@
 @import "admin-lte/dist/css/adminlte.css";
 @import "./base.css";
-@import "./layout.css";
+@import "./adminlte-shell.css";
 @import "./components.css";
-@import "./adminlte-theme.css";
+@import "./forms.css";
 @import "./responsive.css";

@@ -1,0 +1,238 @@
+.certwatch-adminlte {
+  min-height: 100vh;
+}
+
+.certwatch-adminlte .app-header {
+  min-height: 3.5rem;
+}
+
+.certwatch-adminlte .sidebar-toggle,
+.certwatch-adminlte .product-link,
+.certwatch-adminlte .brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  border: 0;
+  background: transparent;
+  color: var(--bs-body-color);
+}
+
+.certwatch-adminlte .product-link {
+  font-weight: 700;
+}
+
+.certwatch-adminlte .brand-link {
+  width: 100%;
+  min-height: 3.5rem;
+  padding: .8rem 1rem;
+  text-decoration: none;
+}
+
+.certwatch-adminlte .brand-image {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: .5rem;
+  background: var(--bs-primary);
+  color: #fff;
+}
+
+.certwatch-adminlte .sidebar-wrapper {
+  display: flex;
+  min-height: calc(100vh - 3.5rem);
+  flex-direction: column;
+}
+
+.certwatch-adminlte .sidebar-menu .nav-link {
+  width: 100%;
+  min-height: auto;
+  justify-content: flex-start;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: .625rem 1rem;
+}
+
+.certwatch-adminlte .sidebar-menu .nav-link p {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.certwatch-adminlte .sidebar-menu .nav-link.active {
+  background: var(--bs-primary);
+  color: #fff;
+}
+
+.nav-badge {
+  min-width: 1.35rem;
+  border-radius: 999px;
+  padding: .12rem .45rem;
+  color: #fff;
+  font-size: .72rem;
+  text-align: center;
+}
+
+.nav-badge.danger {
+  background: var(--bs-danger);
+}
+
+.nav-badge.warning {
+  background: var(--bs-warning);
+  color: #111;
+}
+
+.header-search {
+  position: relative;
+  display: flex;
+  width: min(480px, 38vw);
+  min-width: 220px;
+  align-items: center;
+  gap: .5rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-body-bg);
+  padding: .35rem .6rem;
+}
+
+.header-search input {
+  min-height: 1.75rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.header-search-results,
+.status-menu {
+  position: absolute;
+  top: calc(100% + .35rem);
+  z-index: 1050;
+}
+
+.header-search-results {
+  right: 0;
+  left: 0;
+  overflow: hidden;
+  border-radius: var(--bs-border-radius);
+  box-shadow: var(--bs-box-shadow);
+}
+
+.header-search-results .list-group-item {
+  display: grid;
+  gap: .15rem;
+  text-align: left;
+}
+
+.header-search-results span {
+  color: var(--bs-secondary-color);
+  font-size: .8rem;
+}
+
+.status-dropdown {
+  position: relative;
+}
+
+.status-menu {
+  right: 0;
+  width: min(340px, 92vw);
+}
+
+.sidebar-health {
+  display: grid;
+  gap: .2rem;
+  margin: auto 1rem 1rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  background: rgba(var(--bs-body-bg-rgb), .65);
+  padding: .85rem;
+}
+
+.adminlte-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.certwatch-adminlte .app-content {
+  padding-bottom: 1.5rem;
+}
+
+.content {
+  display: grid;
+  gap: 1rem;
+  padding: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  flex-wrap: wrap;
+}
+
+.end {
+  justify-content: flex-end;
+}
+
+.section-head,
+.detail-head,
+.modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.login {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  background: var(--bs-tertiary-bg);
+  padding: 1.5rem;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, .55);
+  padding: 1.25rem;
+}
+
+.modal-panel {
+  display: grid;
+  width: min(1080px, 100%);
+  max-height: 92vh;
+  gap: 1rem;
+  overflow: auto;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius-lg);
+  background: var(--bs-body-bg);
+  box-shadow: var(--bs-box-shadow-lg);
+  padding: 1.25rem;
+}
+
+.app-footer {
+  display: flex;
+  gap: 1rem;
+  border-top: 1px solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+}
+
+.sidebar-backdrop {
+  display: none;
+}
