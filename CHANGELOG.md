@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.1 - 2026-05-28
+
+- Added a Vite development proxy for `/api`, `/metrics`, and `/public` so the frontend on `localhost:5173` can talk to the API on `localhost:8080`.
+- Restarted the local development server after dependency and lockfile updates so Vite re-optimized AdminLTE and rendered the app again.
+
 ## 0.7.0 - 2026-05-28
 
 - Added AdminLTE `4.0.0` as an optional frontend skin.

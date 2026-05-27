@@ -137,6 +137,8 @@ http://localhost:8080
 
 On first launch, CertWatch shows a setup screen where the first user creates the administrator account.
 
+For local development, the Vite frontend runs on `http://localhost:5173` and proxies `/api`, `/metrics`, and `/public` to the API server on `http://localhost:8080`.
+
 ## Example Monitors
 
 - `example.com`, port `443`, type `HTTPS`
