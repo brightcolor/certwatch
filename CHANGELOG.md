@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.2 - 2026-05-28
+
+- Replaced the fixed-width public SVG badges with a responsive badge renderer that dynamically sizes content and safely clips long hostnames.
+- Added `?label=` and `?alias=` support for monitor and label badges so embeds can use short customer-facing names.
+- Exposed alias badge URLs in the monitor and application embed panels.
+
 ## 0.8.1 - 2026-05-28
 
 - Reworked the dark theme to use a neutral dark blue/gray palette and removed the green/olive cast.

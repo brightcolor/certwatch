@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { appSettings, incidents, monitors, results, subscriptions } from "../storage/repositories.js";
 import { sendStatusSubscriptionOptIn } from "../notifications/service.js";
-import { escapeHtml, renderPublicStatusPage } from "./publicStatusPage.js";
+import { renderPublicStatusPage } from "./publicStatusPage.js";
+import { badgeLabelFromQuery, renderStatusBadge } from "./publicBadge.js";
 import type { MonitorStatus } from "../types.js";
 
 export const publicRoutes = Router();
@@ -18,18 +19,16 @@ publicRoutes.get("/badge/:id.svg", (req, res) => {
   const monitor = monitors.get(req.params.id);
   const result = monitor ? results.list(monitor.id, 1)[0] : null;
   const status = monitor?.lastStatus ?? "UNKNOWN";
-  const label = encodeXml(monitor?.name ?? "monitor");
-  const value = encodeXml(result?.daysRemaining !== null && result?.daysRemaining !== undefined ? `${status} ${result.daysRemaining}d` : status);
-  const color = colorFor(status);
-  res.type("image/svg+xml").send(`<svg xmlns="http://www.w3.org/2000/svg" width="190" height="28" role="img"><rect width="190" height="28" rx="4" fill="#151b23"/><rect x="95" width="95" height="28" rx="4" fill="${color}"/><text x="10" y="18" fill="#e6edf3" font-family="Verdana" font-size="11">${label}</text><text x="105" y="18" fill="#fff" font-family="Verdana" font-size="11">${value}</text></svg>`);
+  const label = badgeLabelFromQuery(req.query, monitor?.name ?? monitor?.host ?? "monitor");
+  const value = result?.daysRemaining !== null && result?.daysRemaining !== undefined ? `${status} ${result.daysRemaining}d` : status;
+  res.set("Cache-Control", "no-cache").type("image/svg+xml").send(renderStatusBadge({ label, value, status }));
 });
 
 publicRoutes.get("/badge/tags/:tags.svg", (req, res) => {
   const status = publicStatus(req.params.tags);
-  const label = encodeXml(status.label);
-  const value = encodeXml(status.rollupStatus.toLowerCase());
-  const color = colorFor(status.rollupStatus);
-  res.type("image/svg+xml").send(`<svg xmlns="http://www.w3.org/2000/svg" width="190" height="28" role="img"><rect width="190" height="28" rx="4" fill="#151b23"/><rect x="95" width="95" height="28" rx="4" fill="${color}"/><text x="10" y="18" fill="#e6edf3" font-family="Verdana" font-size="11">${label}</text><text x="105" y="18" fill="#fff" font-family="Verdana" font-size="11">${value}</text></svg>`);
+  const label = badgeLabelFromQuery(req.query, status.label);
+  const value = status.rollupStatus.toLowerCase();
+  res.set("Cache-Control", "no-cache").type("image/svg+xml").send(renderStatusBadge({ label, value, status: status.rollupStatus }));
 });
 
 publicRoutes.get("/status/:tags", (req, res) => res.json(publicStatus(req.params.tags)));
@@ -96,9 +95,7 @@ const publicStatus = (rawTags: string) => {
   };
 };
 
-const encodeXml = escapeHtml;
 const parseTags = (value: string) => value.split(/[,+]/).map((tag) => decodeURIComponent(tag).trim()).filter(Boolean);
 const rawTags = (value: string) => value;
 const rollup = (counts: Record<string, number>): MonitorStatus => (counts.DOWN || counts.CRITICAL ? "CRITICAL" : counts.WARNING ? "WARNING" : counts.PAUSED ? "PAUSED" : counts.UNKNOWN ? "UNKNOWN" : "OK");
-const colorFor = (status: string) => status === "OK" ? "#3fb950" : status === "WARNING" ? "#d29922" : status === "CRITICAL" || status === "DOWN" ? "#f85149" : "#8b949e";
 const subscriptionState = (value: unknown) => value === "pending" || value === "confirmed" || value === "failed" ? value : undefined;

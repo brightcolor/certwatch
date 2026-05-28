@@ -24,6 +24,7 @@ export function Applications({ monitors, onSelect }: { monitors: Monitor[]; onSe
           const key = encodeURIComponent(group.tag);
           const statusUrl = `${origin}/public/status/${key}.html`;
           const badgeUrl = `${origin}/public/badge/tags/${key}.svg`;
+          const aliasBadgeUrl = `${badgeUrl}?label=${encodeURIComponent(group.tag)}`;
           return (
             <div className="panel" key={group.tag}>
               <div className="detail-head">
@@ -35,6 +36,7 @@ export function Applications({ monitors, onSelect }: { monitors: Monitor[]; onSe
               </div>
               <EmbedRow label="Status" value={statusUrl} />
               <EmbedRow label="Badge" value={badgeUrl} />
+              <EmbedRow label="Alias Badge" value={aliasBadgeUrl} />
             </div>
           );
         })}
@@ -48,8 +50,9 @@ export function Applications({ monitors, onSelect }: { monitors: Monitor[]; onSe
             const label = group.join(" + ");
             const html = `${origin}/public/status/${key}.html`;
             const badge = `${origin}/public/badge/tags/${key}.svg`;
+            const aliasBadge = `${badge}?label=${encodeURIComponent(label)}`;
             const iframe = `<iframe src="${html}" title="CertWatch ${label}" loading="lazy"></iframe>`;
-            const markdown = `[![${label}](${badge})](${html})`;
+            const markdown = `[![${label}](${aliasBadge})](${html})`;
             return <div className="embed-card" key={key}><strong>{label}</strong><code>{html}</code><div className="actions"><button onClick={() => navigator.clipboard?.writeText(html)}>URL</button><button onClick={() => navigator.clipboard?.writeText(iframe)}>iframe</button><button onClick={() => navigator.clipboard?.writeText(markdown)}>Badge</button></div></div>;
           })}
         </div>

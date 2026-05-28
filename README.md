@@ -245,6 +245,13 @@ Monitor badges are SVG URLs:
 /public/badge/tags/prod+mail.svg
 ```
 
+Badges size themselves from their content, keep long hostnames clipped inside the label area, and expose a `viewBox` for responsive embedding. Add a custom public label or short alias with `?label=Mail` or `?alias=Mail`:
+
+```text
+/public/badge/{monitorId}.svg?label=Mail
+/public/badge/tags/prod+mail.svg?alias=Customer%20Mail
+```
+
 Status pages include the latest incident timeline and expose a simple email/webhook subscription form. Subscriptions are notified when an incident opens or resolves for matching labels.
 
 Custom status pages can be configured in the Operations page. A custom page maps a public slug to one or more labels and can set a title, description, logo URL, and hostname-hiding behavior.

@@ -11,9 +11,10 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
   const origin = window.location.origin;
   const statusTag = monitor.tags[0] ?? "all";
   const badgeUrl = `${origin}/public/badge/${monitor.id}.svg`;
+  const aliasBadgeUrl = `${badgeUrl}?label=${encodeURIComponent(shortBadgeLabel(monitor.name))}`;
   const statusUrl = `${origin}/public/status/${encodeURIComponent(statusTag)}.html`;
-  const markdownBadge = `[![${monitor.name}](${badgeUrl})](${statusUrl})`;
-  const htmlBadge = `<a href="${statusUrl}"><img src="${badgeUrl}" alt="${monitor.name} status"></a>`;
+  const markdownBadge = `[![${monitor.name}](${aliasBadgeUrl})](${statusUrl})`;
+  const htmlBadge = `<a href="${statusUrl}"><img src="${aliasBadgeUrl}" alt="${escapeHtmlAttr(monitor.name)} status"></a>`;
   const hasCertificateDetails = Boolean(latest?.fingerprintSha256 || latest?.commonName || latest?.validUntil || latest?.tlsVersion || (latest?.chain?.length ?? 0) > 0);
   const certificateExpected = collectsCertificate(monitor.type, monitor.config, monitor.port);
 
@@ -54,6 +55,7 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
       </Panel>}
       <Panel title="Embed">
         <EmbedRow label="Badge URL" value={badgeUrl} />
+        <EmbedRow label="Alias Badge URL" value={aliasBadgeUrl} />
         <EmbedRow label="Markdown" value={markdownBadge} />
         <EmbedRow label="HTML" value={htmlBadge} />
       </Panel>
@@ -110,3 +112,5 @@ function EmbedRow({ label, value }: { label: string; value: string }) {
 }
 
 const dateTime = formatDateTime;
+const shortBadgeLabel = (value: string) => value.trim() || "Monitor";
+const escapeHtmlAttr = (value: string) => value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
