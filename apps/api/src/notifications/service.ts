@@ -6,8 +6,8 @@ import { alertFingerprint } from "../checks/status.js";
 import { isInMaintenance } from "../checks/maintenance.js";
 
 export const dispatchAlerts = async (monitor: Monitor, result: CheckResult, configured: NotificationChannel[]) => {
-  const settings = appSettings.alerting();
-  if (isInMaintenance(monitor, appSettings.maintenance())) return;
+  const settings = appSettings.alerting(monitor.tenantId);
+  if (isInMaintenance(monitor, appSettings.maintenance(monitor.tenantId))) return;
   if (result.severity === "info" && result.status === "OK") {
     if (settings.recoveryEnabled && monitor.lastStatus !== "OK" && monitor.lastStatus !== "UNKNOWN") {
       await sendToChannels(monitor, { ...result, severity: "recovery", message: "Monitor recovered." }, configured);
@@ -28,7 +28,7 @@ export const testChannel = async (channel: NotificationChannel) => {
 };
 
 export const dispatchStatusSubscriptions = async (monitor: Monitor, result: CheckResult, event: "opened" | "resolved", configured: StatusSubscription[]) => {
-  if (isInMaintenance(monitor, appSettings.maintenance())) return;
+  if (isInMaintenance(monitor, appSettings.maintenance(monitor.tenantId))) return;
   const targets = configured.filter((subscription) => subscription.enabled && subscription.tags.every((tag) => monitor.tags.includes(tag)));
   await Promise.allSettled(targets.map((subscription) => sendStatusSubscription(subscription, monitor, result, event)));
 };
@@ -100,7 +100,7 @@ const sendStatusSubscription = async (subscription: StatusSubscription, monitor:
     status_page: `${env.baseUrl}/public/status/${encodeURIComponent(subscription.tags.join("+"))}.html`
   };
   if (subscription.type === "webhook") return postJson(subscription.target, payload);
-  const smtp = appSettings.smtp();
+  const smtp = appSettings.smtp(monitor.tenantId);
   const transport = nodemailer.createTransport({
     host: smtp.host,
     port: smtp.port,
@@ -117,7 +117,7 @@ const sendStatusSubscription = async (subscription: StatusSubscription, monitor:
 };
 
 const sendToChannels = async (monitor: Monitor, result: CheckResult, configured: NotificationChannel[]) => {
-  const selected = selectedChannelIds(monitor, result, appSettings.notificationRoutes(), configured.map((channel) => channel.id));
+  const selected = selectedChannelIds(monitor, result, appSettings.notificationRoutes(monitor.tenantId), configured.map((channel) => channel.id));
   const targets = configured.filter((channel) => channel.enabled && selected.has(channel.id));
   await Promise.allSettled(targets.map(async (channel) => {
     const target = selected.get(channel.id) ?? "";
@@ -200,7 +200,7 @@ const endpoint = (channel: NotificationChannel, fallbackParts?: string[]) => {
 };
 
 const sendEmail = async (channel: NotificationChannel, monitor: Monitor, result: CheckResult, recipient = "") => {
-  const globalSmtp = appSettings.smtp();
+  const globalSmtp = appSettings.smtp(monitor.tenantId);
   const smtp = mergeSmtp(globalSmtp, channel.config);
   const transport = nodemailer.createTransport({
     host: smtp.host,

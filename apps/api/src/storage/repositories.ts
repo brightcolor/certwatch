@@ -1,7 +1,8 @@
-import { db, rowToApiToken, rowToChannel, rowToDelivery, rowToIncident, rowToMonitor, rowToResult, rowToSubscription, rowToUser } from "./db.js";
+import { db, rowToApiToken, rowToChannel, rowToDelivery, rowToIncident, rowToMembership, rowToMonitor, rowToResult, rowToSubscription, rowToTenant, rowToUser } from "./db.js";
 import { id } from "../utils/id.js";
 import { addSecondsIso, nowIso } from "../utils/time.js";
-import type { AlertingSettings, ApiToken, BackupSettings, CheckResult, CtWatchSettings, DiscoverySettings, Incident, IncidentNote, MaintenanceSettings, Monitor, NotificationChannel, NotificationDelivery, NotificationRoute, RetentionSettings, SslLabsSettings, StatusPageSettings, StatusSubscription, SmtpSettings, TlsPolicySettings, User } from "../types.js";
+import type { AlertingSettings, ApiToken, BackupSettings, CheckResult, CtWatchSettings, DiscoverySettings, Incident, IncidentNote, MaintenanceSettings, Monitor, NotificationChannel, NotificationDelivery, NotificationRoute, RetentionSettings, SslLabsSettings, StatusPageSettings, StatusSubscription, SmtpSettings, Tenant, TenantMembership, TenantRole, TlsPolicySettings, User } from "../types.js";
+import { DEFAULT_TENANT_ID } from "../types.js";
 import { decryptConfigSecrets, encryptConfigSecrets } from "../utils/secrets.js";
 
 export const users = {
@@ -21,6 +22,7 @@ export const users = {
     const createdAt = nowIso();
     const user = { id: id(), email: email.toLowerCase(), passwordHash, role: "admin" as const, createdAt };
     db.prepare("INSERT INTO users VALUES (?, ?, ?, ?, ?)").run(user.id, user.email, user.passwordHash, user.role, user.createdAt);
+    ensureDefaultMembership(user.id, "owner");
     return user;
   },
   list(): User[] {
@@ -38,6 +40,49 @@ export const users = {
   },
   delete(userId: string) {
     db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+  }
+};
+
+export const tenants = {
+  list(): Tenant[] {
+    return db.prepare("SELECT * FROM tenants ORDER BY name").all().map(rowToTenant);
+  },
+  get(tenantId: string): Tenant | null {
+    const row = db.prepare("SELECT * FROM tenants WHERE id = ?").get(tenantId);
+    return row ? rowToTenant(row) : null;
+  },
+  forUser(userId: string): TenantMembership[] {
+    return db.prepare(`
+      SELECT t.*, tm.tenant_id, tm.user_id, tm.role, tm.created_at, u.email
+      FROM tenant_memberships tm
+      JOIN tenants t ON t.id = tm.tenant_id
+      JOIN users u ON u.id = tm.user_id
+      WHERE tm.user_id = ?
+      ORDER BY t.name
+    `).all(userId).map(rowToMembership);
+  },
+  members(tenantId: string): TenantMembership[] {
+    return db.prepare(`
+      SELECT t.*, tm.tenant_id, tm.user_id, tm.role, tm.created_at, u.email
+      FROM tenant_memberships tm
+      JOIN tenants t ON t.id = tm.tenant_id
+      JOIN users u ON u.id = tm.user_id
+      WHERE tm.tenant_id = ?
+      ORDER BY u.email
+    `).all(tenantId).map(rowToMembership);
+  },
+  create(name: string, ownerUserId: string): Tenant {
+    const createdAt = nowIso();
+    const tenant = { id: id(), name, slug: uniqueSlug(slugify(name)), plan: "free" as const, status: "trialing" as const, monitorLimit: 50, userLimit: 5, createdAt };
+    db.prepare("INSERT INTO tenants VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(tenant.id, tenant.name, tenant.slug, tenant.plan, tenant.status, tenant.monitorLimit, tenant.userLimit, tenant.createdAt);
+    this.addMember(tenant.id, ownerUserId, "owner");
+    return tenant;
+  },
+  addMember(tenantId: string, userId: string, role: TenantRole) {
+    db.prepare("INSERT INTO tenant_memberships VALUES (?, ?, ?, ?) ON CONFLICT(tenant_id, user_id) DO UPDATE SET role = excluded.role").run(tenantId, userId, role, nowIso());
+  },
+  removeMember(tenantId: string, userId: string) {
+    db.prepare("DELETE FROM tenant_memberships WHERE tenant_id = ? AND user_id = ?").run(tenantId, userId);
   }
 };
 
@@ -81,8 +126,8 @@ export const apiTokens = {
 };
 
 export const monitors = {
-  list(): Monitor[] {
-    return db.prepare("SELECT * FROM monitors ORDER BY name").all().map(rowToMonitor);
+  list(tenantId = DEFAULT_TENANT_ID): Monitor[] {
+    return db.prepare("SELECT * FROM monitors WHERE tenant_id = ? ORDER BY name").all(tenantId).map(rowToMonitor);
   },
   due(limit: number): Monitor[] {
     return db
@@ -90,19 +135,19 @@ export const monitors = {
       .all(nowIso(), limit)
       .map(rowToMonitor);
   },
-  get(monitorId: string): Monitor | null {
-    const row = db.prepare("SELECT * FROM monitors WHERE id = ?").get(monitorId);
+  get(monitorId: string, tenantId?: string): Monitor | null {
+    const row = tenantId ? db.prepare("SELECT * FROM monitors WHERE id = ? AND tenant_id = ?").get(monitorId, tenantId) : db.prepare("SELECT * FROM monitors WHERE id = ?").get(monitorId);
     return row ? rowToMonitor(row) : null;
   },
   create(input: Omit<Monitor, "id" | "lastStatus" | "createdAt" | "updatedAt" | "nextCheckAt">): Monitor {
     const createdAt = nowIso();
-    const monitor: Monitor = { ...input, id: id(), lastStatus: input.enabled ? "UNKNOWN" : "PAUSED", nextCheckAt: null, createdAt, updatedAt: createdAt };
+    const monitor: Monitor = { ...input, tenantId: input.tenantId ?? DEFAULT_TENANT_ID, id: id(), lastStatus: input.enabled ? "UNKNOWN" : "PAUSED", nextCheckAt: null, createdAt, updatedAt: createdAt };
     db.prepare(`
-      INSERT INTO monitors (id, name, host, port, type, enabled, interval_seconds,
+      INSERT INTO monitors (id, tenant_id, name, host, port, type, enabled, interval_seconds,
       timeout_seconds, warning_days, critical_days, grace_period_seconds, sni_enabled, sni_host, validate_certificate,
       allow_self_signed, tags_json, notes, owner, channel_ids_json, notification_recipients_json,
       config_json, maintenance_windows, last_status, next_check_at, created_at, updated_at)
-      VALUES (@id, @name, @host, @port, @type, @enabled, @intervalSeconds,
+      VALUES (@id, @tenantId, @name, @host, @port, @type, @enabled, @intervalSeconds,
       @timeoutSeconds, @warningDays, @criticalDays, @gracePeriodSeconds, @sniEnabled, @sniHost, @validateCertificate,
       @allowSelfSigned, @tagsJson, @notes, @owner, @channelIdsJson, @notificationRecipientsJson,
       @configJson, @maintenanceWindows, @lastStatus, @nextCheckAt, @createdAt, @updatedAt)
@@ -124,7 +169,8 @@ export const monitors = {
     `).run(serializeMonitor(updated));
     return updated;
   },
-  delete(monitorId: string) {
+  delete(monitorId: string, tenantId?: string) {
+    if (tenantId && !this.get(monitorId, tenantId)) return;
     db.prepare("DELETE FROM check_results WHERE monitor_id = ?").run(monitorId);
     db.prepare("DELETE FROM alert_history WHERE monitor_id = ?").run(monitorId);
     db.prepare("DELETE FROM monitors WHERE id = ?").run(monitorId);
@@ -291,21 +337,23 @@ export const subscriptions = {
 };
 
 export const channels = {
-  list(): NotificationChannel[] {
-    return db.prepare("SELECT * FROM notification_channels ORDER BY name").all().map(rowToChannel);
+  list(tenantId = DEFAULT_TENANT_ID): NotificationChannel[] {
+    return db.prepare("SELECT * FROM notification_channels WHERE tenant_id = ? ORDER BY name").all(tenantId).map(rowToChannel);
   },
-  get(channelId: string): NotificationChannel | null {
-    const row = db.prepare("SELECT * FROM notification_channels WHERE id = ?").get(channelId);
+  get(channelId: string, tenantId?: string): NotificationChannel | null {
+    const row = tenantId ? db.prepare("SELECT * FROM notification_channels WHERE id = ? AND tenant_id = ?").get(channelId, tenantId) : db.prepare("SELECT * FROM notification_channels WHERE id = ?").get(channelId);
     return row ? rowToChannel(row) : null;
   },
   upsert(channel: NotificationChannel) {
     db.prepare(`
-      INSERT INTO notification_channels VALUES (@id, @name, @type, @enabled, @configJson, @createdAt, @updatedAt)
-      ON CONFLICT(id) DO UPDATE SET name=@name, type=@type, enabled=@enabled, config_json=@configJson, updated_at=@updatedAt
-    `).run({ ...channel, configJson: JSON.stringify(encryptConfigSecrets(channel.config ?? {})) });
+      INSERT INTO notification_channels (id, tenant_id, name, type, enabled, config_json, created_at, updated_at)
+      VALUES (@id, @tenantId, @name, @type, @enabled, @configJson, @createdAt, @updatedAt)
+      ON CONFLICT(id) DO UPDATE SET tenant_id=@tenantId, name=@name, type=@type, enabled=@enabled, config_json=@configJson, updated_at=@updatedAt
+    `).run({ ...channel, tenantId: channel.tenantId ?? DEFAULT_TENANT_ID, configJson: JSON.stringify(encryptConfigSecrets(channel.config ?? {})) });
   },
-  delete(channelId: string) {
-    db.prepare("DELETE FROM notification_channels WHERE id = ?").run(channelId);
+  delete(channelId: string, tenantId?: string) {
+    if (tenantId) db.prepare("DELETE FROM notification_channels WHERE id = ? AND tenant_id = ?").run(channelId, tenantId);
+    else db.prepare("DELETE FROM notification_channels WHERE id = ?").run(channelId);
   }
 };
 
@@ -337,7 +385,7 @@ export const alerts = {
 };
 
 export const appSettings = {
-  alerting(): AlertingSettings {
+  alerting(tenantId?: string): AlertingSettings {
     return this.get("alerting", {
       resendAfterHours: 24,
       recoveryEnabled: true,
@@ -350,9 +398,9 @@ export const appSettings = {
       quietEnd: "07:00",
       quietSuppressCritical: false,
       flappingThreshold: 4
-    });
+    }, tenantId);
   },
-  smtp(): SmtpSettings {
+  smtp(tenantId?: string): SmtpSettings {
     return this.get("smtp", {
       host: "",
       port: 587,
@@ -361,37 +409,37 @@ export const appSettings = {
       from: "",
       secure: false,
       starttls: true
-    });
+    }, tenantId);
   },
-  retention(): RetentionSettings {
-    return this.get("retention", { checkResultsDays: 365, alertHistoryDays: 365 });
+  retention(tenantId?: string): RetentionSettings {
+    return this.get("retention", { checkResultsDays: 365, alertHistoryDays: 365 }, tenantId);
   },
-  notificationRoutes(): NotificationRoute[] {
-    return this.get("notificationRoutes", []);
+  notificationRoutes(tenantId?: string): NotificationRoute[] {
+    return this.get("notificationRoutes", [], tenantId);
   },
-  ctWatch(): CtWatchSettings {
-    return this.get("ctWatch", { enabled: false, domains: [], lastSeen: {} });
+  ctWatch(tenantId?: string): CtWatchSettings {
+    return this.get("ctWatch", { enabled: false, domains: [], lastSeen: {} }, tenantId);
   },
-  maintenance(): MaintenanceSettings {
-    return this.get("maintenance", { windows: [] });
+  maintenance(tenantId?: string): MaintenanceSettings {
+    return this.get("maintenance", { windows: [] }, tenantId);
   },
-  tlsPolicy(): TlsPolicySettings {
-    return this.get("tlsPolicy", { profile: "modern", minimumTlsVersion: "TLSv1.2", weakCipherPenalty: 40, requireSan: true, intensiveScan: true });
+  tlsPolicy(tenantId?: string): TlsPolicySettings {
+    return this.get("tlsPolicy", { profile: "modern", minimumTlsVersion: "TLSv1.2", weakCipherPenalty: 40, requireSan: true, intensiveScan: true }, tenantId);
   },
-  sslLabs(): SslLabsSettings {
-    return this.get("sslLabs", { enabled: false, registeredEmail: "", intervalHours: 24, maxAgeHours: 24, timeoutSeconds: 90, startNewScans: false, publishResults: false });
+  sslLabs(tenantId?: string): SslLabsSettings {
+    return this.get("sslLabs", { enabled: false, registeredEmail: "", intervalHours: 24, maxAgeHours: 24, timeoutSeconds: 90, startNewScans: false, publishResults: false }, tenantId);
   },
-  statusPages(): StatusPageSettings {
-    return this.get("statusPages", { pages: [] });
+  statusPages(tenantId?: string): StatusPageSettings {
+    return this.get("statusPages", { pages: [] }, tenantId);
   },
-  discovery(): DiscoverySettings {
-    return this.get("discovery", { enabled: false, intervalHours: 24, domains: [], suggestions: [], lastRunAt: null });
+  discovery(tenantId?: string): DiscoverySettings {
+    return this.get("discovery", { enabled: false, intervalHours: 24, domains: [], suggestions: [], lastRunAt: null }, tenantId);
   },
-  backups(): BackupSettings {
-    return this.get("backups", { enabled: false, intervalHours: 24, keep: 7, lastRunAt: null });
+  backups(tenantId?: string): BackupSettings {
+    return this.get("backups", { enabled: false, intervalHours: 24, keep: 7, lastRunAt: null }, tenantId);
   },
-  get<T>(key: string, fallback: T): T {
-    const row = db.prepare("SELECT value_json FROM settings WHERE key = ?").get(key) as { value_json?: string } | undefined;
+  get<T>(key: string, fallback: T, tenantId?: string): T {
+    const row = db.prepare("SELECT value_json FROM settings WHERE key = ?").get(settingKey(key, tenantId)) as { value_json?: string } | undefined;
     if (!row?.value_json) return fallback;
     try {
       const parsed = JSON.parse(row.value_json);
@@ -402,10 +450,10 @@ export const appSettings = {
       return fallback;
     }
   },
-  set<T>(key: string, value: T) {
+  set<T>(key: string, value: T, tenantId?: string) {
     const stored = isPlainSettingsObject(value) ? encryptConfigSecrets(value as Record<string, unknown>) : value;
     db.prepare("INSERT INTO settings VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json").run(
-      key,
+      settingKey(key, tenantId),
       JSON.stringify(stored)
     );
   }
@@ -413,6 +461,7 @@ export const appSettings = {
 
 const serializeMonitor = (monitor: Monitor) => ({
   ...monitor,
+  tenantId: monitor.tenantId ?? DEFAULT_TENANT_ID,
   enabled: monitor.enabled ? 1 : 0,
   sniEnabled: monitor.sniEnabled ? 1 : 0,
   validateCertificate: monitor.validateCertificate ? 1 : 0,
@@ -425,3 +474,22 @@ const serializeMonitor = (monitor: Monitor) => ({
 
 const isPlainSettingsObject = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+const settingKey = (key: string, tenantId?: string) => tenantId && tenantId !== DEFAULT_TENANT_ID ? `tenant:${tenantId}:${key}` : key;
+
+const ensureDefaultMembership = (userId: string, role: TenantRole) => {
+  db.prepare("INSERT OR IGNORE INTO tenant_memberships VALUES (?, ?, ?, ?)").run(DEFAULT_TENANT_ID, userId, role, nowIso());
+};
+
+const slugify = (value: string) =>
+  value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "workspace";
+
+const uniqueSlug = (base: string) => {
+  let slug = base;
+  let suffix = 2;
+  while (db.prepare("SELECT id FROM tenants WHERE slug = ?").get(slug)) {
+    slug = `${base}-${suffix}`;
+    suffix += 1;
+  }
+  return slug;
+};

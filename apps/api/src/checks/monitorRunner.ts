@@ -9,10 +9,11 @@ import { runTlsCheck } from "./tlsChecker.js";
 
 export const runMonitorCheck = async (monitor: Monitor, previous?: CheckResult) => {
   const checked = isServiceMonitor(monitor.type)
-    ? await runServiceCheck(monitor, previous?.fingerprintSha256, appSettings.tlsPolicy())
-    : await runTlsCheck(monitor, previous?.fingerprintSha256, appSettings.tlsPolicy());
-  const sslLabs = await enrichWithSslLabs(monitor, checked, previous, appSettings.sslLabs(), results.latestSslLabsForHost(monitor.host));
+    ? await runServiceCheck(monitor, previous?.fingerprintSha256, appSettings.tlsPolicy(monitor.tenantId))
+    : await runTlsCheck(monitor, previous?.fingerprintSha256, appSettings.tlsPolicy(monitor.tenantId));
+  const sslLabs = await enrichWithSslLabs(monitor, checked, previous, appSettings.sslLabs(monitor.tenantId), results.latestSslLabsForHost(monitor.host));
   const dns = await enrichWithDnsResolution(monitor, sslLabs, previous);
-  const watched = applyResultWatches(dns, previous, appSettings.alerting(), monitor);
-  return markFlapping(watched, results.listRecent(monitor.id, 10), appSettings.alerting().flappingThreshold);
+  const alerting = appSettings.alerting(monitor.tenantId);
+  const watched = applyResultWatches(dns, previous, alerting, monitor);
+  return markFlapping(watched, results.listRecent(monitor.id, 10), alerting.flappingThreshold);
 };

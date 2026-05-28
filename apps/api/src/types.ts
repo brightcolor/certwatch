@@ -14,6 +14,8 @@ export type MonitorType =
 export type ServiceMonitorType = "http" | "tcp" | "dns" | "http_login" | "ssh" | "ftp" | "smtp" | "imap" | "pop3";
 export type MonitorStatus = "OK" | "WARNING" | "CRITICAL" | "DOWN" | "PAUSED" | "UNKNOWN";
 export type Severity = "info" | "warning" | "critical" | "recovery";
+export type TenantRole = "owner" | "admin" | "member" | "viewer";
+export const DEFAULT_TENANT_ID = "00000000-0000-4000-8000-000000000001";
 export type ChannelType =
   | "email"
   | "pushover"
@@ -31,6 +33,7 @@ export type ChannelType =
 
 export interface Monitor {
   id: string;
+  tenantId: string;
   name: string;
   host: string;
   port: number;
@@ -123,6 +126,7 @@ export interface CertificateChainItem {
 
 export interface NotificationChannel {
   id: string;
+  tenantId: string;
   name: string;
   type: ChannelType;
   enabled: boolean;
@@ -137,6 +141,26 @@ export interface User {
   passwordHash: string;
   role: "admin" | "viewer";
   createdAt: string;
+}
+
+export interface Tenant {
+  id: string;
+  name: string;
+  slug: string;
+  plan: "free" | "team" | "business" | "enterprise";
+  status: "active" | "trialing" | "past_due" | "suspended";
+  monitorLimit: number;
+  userLimit: number;
+  createdAt: string;
+}
+
+export interface TenantMembership {
+  tenantId: string;
+  userId: string;
+  role: TenantRole;
+  createdAt: string;
+  tenant: Tenant;
+  userEmail?: string;
 }
 
 export interface AlertingSettings {

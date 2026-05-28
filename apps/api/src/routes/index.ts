@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth } from "../auth/auth.js";
+import { requireAuth, resolveTenant } from "../auth/auth.js";
 import { authRoutes } from "./authRoutes.js";
 import { monitorRoutes } from "./monitorRoutes.js";
 import { systemRoutes } from "./systemRoutes.js";
@@ -11,6 +11,7 @@ export const apiRoutes = Router();
 apiRoutes.use("/auth", authRoutes);
 apiRoutes.get("/health", (_req, res) => res.json({ ok: true }));
 apiRoutes.use(requireAuth);
+apiRoutes.use(resolveTenant);
 apiRoutes.use("/monitors", monitorRoutes);
 apiRoutes.use("/", opsRoutes);
 apiRoutes.use("/", systemRoutes);

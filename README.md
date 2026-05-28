@@ -21,6 +21,7 @@ This stack keeps the application easy to self-host while still supporting real T
 ## Features
 
 - Dashboard with OK, warning, critical, down, paused, and unknown status counts
+- SaaS-ready workspace model with tenant-scoped monitors, notification providers, settings, and role-based memberships
 - Dynamic browser favicon that glows green when healthy and blinks red when attention is required
 - Monitor types for HTTPS, custom TCP TLS, SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, XMPP TLS, SMTP STARTTLS, IMAP STARTTLS, POP3 STARTTLS, and explicit FTP AUTH TLS
 - Service health checks for HTTP, HTTP login flows, raw TCP ports, DNS records, SSH, FTP, SMTP, IMAP, and POP3 banners
@@ -62,6 +63,7 @@ This stack keeps the application easy to self-host while still supporting real T
 - Scheduled SQLite database backups with UI download and retention controls
 - Local user login with bcrypt password hashes, secure sessions, CSRF token header, and first-run admin setup
 - Admin-only user management with visible validation for password length and duplicate email addresses
+- Workspace roles for `owner`, `admin`, `member`, and `viewer`; existing self-hosted installs are migrated into a default workspace
 - Encrypted storage for monitor login secrets, SMTP settings, and notification provider secrets using `SESSION_SECRET`
 - JSON monitor import/export and CSV exports for certificate summary and check history
 - REST API under `/api`
@@ -279,6 +281,18 @@ The Operations page contains production controls that are intentionally kept out
 Monitor labels are entered as chips in the monitor form. Press Enter or comma to add a label, move to another field to commit the current label on blur, click a label to remove it, or switch to text mode when labels need to be copied or pasted in bulk.
 
 The Settings page includes the remaining interface preference for dark or light mode. AdminLTE 4 is the single frontend shell, so operators get one consistent navigation, status center, global monitor search, card layout, and form system.
+
+## SaaS Readiness
+
+CertWatch now has a workspace layer that prepares the app for SaaS operation:
+
+- Each authenticated request is scoped to the selected workspace through the `X-Tenant-Id` header.
+- Monitors, notification providers, alert policy, SMTP settings, TLS policy, discovery, status page settings, and backups are tenant-scoped.
+- Workspace memberships support `owner`, `admin`, `member`, and `viewer` roles.
+- Viewers can read workspace data, members can operate monitors, and owners/admins can manage settings, providers, and members.
+- Tenants include plan, status, monitor limit, and user limit fields so billing or subscription logic can be added later.
+
+Billing, hosted signup, invite emails, and per-tenant custom domains are intentionally not included yet.
 
 ## Prometheus
 

@@ -1,40 +1,43 @@
 import { Router } from "express";
-import { channels, incidents, monitors, results, subscriptions } from "../storage/repositories.js";
+import { channels, incidents, monitors, results, subscriptions, tenants } from "../storage/repositories.js";
 import { monitorInputSchema } from "./monitorSchemas.js";
 import { dispatchAlerts, dispatchStatusSubscriptions } from "../notifications/service.js";
 import type { Monitor } from "../types.js";
 import { redactConfigSecrets } from "../utils/secrets.js";
 import { runMonitorCheck } from "../checks/monitorRunner.js";
+import { requireTenantRole } from "../auth/auth.js";
 
 export const monitorRoutes = Router();
 
 monitorRoutes.get("/", (_req, res) => {
   const latest = results.latestByMonitor();
-  res.json(monitors.list().map((monitor) => ({ ...publicMonitor(monitor), latestResult: latest[monitor.id] ?? null })));
+  res.json(monitors.list(_req.currentTenant!.id).map((monitor) => ({ ...publicMonitor(monitor), latestResult: latest[monitor.id] ?? null })));
 });
 
-monitorRoutes.post("/", async (req, res) => {
+monitorRoutes.post("/", requireTenantRole("owner", "admin", "member"), async (req, res) => {
   const parsed = monitorInputSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid monitor." });
-  const monitor = monitors.create(parsed.data);
+  if (!monitorQuotaAvailable(req.currentTenant!.id)) return res.status(402).json({ error: "Workspace monitor limit reached." });
+  const monitor = monitors.create({ ...parsed.data, tenantId: req.currentTenant!.id });
   res.status(201).json(publicMonitor(monitor));
 });
 
-monitorRoutes.post("/bulk", (req, res) => {
+monitorRoutes.post("/bulk", requireTenantRole("owner", "admin", "member"), (req, res) => {
   const lines = String(req.body?.text ?? "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const created = [];
   const errors = [];
   for (const line of lines) {
     const parsedLine = parseBulkLine(line);
     const parsed = monitorInputSchema.safeParse(parsedLine);
-    if (parsed.success) created.push(publicMonitor(monitors.create(parsed.data)));
+    if (parsed.success && monitorQuotaAvailable(req.currentTenant!.id, created.length)) created.push(publicMonitor(monitors.create({ ...parsed.data, tenantId: req.currentTenant!.id })));
+    else if (parsed.success) errors.push({ line, error: "Workspace monitor limit reached." });
     else errors.push({ line, error: parsed.error.issues[0]?.message ?? "Invalid monitor." });
   }
   res.status(errors.length ? 207 : 201).json({ imported: created.length, errors, monitors: created });
 });
 
 monitorRoutes.get("/:id", (req, res) => {
-  const monitor = monitors.get(req.params.id);
+  const monitor = monitors.get(req.params.id, req.currentTenant!.id);
   if (!monitor) return res.status(404).json({ error: "Monitor not found." });
   res.json({ ...publicMonitor(monitor), latestResult: results.list(monitor.id, 1)[0] ?? null });
 });
@@ -74,21 +77,21 @@ const parseBulkLine = (line: string) => {
   };
 };
 
-monitorRoutes.put("/:id", (req, res) => {
-  const monitor = monitors.get(req.params.id);
+monitorRoutes.put("/:id", requireTenantRole("owner", "admin", "member"), (req, res) => {
+  const monitor = monitors.get(req.params.id, req.currentTenant!.id);
   if (!monitor) return res.status(404).json({ error: "Monitor not found." });
   const parsed = monitorInputSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid monitor." });
   res.json(publicMonitor(monitors.update({ ...monitor, ...parsed.data, config: mergeMaskedSecrets(monitor.config, parsed.data.config) })));
 });
 
-monitorRoutes.delete("/:id", (req, res) => {
-  monitors.delete(req.params.id);
+monitorRoutes.delete("/:id", requireTenantRole("owner", "admin"), (req, res) => {
+  monitors.delete(req.params.id, req.currentTenant!.id);
   res.status(204).end();
 });
 
-monitorRoutes.post("/:id/check", async (req, res) => {
-  const monitor = monitors.get(req.params.id);
+monitorRoutes.post("/:id/check", requireTenantRole("owner", "admin", "member"), async (req, res) => {
+  const monitor = monitors.get(req.params.id, req.currentTenant!.id);
   if (!monitor) return res.status(404).json({ error: "Monitor not found." });
   if (!monitor.enabled) return res.status(409).json({ error: "Monitor is paused." });
   const previous = results.list(monitor.id, 1)[0];
@@ -98,16 +101,18 @@ monitorRoutes.post("/:id/check", async (req, res) => {
   const statusEvent = result.status === "OK" ? (openIncident ? "resolved" : null) : (!openIncident ? "opened" : null);
   incidents.sync(monitor, result);
   monitors.markChecked(monitor, result);
-  await dispatchAlerts(monitor, result, channels.list());
+  await dispatchAlerts(monitor, result, channels.list(monitor.tenantId));
   if (statusEvent) await dispatchStatusSubscriptions(monitor, result, statusEvent, subscriptions.list());
   res.json(result);
 });
 
 monitorRoutes.get("/:id/results", (req, res) => {
+  if (!monitors.get(req.params.id, req.currentTenant!.id)) return res.status(404).json({ error: "Monitor not found." });
   res.json(results.list(req.params.id, Number(req.query.limit ?? 100)));
 });
 
 monitorRoutes.get("/:id/incidents", (req, res) => {
+  if (!monitors.get(req.params.id, req.currentTenant!.id)) return res.status(404).json({ error: "Monitor not found." });
   res.json(incidents.listForMonitor(req.params.id, Number(req.query.limit ?? 50)));
 });
 
@@ -118,3 +123,8 @@ const mergeMaskedSecrets = (previous: Record<string, unknown>, next: Record<stri
     key,
     value === "********" ? previous?.[key] : value
   ]));
+
+const monitorQuotaAvailable = (tenantId: string, pending = 0) => {
+  const tenant = tenants.get(tenantId);
+  return !tenant || tenant.monitorLimit <= 0 || monitors.list(tenantId).length + pending < tenant.monitorLimit;
+};

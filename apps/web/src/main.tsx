@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { api, Monitor, CheckResult, Incident, StatusSubscription } from "./api/client";
+import { api, Monitor, CheckResult, Incident, StatusSubscription, TenantMembership } from "./api/client";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./pages/Dashboard";
 import { Login } from "./pages/Login";
@@ -12,6 +12,7 @@ import { UsersPage } from "./pages/Users";
 import { Applications } from "./pages/Applications";
 import { Operations } from "./pages/Operations";
 import { Reports } from "./pages/Reports";
+import { TenantsPage } from "./pages/Tenants";
 import { applyStatusFavicon } from "./utils/favicon";
 import "./styles/app.css";
 
@@ -28,6 +29,9 @@ function App() {
   const [routes, setRoutes] = useState<any[]>([]);
   const [ctWatch, setCtWatch] = useState<any>(null);
   const [subscriptions, setSubscriptions] = useState<StatusSubscription[]>([]);
+  const [tenants, setTenants] = useState<TenantMembership[]>([]);
+  const [tenantMembers, setTenantMembers] = useState<any[]>([]);
+  const [tenantId, setTenantId] = useState(localStorage.getItem("tenantId") ?? "");
   const [users, setUsers] = useState<any[]>([]);
   const [version, setVersion] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
@@ -49,12 +53,12 @@ function App() {
       .then((status) => {
         setSetupRequired(status.setupRequired);
         if (status.setupRequired) return null;
-        return api.request<any>("/auth/me").then((r) => { api.setCsrf(r.csrfToken); setUser(r.user); });
+        return api.request<any>("/auth/me").then((r) => { api.setCsrf(r.csrfToken); applyTenants(r.tenants ?? []); setUser(r.user); });
       })
       .catch(() => setUser(null))
       .finally(() => setBooted(true));
   }, []);
-  useEffect(() => { if (user) void refresh(); }, [user]);
+  useEffect(() => { if (user && tenantId) void refresh(); }, [user, tenantId]);
   useEffect(() => { if (selected) void loadMonitorData(selected); }, [selected]);
   useEffect(() => applyStatusFavicon(stats), [stats]);
   useEffect(() => {
@@ -104,7 +108,35 @@ function App() {
     setCtWatch(ctWatchData);
     setSubscriptions(subscriptionData);
     setVersion((await api.request<any>("/version")).version);
+    setTenants(await api.request<TenantMembership[]>("/tenants"));
+    await loadTenantMembers();
     if (user?.role === "admin") setUsers(await api.request<any[]>("/users"));
+  };
+
+  const applyTenants = (items: TenantMembership[]) => {
+    setTenants(items);
+    const existing = localStorage.getItem("tenantId");
+    const selected = items.find((item) => item.tenantId === existing)?.tenantId ?? items[0]?.tenantId ?? "";
+    if (selected) {
+      api.setTenant(selected);
+      setTenantId(selected);
+    }
+  };
+
+  const switchTenant = (nextTenantId: string) => {
+    api.setTenant(nextTenantId);
+    setTenantId(nextTenantId);
+    navigate("dashboard");
+  };
+
+  const loadTenantMembers = async () => {
+    const id = localStorage.getItem("tenantId");
+    if (!id) return setTenantMembers([]);
+    try {
+      setTenantMembers(await api.request<any[]>(`/tenants/${id}/members`));
+    } catch {
+      setTenantMembers([]);
+    }
   };
 
   const loadMonitorData = async (id: string) => {
@@ -155,7 +187,7 @@ function App() {
   };
 
   if (!booted) return <main className="login"><div className="login-panel"><span className="eyebrow">CertWatch</span><h1>Loading</h1></div></main>;
-  if (!user) return <Login setupRequired={setupRequired} onLogin={(nextUser) => { setUser(nextUser); setSetupRequired(false); }} />;
+  if (!user) return <Login setupRequired={setupRequired} onLogin={(result) => { applyTenants(result.tenants ?? []); setUser(result.user); setSetupRequired(false); }} />;
   const selectedMonitor = monitors.find((monitor) => monitor.id === selected);
 
   return (
@@ -169,6 +201,9 @@ function App() {
       stats={stats}
       monitors={monitors}
       onSelectMonitor={(id: string) => navigate("dashboard", id)}
+      tenants={tenants}
+      tenantId={tenantId}
+      onTenant={switchTenant}
     >
       {toast && <div className="toast" onAnimationEnd={() => setToast("")}>{toast}</div>}
       {page === "settings" ? (
@@ -202,6 +237,14 @@ function App() {
         />
       ) : page === "users" ? (
         <UsersPage users={users} onCreate={async (data: any) => { await api.request("/users", { method: "POST", body: JSON.stringify(data) }); await refresh(); }} onDelete={async (id: string) => { await api.request(`/users/${id}`, { method: "DELETE" }); await refresh(); }} />
+      ) : page === "tenants" ? (
+        <TenantsPage
+          tenants={tenants}
+          members={tenantMembers}
+          onCreateTenant={async (name) => { const created = await api.request<any>("/tenants", { method: "POST", body: JSON.stringify({ name }) }); api.setTenant(created.tenantId); setTenantId(created.tenantId); await refresh(); }}
+          onAddMember={async (email, role) => { await api.request(`/tenants/${tenantId}/members`, { method: "POST", body: JSON.stringify({ email, role }) }); await loadTenantMembers(); }}
+          onRemoveMember={async (userId) => { await api.request(`/tenants/${tenantId}/members/${userId}`, { method: "DELETE" }); await loadTenantMembers(); }}
+        />
       ) : page === "applications" ? (
         <Applications monitors={monitors} onSelect={(id) => navigate("dashboard", id)} />
       ) : page === "operations" ? (

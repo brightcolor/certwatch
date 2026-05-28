@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "../api/client";
 
-export function Login({ setupRequired, onLogin }: { setupRequired: boolean; onLogin: (user: any) => void }) {
+export function Login({ setupRequired, onLogin }: { setupRequired: boolean; onLogin: (result: any) => void }) {
   const [email, setEmail] = useState("admin@example.com");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -17,7 +17,7 @@ export function Login({ setupRequired, onLogin }: { setupRequired: boolean; onLo
     try {
       const result = await api.request<any>(setupRequired ? "/auth/setup" : "/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
       api.setCsrf(result.csrfToken);
-      onLogin(result.user);
+      onLogin(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed.");
     }

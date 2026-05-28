@@ -2,8 +2,8 @@ import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import type { NextFunction, Request, Response } from "express";
 import { env } from "../config/env.js";
-import { apiTokens, sessions, users } from "../storage/repositories.js";
-import type { ApiToken, User } from "../types.js";
+import { apiTokens, sessions, tenants, users } from "../storage/repositories.js";
+import type { ApiToken, Tenant, TenantMembership, TenantRole, User } from "../types.js";
 
 declare global {
   namespace Express {
@@ -11,6 +11,9 @@ declare global {
       user?: User;
       apiToken?: ApiToken;
       csrfToken?: string;
+      currentTenant?: Tenant;
+      tenantRole?: TenantRole;
+      tenantMemberships?: TenantMembership[];
     }
   }
 }
@@ -58,6 +61,23 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
   if (!req.apiToken && !["GET", "HEAD", "OPTIONS"].includes(req.method) && req.get("x-csrf-token") !== req.csrfToken) {
     return res.status(403).json({ error: "Invalid CSRF token." });
   }
+  next();
+};
+
+export const resolveTenant = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user) return next();
+  const memberships = tenants.forUser(req.user.id);
+  if (!memberships.length) return res.status(403).json({ error: "No workspace membership found." });
+  const requested = req.get("x-tenant-id");
+  const membership = memberships.find((item) => item.tenantId === requested) ?? memberships[0];
+  req.currentTenant = membership.tenant;
+  req.tenantRole = membership.role;
+  req.tenantMemberships = memberships;
+  next();
+};
+
+export const requireTenantRole = (...roles: TenantRole[]) => (req: Request, res: Response, next: NextFunction) => {
+  if (!req.tenantRole || !roles.includes(req.tenantRole)) return res.status(403).json({ error: "Workspace permission required." });
   next();
 };
 

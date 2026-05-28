@@ -1,42 +1,42 @@
 import { Router } from "express";
 import { z } from "zod";
 import { createBackup, backupPath, deleteBackup, listBackups } from "../backup/backupService.js";
-import { createPlainApiToken, hashToken, requireAdmin } from "../auth/auth.js";
+import { createPlainApiToken, hashToken, requireAdmin, requireTenantRole } from "../auth/auth.js";
 import { discoverMonitors } from "../checks/discovery.js";
-import { apiTokens, appSettings, deliveries, incidents, monitors, results } from "../storage/repositories.js";
+import { apiTokens, appSettings, deliveries, incidents, monitors, results, tenants } from "../storage/repositories.js";
 import { id } from "../utils/id.js";
 import { monitorInputSchema, monitorTypes } from "./monitorSchemas.js";
 import type { DiscoveredMonitor, Monitor } from "../types.js";
 
 export const opsRoutes = Router();
 
-opsRoutes.get("/settings/maintenance", (_req, res) => res.json(appSettings.maintenance()));
-opsRoutes.put("/settings/maintenance", (req, res) => saveSetting(req, res, "maintenance", maintenanceSchema));
-opsRoutes.get("/settings/tls-policy", (_req, res) => res.json(appSettings.tlsPolicy()));
-opsRoutes.put("/settings/tls-policy", (req, res) => saveSetting(req, res, "tlsPolicy", tlsPolicySchema));
-opsRoutes.get("/settings/ssl-labs", (_req, res) => res.json(appSettings.sslLabs()));
-opsRoutes.put("/settings/ssl-labs", (req, res) => saveSetting(req, res, "sslLabs", sslLabsSchema));
-opsRoutes.get("/settings/status-pages", (_req, res) => res.json(appSettings.statusPages()));
-opsRoutes.put("/settings/status-pages", (req, res) => saveSetting(req, res, "statusPages", statusPagesSchema));
-opsRoutes.get("/settings/discovery", (_req, res) => res.json(appSettings.discovery()));
-opsRoutes.put("/settings/discovery", (req, res) => saveSetting(req, res, "discovery", discoverySchema));
-opsRoutes.get("/settings/backups", (_req, res) => res.json(appSettings.backups()));
-opsRoutes.put("/settings/backups", (req, res) => saveSetting(req, res, "backups", backupsSchema));
+opsRoutes.get("/settings/maintenance", (req, res) => res.json(appSettings.maintenance(req.currentTenant!.id)));
+opsRoutes.put("/settings/maintenance", requireTenantRole("owner", "admin"), (req, res) => saveSetting(req, res, "maintenance", maintenanceSchema));
+opsRoutes.get("/settings/tls-policy", (req, res) => res.json(appSettings.tlsPolicy(req.currentTenant!.id)));
+opsRoutes.put("/settings/tls-policy", requireTenantRole("owner", "admin"), (req, res) => saveSetting(req, res, "tlsPolicy", tlsPolicySchema));
+opsRoutes.get("/settings/ssl-labs", (req, res) => res.json(appSettings.sslLabs(req.currentTenant!.id)));
+opsRoutes.put("/settings/ssl-labs", requireTenantRole("owner", "admin"), (req, res) => saveSetting(req, res, "sslLabs", sslLabsSchema));
+opsRoutes.get("/settings/status-pages", (req, res) => res.json(appSettings.statusPages(req.currentTenant!.id)));
+opsRoutes.put("/settings/status-pages", requireTenantRole("owner", "admin"), (req, res) => saveSetting(req, res, "statusPages", statusPagesSchema));
+opsRoutes.get("/settings/discovery", (req, res) => res.json(appSettings.discovery(req.currentTenant!.id)));
+opsRoutes.put("/settings/discovery", requireTenantRole("owner", "admin"), (req, res) => saveSetting(req, res, "discovery", discoverySchema));
+opsRoutes.get("/settings/backups", (req, res) => res.json(appSettings.backups(req.currentTenant!.id)));
+opsRoutes.put("/settings/backups", requireTenantRole("owner", "admin"), (req, res) => saveSetting(req, res, "backups", backupsSchema));
 
-opsRoutes.post("/discovery/run", async (_req, res) => {
-  const settings = appSettings.discovery();
+opsRoutes.post("/discovery/run", requireTenantRole("owner", "admin"), async (_req, res) => {
+  const settings = appSettings.discovery(_req.currentTenant!.id);
   const suggestions = (await Promise.all(settings.domains.map(discoverMonitors))).flat();
   const next = { ...settings, suggestions, lastRunAt: new Date().toISOString() };
-  appSettings.set("discovery", next);
+  appSettings.set("discovery", next, _req.currentTenant!.id);
   res.json(next);
 });
 
-opsRoutes.post("/discovery/import", (req, res) => {
+opsRoutes.post("/discovery/import", requireTenantRole("owner", "admin", "member"), (req, res) => {
   const parsed = z.object({ monitors: z.array(discoveredMonitorSchema).optional() }).safeParse(req.body ?? {});
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid discovery import." });
-  const settings = appSettings.discovery();
+  const settings = appSettings.discovery(req.currentTenant!.id);
   const requested = parsed.data.monitors?.length ? parsed.data.monitors : settings.suggestions;
-  const existing = new Set(monitors.list().map(monitorKey));
+  const existing = new Set(monitors.list(req.currentTenant!.id).map(monitorKey));
   const created: Monitor[] = [];
   const skipped: DiscoveredMonitor[] = [];
   const errors: Array<{ monitor: DiscoveredMonitor; error: string }> = [];
@@ -45,27 +45,31 @@ opsRoutes.post("/discovery/import", (req, res) => {
       skipped.push(suggestion);
       continue;
     }
+    if (!monitorQuotaAvailable(req.currentTenant!.id, created.length)) {
+      errors.push({ monitor: suggestion, error: "Workspace monitor limit reached." });
+      continue;
+    }
     const parsedMonitor = monitorInputSchema.safeParse(monitorFromDiscovery(suggestion));
     if (!parsedMonitor.success) {
       errors.push({ monitor: suggestion, error: parsedMonitor.error.issues[0]?.message ?? "Invalid monitor." });
       continue;
     }
-    const monitor = monitors.create(parsedMonitor.data);
+    const monitor = monitors.create({ ...parsedMonitor.data, tenantId: req.currentTenant!.id });
     existing.add(monitorKey(monitor));
     created.push(monitor);
   }
   if (created.length) {
     const imported = new Set(created.map(monitorKey));
-    appSettings.set("discovery", { ...settings, suggestions: settings.suggestions.filter((item) => !imported.has(monitorKey(item))) });
+    appSettings.set("discovery", { ...settings, suggestions: settings.suggestions.filter((item) => !imported.has(monitorKey(item))) }, req.currentTenant!.id);
   }
   res.status(errors.length ? 207 : 201).json({ imported: created.length, skipped: skipped.length, errors, monitors: created });
 });
 
 opsRoutes.get("/backups", (_req, res) => res.json(listBackups()));
-opsRoutes.post("/backups/run", (_req, res) => {
-  const settings = appSettings.backups();
+opsRoutes.post("/backups/run", requireTenantRole("owner", "admin"), (req, res) => {
+  const settings = appSettings.backups(req.currentTenant!.id);
   const backup = createBackup(settings);
-  appSettings.set("backups", { ...settings, lastRunAt: new Date().toISOString() });
+  appSettings.set("backups", { ...settings, lastRunAt: new Date().toISOString() }, req.currentTenant!.id);
   res.status(201).json(backup);
 });
 opsRoutes.get("/backups/:name", (req, res) => res.download(backupPath(req.params.name)));
@@ -88,7 +92,7 @@ opsRoutes.delete("/api-tokens/:id", requireAdmin, (req, res) => {
 });
 
 opsRoutes.get("/deliveries", (_req, res) => res.json(deliveries.list()));
-opsRoutes.get("/reports/availability", (req, res) => res.json(availabilityReport(Number(req.query.days ?? 30))));
+opsRoutes.get("/reports/availability", (req, res) => res.json(availabilityReport(req.currentTenant!.id, Number(req.query.days ?? 30))));
 
 opsRoutes.post("/incidents/:id/ack", (req, res) => {
   const parsed = z.object({ assignee: z.string().max(120).optional().nullable() }).safeParse(req.body ?? {});
@@ -109,7 +113,7 @@ opsRoutes.post("/incidents/:id/notes", (req, res) => {
 const saveSetting = (req: any, res: any, key: string, schema: z.ZodTypeAny) => {
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid settings." });
-  appSettings.set(key, parsed.data);
+  appSettings.set(key, parsed.data, req.currentTenant.id);
   res.json(parsed.data);
 };
 
@@ -184,9 +188,9 @@ const tokenSchema = z.object({
 
 const publicToken = (token: any) => ({ id: token.id, name: token.name, scopes: token.scopes, createdAt: token.createdAt, lastUsedAt: token.lastUsedAt });
 
-const availabilityReport = (days: number) => {
+const availabilityReport = (tenantId: string, days: number) => {
   const cutoff = Date.now() - Math.max(1, Math.min(days, 3650)) * 86_400_000;
-  return monitors.list().map((monitor) => {
+  return monitors.list(tenantId).map((monitor) => {
     const checks = results.list(monitor.id, 2000).filter((result) => new Date(result.checkedAt).getTime() >= cutoff);
     const ok = checks.filter((result) => result.status === "OK").length;
     const monitorIncidents = incidents.listForMonitor(monitor.id, 200).filter((incident) => new Date(incident.startedAt).getTime() >= cutoff);
@@ -222,3 +226,8 @@ const monitorFromDiscovery = (item: DiscoveredMonitor) => ({
   config: item.type === "https" && item.port === 443 ? { sslLabsEnabled: false } : {},
   maintenanceWindows: null
 });
+
+const monitorQuotaAvailable = (tenantId: string, pending = 0) => {
+  const tenant = tenants.get(tenantId);
+  return !tenant || tenant.monitorLimit <= 0 || monitors.list(tenantId).length + pending < tenant.monitorLimit;
+};

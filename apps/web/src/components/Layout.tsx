@@ -9,10 +9,11 @@ const navItems = [
   { page: "operations", label: "Operations", icon: Settings },
   { page: "reports", label: "Reports", icon: BarChart3 },
   { page: "import", label: "Import", icon: Upload },
+  { page: "tenants", label: "Workspaces", icon: Boxes },
   { page: "users", label: "Users", icon: Users }
 ];
 
-export function Layout({ children, page, onNew, theme, setTheme, onPage, version, stats = {}, monitors = [], onSelectMonitor }: any) {
+export function Layout({ children, page, onNew, theme, setTheme, onPage, version, stats = {}, monitors = [], onSelectMonitor, tenants = [], tenantId, onTenant }: any) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -61,6 +62,9 @@ export function Layout({ children, page, onNew, theme, setTheme, onPage, version
             )}
           </form>
           <div className="navbar-nav ms-auto align-items-center gap-2">
+            {tenants.length > 1 && <select className="form-select form-select-sm tenant-select" value={tenantId ?? ""} onChange={(event) => onTenant?.(event.target.value)} aria-label="Workspace">
+              {tenants.map((item: any) => <option key={item.tenantId} value={item.tenantId}>{item.tenant.name}</option>)}
+            </select>}
             <div className="nav-item status-dropdown">
               <button className="btn btn-outline-secondary btn-sm position-relative" type="button" onClick={() => setStatusOpen((current) => !current)} aria-expanded={statusOpen}>
                 <Bell size={16} />
@@ -168,6 +172,7 @@ const titleFor = (page: string) => ({
   operations: "Operations",
   reports: "Reports",
   users: "Users",
+  tenants: "Workspaces",
   import: "Bulk Import",
   applications: "Applications"
 }[page] ?? "Certificate Operations");

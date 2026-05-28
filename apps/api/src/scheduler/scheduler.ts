@@ -1,5 +1,5 @@
 import { env } from "../config/env.js";
-import { alerts, appSettings, channels, deliveries, incidents, monitors, results, subscriptions } from "../storage/repositories.js";
+import { alerts, appSettings, channels, deliveries, incidents, monitors, results, subscriptions, tenants } from "../storage/repositories.js";
 import { dispatchAlerts, dispatchStatusSubscriptions } from "../notifications/service.js";
 import { discoverMonitors } from "../checks/discovery.js";
 import { createBackup } from "../backup/backupService.js";
@@ -27,17 +27,21 @@ export const startScheduler = () => {
 };
 
 const runDiscoveryIfDue = async () => {
-  const settings = appSettings.discovery();
-  if (!settings.enabled || !settings.domains.length || !elapsed(settings.lastRunAt, settings.intervalHours)) return;
-  const suggestions = (await Promise.all(settings.domains.map(discoverMonitors))).flat();
-  appSettings.set("discovery", { ...settings, suggestions, lastRunAt: new Date().toISOString() });
+  for (const tenant of tenants.list()) {
+    const settings = appSettings.discovery(tenant.id);
+    if (!settings.enabled || !settings.domains.length || !elapsed(settings.lastRunAt, settings.intervalHours)) continue;
+    const suggestions = (await Promise.all(settings.domains.map(discoverMonitors))).flat();
+    appSettings.set("discovery", { ...settings, suggestions, lastRunAt: new Date().toISOString() }, tenant.id);
+  }
 };
 
 const runBackupIfDue = () => {
-  const settings = appSettings.backups();
-  if (!settings.enabled || !elapsed(settings.lastRunAt, settings.intervalHours)) return;
-  createBackup(settings);
-  appSettings.set("backups", { ...settings, lastRunAt: new Date().toISOString() });
+  for (const tenant of tenants.list()) {
+    const settings = appSettings.backups(tenant.id);
+    if (!settings.enabled || !elapsed(settings.lastRunAt, settings.intervalHours)) continue;
+    createBackup(settings);
+    appSettings.set("backups", { ...settings, lastRunAt: new Date().toISOString() }, tenant.id);
+  }
 };
 
 const elapsed = (lastRunAt: string | null | undefined, intervalHours: number) =>
@@ -61,7 +65,7 @@ const runMonitor = async (monitor: ReturnType<typeof monitors.list>[number]) => 
     const statusEvent = result.status === "OK" ? (openIncident ? "resolved" : null) : (!openIncident ? "opened" : null);
     incidents.sync(monitor, result);
     monitors.markChecked(monitor, result);
-    await dispatchAlerts(monitor, result, channels.list());
+    await dispatchAlerts(monitor, result, channels.list(monitor.tenantId));
     if (statusEvent) await dispatchStatusSubscriptions(monitor, result, statusEvent, subscriptions.list());
   } catch (error) {
     console.error(`Check failed for monitor ${monitor.id}:`, error instanceof Error ? error.message : error);

@@ -2,7 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import initSqlJs, { Database as SqlJsDatabase, SqlValue } from "sql.js";
 import { env } from "../config/env.js";
-import type { ApiToken, CheckResult, Incident, Monitor, NotificationChannel, NotificationDelivery, StatusSubscription, User } from "../types.js";
+import type { ApiToken, CheckResult, Incident, Monitor, NotificationChannel, NotificationDelivery, StatusSubscription, Tenant, TenantMembership, User } from "../types.js";
+import { DEFAULT_TENANT_ID } from "../types.js";
 import { decryptConfigSecrets } from "../utils/secrets.js";
 
 fs.mkdirSync(path.dirname(env.databasePath), { recursive: true });
@@ -105,8 +106,26 @@ export const migrate = () => {
       created_at TEXT NOT NULL,
       last_used_at TEXT
     );
+    CREATE TABLE IF NOT EXISTS tenants (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      plan TEXT NOT NULL DEFAULT 'free',
+      status TEXT NOT NULL DEFAULT 'active',
+      monitor_limit INTEGER NOT NULL DEFAULT 50,
+      user_limit INTEGER NOT NULL DEFAULT 5,
+      created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS tenant_memberships (
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      role TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      PRIMARY KEY (tenant_id, user_id)
+    );
     CREATE TABLE IF NOT EXISTS monitors (
       id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL DEFAULT '${DEFAULT_TENANT_ID}',
       name TEXT NOT NULL,
       host TEXT NOT NULL,
       port INTEGER NOT NULL,
@@ -168,6 +187,7 @@ export const migrate = () => {
     );
     CREATE TABLE IF NOT EXISTS notification_channels (
       id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL DEFAULT '${DEFAULT_TENANT_ID}',
       name TEXT NOT NULL,
       type TEXT NOT NULL,
       enabled INTEGER NOT NULL,
@@ -234,6 +254,24 @@ export const migrate = () => {
       created_at TEXT NOT NULL
     );
   `);
+  db.prepare("INSERT OR IGNORE INTO tenants VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(DEFAULT_TENANT_ID, "Default workspace", "default", "team", "active", 1000, 100, new Date().toISOString());
+  db.prepare(`
+    INSERT OR IGNORE INTO tenant_memberships (tenant_id, user_id, role, created_at)
+    SELECT ?, id, CASE WHEN role = 'admin' THEN 'owner' ELSE 'viewer' END, ?
+    FROM users
+  `).run(DEFAULT_TENANT_ID, new Date().toISOString());
+  try {
+    db.exec(`ALTER TABLE monitors ADD COLUMN tenant_id TEXT NOT NULL DEFAULT '${DEFAULT_TENANT_ID}';`);
+  } catch {
+    // Existing databases already have the column.
+  }
+  try {
+    db.exec(`ALTER TABLE notification_channels ADD COLUMN tenant_id TEXT NOT NULL DEFAULT '${DEFAULT_TENANT_ID}';`);
+  } catch {
+    // Existing databases already have the column.
+  }
+  db.prepare("UPDATE monitors SET tenant_id = ? WHERE tenant_id IS NULL OR tenant_id = ''").run(DEFAULT_TENANT_ID);
+  db.prepare("UPDATE notification_channels SET tenant_id = ? WHERE tenant_id IS NULL OR tenant_id = ''").run(DEFAULT_TENANT_ID);
   try {
     db.exec("ALTER TABLE monitors ADD COLUMN notification_recipients_json TEXT NOT NULL DEFAULT '{}';");
   } catch {
@@ -293,6 +331,7 @@ const parse = <T>(value: string | null | undefined, fallback: T): T => {
 
 export const rowToMonitor = (row: any): Monitor => ({
   id: row.id,
+  tenantId: row.tenant_id ?? DEFAULT_TENANT_ID,
   name: row.name,
   host: row.host,
   port: row.port,
@@ -356,6 +395,7 @@ export const rowToResult = (row: any): CheckResult => ({
 
 export const rowToChannel = (row: any): NotificationChannel => ({
   id: row.id,
+  tenantId: row.tenant_id ?? DEFAULT_TENANT_ID,
   name: row.name,
   type: row.type,
   enabled: Boolean(row.enabled),
@@ -418,4 +458,24 @@ export const rowToDelivery = (row: any): NotificationDelivery => ({
   message: row.message,
   error: row.error,
   sentAt: row.sent_at
+});
+
+export const rowToTenant = (row: any): Tenant => ({
+  id: row.id,
+  name: row.name,
+  slug: row.slug,
+  plan: row.plan,
+  status: row.status,
+  monitorLimit: row.monitor_limit,
+  userLimit: row.user_limit,
+  createdAt: row.created_at
+});
+
+export const rowToMembership = (row: any): TenantMembership => ({
+  tenantId: row.tenant_id,
+  userId: row.user_id,
+  role: row.role,
+  createdAt: row.created_at,
+  tenant: rowToTenant(row),
+  userEmail: row.email
 });

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0 - 2026-05-28
+
+- Added a SaaS-ready workspace model with tenant records, plan/status/limit fields, and role-based memberships.
+- Scoped monitors, notification providers, and tenant settings by selected workspace while preserving existing installs through a default workspace migration.
+- Added workspace roles for owners, admins, members, and viewers plus API enforcement for monitor writes, provider changes, and settings updates.
+- Added a workspace switcher and workspace/member management page to the AdminLTE UI.
+
 ## 0.8.3 - 2026-05-28
 
 - Added DNS resolution details to monitor results, including resolved IP addresses, authoritative nameservers, and comparison against Cloudflare, Quad9, and Google public resolvers.

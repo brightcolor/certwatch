@@ -119,6 +119,11 @@
   padding: 0;
 }
 
+.tenant-select {
+  width: min(220px, 24vw);
+  min-width: 150px;
+}
+
 .header-search-results,
 .status-menu {
   position: absolute;

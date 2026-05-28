@@ -1,5 +1,6 @@
 export interface Monitor {
   id: string;
+  tenantId: string;
   name: string;
   host: string;
   port: number;
@@ -93,6 +94,21 @@ export interface StatusSubscription {
   createdAt: string;
 }
 
+export interface TenantMembership {
+  tenantId: string;
+  role: "owner" | "admin" | "member" | "viewer";
+  tenant: {
+    id: string;
+    name: string;
+    slug: string;
+    plan: string;
+    status: string;
+    monitorLimit: number;
+    userLimit: number;
+    createdAt: string;
+  };
+}
+
 let csrfToken = localStorage.getItem("csrfToken") ?? "";
 
 export const api = {
@@ -103,6 +119,7 @@ export const api = {
       headers: {
         "content-type": "application/json",
         ...(csrfToken ? { "x-csrf-token": csrfToken } : {}),
+        ...(localStorage.getItem("tenantId") ? { "x-tenant-id": localStorage.getItem("tenantId")! } : {}),
         ...(init.headers ?? {})
       }
     });
@@ -112,5 +129,8 @@ export const api = {
   setCsrf(token: string) {
     csrfToken = token;
     localStorage.setItem("csrfToken", token);
+  },
+  setTenant(tenantId: string) {
+    localStorage.setItem("tenantId", tenantId);
   }
 };
