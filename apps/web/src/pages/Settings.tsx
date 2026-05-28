@@ -61,8 +61,9 @@ export function Settings(props: any) {
         <div className="panel">
           <h3>Interface</h3>
           <label>Color mode<select value={props.theme ?? "dark"} onChange={(e) => props.setTheme(e.target.value)}>
-            <option value="dark">Dark</option>
-            <option value="light">Light</option>
+            <option value="dark">Dark mode</option>
+            <option value="bright">Bright mode</option>
+            <option value="auto">Auto</option>
           </select></label>
           <div className="callout callout-info mb-0">
             <strong>AdminLTE 4 is the active interface.</strong>

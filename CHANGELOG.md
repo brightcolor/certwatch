@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.1 - 2026-05-28
+
+- Polished the AdminLTE operator interface with a more coherent shell, card, table, form, and monitor-detail treatment.
+- Added explicit `Dark`, `Bright`, and `Auto` color modes, with dark mode as the default and auto mode following the operating system preference.
+- Replaced the remaining blue-leaning surfaces with a neutral charcoal and bright palette plus restrained teal accents.
+- Improved dashboard rows, embed controls, status surfaces, focused inputs, and theme persistence.
+
 ## 0.9.0 - 2026-05-28
 
 - Added a SaaS-ready workspace model with tenant records, plan/status/limit fields, and role-based memberships.
@@ -22,7 +29,7 @@
 
 ## 0.8.1 - 2026-05-28
 
-- Reworked the dark theme to use a neutral dark blue/gray palette and removed the green/olive cast.
+- Reworked the dark theme to use a neutral gray palette and removed the green/olive cast.
 - Strengthened status colors across pills, table rows, dashboard info boxes, and status counters with clear green/yellow/red/gray states.
 - Added datetime range builders for global and per-monitor maintenance windows while keeping text rules for recurring schedules.
 

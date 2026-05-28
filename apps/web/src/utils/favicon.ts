@@ -37,7 +37,7 @@ const drawIcon = (attention: boolean, lit: boolean) => {
   if (!context) return "";
 
   context.clearRect(0, 0, 64, 64);
-  context.fillStyle = "#0f172a";
+  context.fillStyle = "#141518";
   roundRect(context, 6, 6, 52, 52, 14);
   context.fill();
 

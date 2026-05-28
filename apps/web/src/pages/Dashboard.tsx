@@ -42,7 +42,7 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck 
                 <span>{monitor.host}:{monitor.port}<small>{monitor.type}</small></span>
                 <span>{certificateSummary(monitor)}{gradePill(monitor)}{sslLabsPill(monitor)}<small>{certificateDetail(monitor)}</small></span>
                 <span>{monitor.latestResult?.message ?? "No result yet"}<small>{monitor.latestResult?.tlsVersion ?? ""}</small></span>
-                <span><button onClick={(e) => { e.stopPropagation(); onCheck(monitor.id); }}>Check now</button></span>
+                <span><button className="btn btn-sm btn-outline-secondary" onClick={(e) => { e.stopPropagation(); onCheck(monitor.id); }}>Check now</button></span>
               </div>
             ))}
           </Fragment>

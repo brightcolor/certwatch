@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Activity, BarChart3, Bell, Boxes, Download, Menu, Moon, Plus, Search, Settings, Sun, Users, Upload } from "lucide-react";
+import { Activity, BarChart3, Bell, Boxes, Download, Menu, Plus, Search, Settings, Users, Upload } from "lucide-react";
 import type { Monitor } from "../api/client";
 
 const navItems = [
@@ -13,7 +13,7 @@ const navItems = [
   { page: "users", label: "Users", icon: Users }
 ];
 
-export function Layout({ children, page, onNew, theme, setTheme, onPage, version, stats = {}, monitors = [], onSelectMonitor, tenants = [], tenantId, onTenant }: any) {
+export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, onPage, version, stats = {}, monitors = [], onSelectMonitor, tenants = [], tenantId, onTenant }: any) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -72,9 +72,11 @@ export function Layout({ children, page, onNew, theme, setTheme, onPage, version
               </button>
               {statusOpen && <StatusMenu stats={stats} onPage={navigate} />}
             </div>
-            <button className="btn btn-outline-secondary btn-sm" type="button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} title="Toggle color mode">
-              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
+            <select className="form-select form-select-sm theme-select" value={themeMode ?? "dark"} onChange={(event) => setThemeMode?.(event.target.value)} aria-label="Color mode" title="Color mode">
+              <option value="dark">Dark</option>
+              <option value="bright">Bright</option>
+              <option value="auto">Auto</option>
+            </select>
             <button className="btn btn-primary btn-sm" type="button" onClick={onNew}><Plus size={16} /> Monitor</button>
           </div>
         </div>
@@ -117,7 +119,7 @@ export function Layout({ children, page, onNew, theme, setTheme, onPage, version
         </div>
         <div className="app-content"><div className="container-fluid">{children}</div></div>
       </main>
-      <footer className="app-footer"><span>CertWatch v{version ?? "0.0.0"}</span><span className="ms-auto">Vibecoded with human review.</span></footer>
+      <footer className="app-footer"><span>CertWatch v{version || "0.0.0"}</span><span className="ms-auto">Vibecoded with human review.</span></footer>
     </div>
   );
 }
@@ -168,6 +170,7 @@ const navBadge = (page: string, stats: any) => {
 };
 
 const titleFor = (page: string) => ({
+  dashboard: "Dashboard",
   settings: "Notification Channels",
   operations: "Operations",
   reports: "Reports",
@@ -175,4 +178,4 @@ const titleFor = (page: string) => ({
   tenants: "Workspaces",
   import: "Bulk Import",
   applications: "Applications"
-}[page] ?? "Certificate Operations");
+}[page] ?? "Dashboard");

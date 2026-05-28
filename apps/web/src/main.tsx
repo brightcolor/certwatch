@@ -16,6 +16,18 @@ import { TenantsPage } from "./pages/Tenants";
 import { applyStatusFavicon } from "./utils/favicon";
 import "./styles/app.css";
 
+const initialThemeMode = (() => {
+  const stored = localStorage.getItem("themeMode") ?? localStorage.getItem("theme");
+  if (stored === "auto" || stored === "dark" || stored === "bright") return stored;
+  if (stored === "light") return "bright";
+  return "dark";
+})();
+
+const resolveTheme = (mode: string) => {
+  if (mode === "auto") return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return mode === "bright" ? "light" : "dark";
+};
+
 function App() {
   const [user, setUser] = useState<any>(null);
   const [setupRequired, setSetupRequired] = useState(false);
@@ -40,14 +52,25 @@ function App() {
   const [editing, setEditing] = useState<Monitor | null | "new">(null);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState("dashboard");
-  const [theme, setTheme] = useState(localStorage.getItem("theme") ?? "dark");
+  const [themeMode, setThemeMode] = useState(initialThemeMode);
+  const [resolvedTheme, setResolvedTheme] = useState(resolveTheme(initialThemeMode));
   const [toast, setToast] = useState("");
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    document.documentElement.dataset.bsTheme = theme;
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+    const apply = () => {
+      const next = resolveTheme(themeMode);
+      setResolvedTheme(next);
+      document.documentElement.dataset.theme = next;
+      document.documentElement.dataset.bsTheme = next;
+      document.documentElement.dataset.themeMode = themeMode;
+    };
+    apply();
+    localStorage.setItem("themeMode", themeMode);
+    localStorage.setItem("theme", themeMode === "bright" ? "light" : themeMode);
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, [themeMode]);
   useEffect(() => {
     api.request<any>("/auth/setup-status")
       .then((status) => {
@@ -195,8 +218,9 @@ function App() {
       page={page}
       onPage={(nextPage: string) => navigate(nextPage)}
       onNew={() => setEditing("new")}
-      theme={theme}
-      setTheme={setTheme}
+      theme={resolvedTheme}
+      themeMode={themeMode}
+      setThemeMode={setThemeMode}
       version={version}
       stats={stats}
       monitors={monitors}
@@ -215,8 +239,8 @@ function App() {
           routes={routes}
           ctWatch={ctWatch}
           subscriptions={subscriptions}
-          theme={theme}
-          setTheme={setTheme}
+          theme={themeMode}
+          setTheme={setThemeMode}
           onSaveChannel={async (channel: any) => { await api.request("/notification-channels", { method: "POST", body: JSON.stringify(channel) }); await refresh(); }}
           onDeleteChannel={async (id: string) => { await api.request(`/notification-channels/${id}`, { method: "DELETE" }); await refresh(); }}
           onTest={(id: string) => api.request("/notification-channels/test", { method: "POST", body: JSON.stringify({ id }) })}

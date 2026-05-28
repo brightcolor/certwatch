@@ -21,7 +21,7 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
   return (
     <section className="content">
       <div className="detail-hero">
-        <button className="ghost" onClick={onBack}>Back</button>
+        <button className="btn btn-outline-secondary btn-sm" onClick={onBack}>Back</button>
         <div className="detail-head">
           <div>
             <StatusPill status={monitor.lastStatus} />
@@ -29,7 +29,7 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
             <p>{monitor.host}:{monitor.port} - {monitor.type}</p>
             <small>{monitor.tags.join(", ") || "unlabeled"}</small>
           </div>
-          <div className="actions"><button onClick={onCheck}>Check now</button><button onClick={onEdit}>Edit</button><button className="ghost danger" onClick={() => { if (confirm(`Delete monitor "${monitor.name}"?`)) onDelete(); }}>Delete</button></div>
+          <div className="actions"><button className="btn btn-primary" onClick={onCheck}>Check now</button><button className="btn btn-outline-secondary" onClick={onEdit}>Edit</button><button className="btn btn-outline-danger" onClick={() => { if (confirm(`Delete monitor "${monitor.name}"?`)) onDelete(); }}>Delete</button></div>
         </div>
       </div>
       {hasCertificateDetails ? <div className="grid two">
@@ -132,7 +132,7 @@ function Info({ label, value }: { label: string; value?: string | null }) {
 }
 
 function EmbedRow({ label, value }: { label: string; value: string }) {
-  return <div className="info embed-row"><span>{label}</span><code>{value}</code><button type="button" onClick={() => navigator.clipboard?.writeText(value)}>Copy</button></div>;
+  return <div className="info embed-row"><span>{label}</span><code>{value}</code><button className="btn btn-sm btn-outline-secondary" type="button" onClick={() => navigator.clipboard?.writeText(value)}>Copy</button></div>;
 }
 
 const dateTime = formatDateTime;
