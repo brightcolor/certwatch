@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.3 - 2026-05-28
+
+- Added DNS resolution details to monitor results, including resolved IP addresses, authoritative nameservers, and comparison against Cloudflare, Quad9, and Google public resolvers.
+- Added configurable DNS resolution change alerting with a global policy, per-monitor override, and per-monitor DNS comparison interval.
+- Added per-monitor certificate change alert overrides while keeping the global certificate-change alert policy.
+- Extended notification payloads and certificate CSV exports with DNS resolution data.
+
 ## 0.8.2 - 2026-05-28
 
 - Replaced the fixed-width public SVG badges with a responsive badge renderer that dynamically sizes content and safely clips long hostnames.

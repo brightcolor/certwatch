@@ -1,14 +1,10 @@
 import { Router } from "express";
-import { appSettings, channels, incidents, monitors, results, subscriptions } from "../storage/repositories.js";
+import { channels, incidents, monitors, results, subscriptions } from "../storage/repositories.js";
 import { monitorInputSchema } from "./monitorSchemas.js";
-import { runTlsCheck } from "../checks/tlsChecker.js";
 import { dispatchAlerts, dispatchStatusSubscriptions } from "../notifications/service.js";
-import { applyResultWatches } from "../checks/changeWatch.js";
-import { isServiceMonitor, runServiceCheck } from "../checks/serviceChecker.js";
 import type { Monitor } from "../types.js";
 import { redactConfigSecrets } from "../utils/secrets.js";
-import { markFlapping } from "../checks/flapping.js";
-import { enrichWithSslLabs } from "../checks/sslLabs.js";
+import { runMonitorCheck } from "../checks/monitorRunner.js";
 
 export const monitorRoutes = Router();
 
@@ -96,10 +92,7 @@ monitorRoutes.post("/:id/check", async (req, res) => {
   if (!monitor) return res.status(404).json({ error: "Monitor not found." });
   if (!monitor.enabled) return res.status(409).json({ error: "Monitor is paused." });
   const previous = results.list(monitor.id, 1)[0];
-  const checked = isServiceMonitor(monitor.type) ? await runServiceCheck(monitor, previous?.fingerprintSha256, appSettings.tlsPolicy()) : await runTlsCheck(monitor, previous?.fingerprintSha256, appSettings.tlsPolicy());
-  const enriched = await enrichWithSslLabs(monitor, checked, previous, appSettings.sslLabs(), results.latestSslLabsForHost(monitor.host));
-  const classified = enriched.fingerprintSha256 ? applyResultWatches(enriched, previous, appSettings.alerting()) : enriched;
-  const result = markFlapping(classified, results.listRecent(monitor.id, 10), appSettings.alerting().flappingThreshold);
+  const result = await runMonitorCheck(monitor, previous);
   const openIncident = incidents.openForMonitor(monitor.id);
   results.insert(result);
   const statusEvent = result.status === "OK" ? (openIncident ? "resolved" : null) : (!openIncident ? "opened" : null);

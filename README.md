@@ -43,12 +43,15 @@ This stack keeps the application easy to self-host while still supporting real T
 - Discovery results can be accepted one by one or imported all at once; MX-derived suggestions receive `mail` and `mx` labels
 - Backup and restore UI for portable, non-secret JSON exports
 - Certificate detail view with CN, SANs, issuer, serial number, SHA256 fingerprint, validity, chain, TLS version, and cipher suite
+- DNS resolution details in monitor views, including resolved IPs, authoritative nameservers, and comparison against Cloudflare, Quad9, and Google public resolvers
 - Hostname mismatch, self-signed, expiry, weak TLS protocol, chain trust, and fingerprint-change detection
+- Optional DNS resolution change alerts with a per-monitor DNS comparison interval
 - Historical check results per monitor
 - Manual "check now" action and automatic periodic scheduler
 - Global and per-monitor warning and critical expiry thresholds
 - Notification channels for SMTP email, Pushover, generic webhooks, Discord, Slack, Telegram, Gotify, ntfy-compatible endpoints, Microsoft Teams, Mattermost, Matrix, PagerDuty, and Opsgenie
 - Alert deduplication with resend interval, route-specific escalation delay, recovery messages, quiet hours, and per-monitor grace periods
+- Certificate change alerting can be controlled globally and per monitor
 - Enforced monitor and label-based maintenance windows that keep checks running while suppressing notifications
 - Incident acknowledgement, assignment, notes, and delivery visibility for alert troubleshooting
 - API tokens with read-only or read/write scopes for automation
@@ -187,7 +190,7 @@ Notification providers are configured in the Settings page. Global SMTP settings
 
 Routes can match labels, severity, and provider targets. Each route can also define an escalation delay, so a route can notify a primary recipient immediately and a second recipient only after the problem remains unresolved for a configured time.
 
-Webhook payloads include monitor ID, monitor name, host, port, status, severity, message, days remaining, validity dates, issuer, SHA256 fingerprint, local TLS grade, optional SSL Labs grade, check time, and the monitor URL.
+Webhook payloads include monitor ID, monitor name, host, port, status, severity, message, days remaining, validity dates, issuer, SHA256 fingerprint, local TLS grade, optional SSL Labs grade, resolved addresses, DNS resolver mismatches, check time, and the monitor URL.
 
 ## REST API
 
@@ -267,6 +270,7 @@ The Operations page contains production controls that are intentionally kept out
 - Intensive TLS probing can be enabled in Operations. It performs additional handshakes to detect supported TLS versions and feeds those findings into the grade.
 - SSL Labs external assessment can be enabled in Operations with a registered SSL Labs API email. There is no API key field; SSL Labs v4 expects the registered organization email in the `email` header. CertWatch respects a minimum 24-hour per-host interval and can either use cached results or start fresh scans when due.
 - Alert policy can notify on TLS grade or score deterioration. The score-drop threshold controls how sensitive these alerts are.
+- Alert policy can notify on certificate changes and DNS resolution changes. Individual monitors can override both policies and set their own DNS comparison interval.
 - Scheduled discovery for web and mail endpoints, with direct accept buttons for individual suggestions or all suggestions.
 - Scheduled SQLite backups with retention and downloadable backup files.
 - API tokens with read-only or read/write scopes.

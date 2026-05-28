@@ -5,6 +5,7 @@ import { assessTlsSecurity } from "../apps/api/src/checks/tlsSecurity.js";
 import { applyResultWatches } from "../apps/api/src/checks/changeWatch.js";
 import { isInMaintenance, windowActive } from "../apps/api/src/checks/maintenance.js";
 import { normalizeSslLabsReport, shouldRunSslLabs } from "../apps/api/src/checks/sslLabs.js";
+import { compareDnsAnswers, shouldRunDnsResolution } from "../apps/api/src/checks/dnsResolution.js";
 import type { AlertingSettings, CheckResult } from "../apps/api/src/types.js";
 
 describe("TLS security grading", () => {
@@ -57,6 +58,36 @@ describe("TLS security grading", () => {
 
     expect(result.status).toBe("WARNING");
     expect(result.message).toContain("SSL Labs assessment deteriorated");
+  });
+
+  it("warns when DNS resolution changes and DNS alerts are enabled", () => {
+    const result = applyResultWatches(
+      { ...resultFor("OK"), dns: dnsResult(["203.0.113.20"], "new") },
+      { ...resultFor("OK"), dns: dnsResult(["203.0.113.10"], "old") },
+      { ...alertingSettings(), dnsChangeAlerts: true }
+    );
+
+    expect(result.status).toBe("WARNING");
+    expect(result.message).toContain("DNS resolution changed");
+  });
+});
+
+describe("DNS resolver comparison", () => {
+  it("detects public resolver differences against authoritative DNS", () => {
+    const mismatches = compareDnsAnswers(
+      { name: "Authoritative DNS", kind: "authoritative", servers: ["ns1.example.com"], addresses: ["203.0.113.10"] },
+      [
+        { name: "Cloudflare", kind: "public", servers: ["1.1.1.1"], addresses: ["203.0.113.10"] },
+        { name: "Google", kind: "public", servers: ["8.8.8.8"], addresses: ["203.0.113.20"] }
+      ]
+    );
+
+    expect(mismatches.join(" ")).toContain("Google differs");
+  });
+
+  it("honors the custom DNS check interval", () => {
+    const previous = { dns: dnsResult(["203.0.113.10"], "same") };
+    expect(shouldRunDnsResolution({ config: { dnsCheckIntervalSeconds: 3600 } }, previous)).toBe(false);
   });
 });
 
@@ -123,6 +154,7 @@ const alertingSettings = (): AlertingSettings => ({
   resendAfterHours: 24,
   recoveryEnabled: true,
   certificateChangeAlerts: true,
+  dnsChangeAlerts: false,
   tlsDeteriorationAlerts: true,
   tlsDeteriorationThreshold: 5,
   quietHoursEnabled: false,
@@ -130,4 +162,16 @@ const alertingSettings = (): AlertingSettings => ({
   quietEnd: "07:00",
   quietSuppressCritical: false,
   flappingThreshold: 4
+});
+
+const dnsResult = (addresses: string[], fingerprint: string) => ({
+  host: "example.com",
+  checkedAt: new Date().toISOString(),
+  fresh: true,
+  addresses,
+  authoritativeZone: "example.com",
+  authoritativeNameservers: ["ns1.example.com"],
+  checks: [],
+  mismatches: [],
+  fingerprint
 });

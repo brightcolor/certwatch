@@ -53,6 +53,7 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
       {hasCertificateDetails && <Panel title="Certificate Chain">
         {(latest?.chain ?? []).length ? (latest?.chain ?? []).map((item, index) => <div className="chain" key={item.fingerprintSha256 ?? index}><strong>{index + 1}. {item.subject}</strong><span>{item.issuer}</span><small>{dateTime(item.validUntil)}</small></div>) : <span className="muted">No certificate chain was returned by the target.</span>}
       </Panel>}
+      <DnsPanel result={latest} />
       <Panel title="Embed">
         <EmbedRow label="Badge URL" value={badgeUrl} />
         <EmbedRow label="Alias Badge URL" value={aliasBadgeUrl} />
@@ -96,6 +97,29 @@ function ResultPanel({ latest, title }: { latest?: CheckResult | null; title: st
     <Info label="Last Check" value={dateTime(latest?.checkedAt)} />
     <Info label="Duration" value={latest ? `${latest.durationMs} ms` : ""} />
     <Info label="Problems" value={[...(latest?.problems ?? []), ...(latest?.sslLabsFindings ?? [])].join("; ") || "None"} />
+  </Panel>;
+}
+
+function DnsPanel({ result }: { result?: CheckResult | null }) {
+  const dns = result?.dns;
+  if (!dns) {
+    return <Panel title="DNS resolution"><span className="muted">No DNS resolution sample has been collected yet. Run a check to resolve the hostname and compare public resolvers.</span></Panel>;
+  }
+  return <Panel title="DNS resolution">
+    <Info label="Resolved IPs" value={dns.addresses.join(", ")} />
+    <Info label="Authoritative zone" value={dns.authoritativeZone} />
+    <Info label="Authoritative nameservers" value={dns.authoritativeNameservers.join(", ")} />
+    <Info label="DNS checked" value={`${dateTime(dns.checkedAt)}${dns.fresh ? "" : " (cached)"}`} />
+    {!!dns.mismatches.length && <div className="callout callout-warning"><strong>Resolver differences detected</strong><p>{dns.mismatches.join(" ")}</p></div>}
+    <div className="stack-list">
+      {dns.checks.map((check) => (
+        <div key={`${check.kind}-${check.name}`}>
+          <strong>{check.name}</strong>
+          <span>{check.addresses.join(", ") || check.error || "No records"}</span>
+          {!!check.servers.length && <small>{check.servers.join(", ")}</small>}
+        </div>
+      ))}
+    </div>
   </Panel>;
 }
 

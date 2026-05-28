@@ -87,6 +87,8 @@ export const buildPayload = (monitor: Monitor, result: CheckResult) => ({
   ssl_labs_status: result.sslLabsStatus,
   ssl_labs_url: result.sslLabsUrl,
   ssl_labs_findings: result.sslLabsFindings ?? [],
+  resolved_addresses: result.dns?.addresses ?? [],
+  dns_mismatches: result.dns?.mismatches ?? [],
   checked_at: result.checkedAt,
   url: `${env.baseUrl}/monitors/${monitor.id}`
 });

@@ -149,6 +149,7 @@ const alertingSchema = z.object({
   resendAfterHours: z.number().int().min(1).max(720),
   recoveryEnabled: z.boolean(),
   certificateChangeAlerts: z.boolean().default(true),
+  dnsChangeAlerts: z.boolean().default(false),
   tlsDeteriorationAlerts: z.boolean().default(true),
   tlsDeteriorationThreshold: z.number().int().min(1).max(50).default(5),
   quietHoursEnabled: z.boolean(),

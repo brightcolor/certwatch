@@ -74,10 +74,10 @@ exportRoutes.post("/restore", (req, res) => {
 
 exportRoutes.get("/certificates.csv", (_req, res) => {
   const latest = results.latestByMonitor();
-  const rows = [["name", "host", "port", "status", "days_remaining", "valid_until", "issuer", "fingerprint_sha256", "tls_grade", "ssl_labs_grade"]];
+  const rows = [["name", "host", "port", "status", "days_remaining", "valid_until", "issuer", "fingerprint_sha256", "tls_grade", "ssl_labs_grade", "resolved_addresses"]];
   for (const monitor of monitors.list()) {
     const result = latest[monitor.id];
-    rows.push([monitor.name, monitor.host, String(monitor.port), monitor.lastStatus, String(result?.daysRemaining ?? ""), result?.validUntil ?? "", result?.issuer ?? "", result?.fingerprintSha256 ?? "", result?.tlsGrade ?? "", result?.sslLabsGrade ?? ""]);
+    rows.push([monitor.name, monitor.host, String(monitor.port), monitor.lastStatus, String(result?.daysRemaining ?? ""), result?.validUntil ?? "", result?.issuer ?? "", result?.fingerprintSha256 ?? "", result?.tlsGrade ?? "", result?.sslLabsGrade ?? "", result?.dns?.addresses.join(" ") ?? ""]);
   }
   res.type("text/csv").attachment("certwatch-certificates.csv").send(toCsv(rows));
 });

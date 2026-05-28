@@ -160,6 +160,7 @@ export const migrate = () => {
       ssl_labs_url TEXT,
       ssl_labs_checked_at TEXT,
       ssl_labs_findings_json TEXT NOT NULL DEFAULT '[]',
+      dns_json TEXT,
       flapping INTEGER NOT NULL DEFAULT 0,
       chain_json TEXT NOT NULL,
       problems_json TEXT NOT NULL,
@@ -258,6 +259,7 @@ export const migrate = () => {
     "ALTER TABLE check_results ADD COLUMN ssl_labs_url TEXT;",
     "ALTER TABLE check_results ADD COLUMN ssl_labs_checked_at TEXT;",
     "ALTER TABLE check_results ADD COLUMN ssl_labs_findings_json TEXT NOT NULL DEFAULT '[]';",
+    "ALTER TABLE check_results ADD COLUMN dns_json TEXT;",
     "ALTER TABLE check_results ADD COLUMN flapping INTEGER NOT NULL DEFAULT 0;"
   ]) {
     try {
@@ -345,6 +347,7 @@ export const rowToResult = (row: any): CheckResult => ({
   sslLabsUrl: row.ssl_labs_url,
   sslLabsCheckedAt: row.ssl_labs_checked_at,
   sslLabsFindings: parse<string[]>(row.ssl_labs_findings_json, []),
+  dns: parse(row.dns_json, null),
   flapping: Boolean(row.flapping),
   chain: parse(row.chain_json, []),
   problems: parse<string[]>(row.problems_json, []),

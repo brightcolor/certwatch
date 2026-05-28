@@ -126,6 +126,21 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
           <MaintenanceWindowBuilder onUse={appendMaintenanceWindow} buttonLabel="Append range" />
           <label>Maintenance windows<textarea value={form.maintenanceWindows ?? ""} placeholder="daily 22:00-23:00&#10;mon-fri 01:00-02:00&#10;2026-06-01T20:00:00/2026-06-01T22:00:00" onChange={(e) => set("maintenanceWindows", e.target.value)} /></label>
         </FormSection>
+        <FormSection title="DNS and change watches">
+          <label><input type="checkbox" checked={form.config?.dnsCheckEnabled !== false} onChange={(e) => setConfig("dnsCheckEnabled", e.target.checked)} /> Collect resolved IPs and compare resolvers</label>
+          <label>DNS check interval seconds<input type="number" min="300" max="604800" value={String(form.config?.dnsCheckIntervalSeconds ?? 3600)} onChange={(e) => setConfig("dnsCheckIntervalSeconds", Number(e.target.value))} /></label>
+          <label>DNS change alerts<select value={String(form.config?.dnsChangeAlertMode ?? "global")} onChange={(e) => setConfig("dnsChangeAlertMode", e.target.value)}>
+            <option value="global">Use global policy</option>
+            <option value="enabled">Always alert for this monitor</option>
+            <option value="disabled">Never alert for this monitor</option>
+          </select></label>
+          <label>Certificate change alerts<select value={String(form.config?.certificateChangeAlertMode ?? "global")} onChange={(e) => setConfig("certificateChangeAlertMode", e.target.value)}>
+            <option value="global">Use global policy</option>
+            <option value="enabled">Always alert for this monitor</option>
+            <option value="disabled">Never alert for this monitor</option>
+          </select></label>
+          <p className="muted">DNS comparison uses the authoritative nameservers plus Cloudflare, Quad9, and Google. Results are shown in monitor details; alerts only fire when enabled globally or for this monitor.</p>
+        </FormSection>
         {collectsCertificate(form.type, form.config, Number(form.port)) && <FormSection title="TLS validation">
           <label>SNI hostname<input value={form.sniHost ?? ""} onChange={(e) => set("sniHost", e.target.value)} /></label>
           <div className="checks">

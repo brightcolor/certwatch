@@ -52,9 +52,22 @@ export interface CheckResult {
   sslLabsUrl?: string | null;
   sslLabsCheckedAt?: string | null;
   sslLabsFindings?: string[];
+  dns?: DnsResolutionSummary | null;
   flapping?: boolean;
   chain: Array<{ subject: string; issuer: string; validFrom?: string; validUntil?: string; fingerprintSha256?: string }>;
   problems: string[];
+}
+
+export interface DnsResolutionSummary {
+  host: string;
+  checkedAt: string;
+  fresh: boolean;
+  addresses: string[];
+  authoritativeZone?: string | null;
+  authoritativeNameservers: string[];
+  checks: Array<{ name: string; kind: string; servers: string[]; addresses: string[]; error?: string | null }>;
+  mismatches: string[];
+  fingerprint: string;
 }
 
 export interface Incident {

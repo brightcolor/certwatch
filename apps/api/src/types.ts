@@ -85,10 +85,31 @@ export interface CheckResult {
   sslLabsUrl?: string | null;
   sslLabsCheckedAt?: string | null;
   sslLabsFindings?: string[];
+  dns?: DnsResolutionSummary | null;
   flapping?: boolean;
   chain: CertificateChainItem[];
   problems: string[];
   rawError?: string | null;
+}
+
+export interface DnsResolutionSummary {
+  host: string;
+  checkedAt: string;
+  fresh: boolean;
+  addresses: string[];
+  authoritativeZone?: string | null;
+  authoritativeNameservers: string[];
+  checks: DnsResolverCheck[];
+  mismatches: string[];
+  fingerprint: string;
+}
+
+export interface DnsResolverCheck {
+  name: string;
+  kind: "system" | "authoritative" | "public";
+  servers: string[];
+  addresses: string[];
+  error?: string | null;
 }
 
 export interface CertificateChainItem {
@@ -122,6 +143,7 @@ export interface AlertingSettings {
   resendAfterHours: number;
   recoveryEnabled: boolean;
   certificateChangeAlerts: boolean;
+  dnsChangeAlerts: boolean;
   tlsDeteriorationAlerts: boolean;
   tlsDeteriorationThreshold: number;
   quietHoursEnabled: boolean;
