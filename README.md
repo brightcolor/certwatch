@@ -67,8 +67,8 @@ This stack keeps the application easy to self-host while still supporting real T
 - Encrypted storage for monitor login secrets, SMTP settings, and notification provider secrets using `SESSION_SECRET`
 - JSON monitor import/export and CSV exports for certificate summary and check history
 - REST API under `/api`
-- Dark, bright, and auto color modes with a neutral charcoal default instead of tinted green/olive or blue-heavy surfaces
-- AdminLTE 4.0.0-based operator interface with sidebar navigation, status center, global monitor search, Bootstrap cards, and responsive admin forms
+- Dark, bright, and auto color modes with a Discord-like neutral gray default and no decorative color accent outside status signals
+- AdminLTE 4.0.0-based operator interface with sidebar navigation, status center, global monitor search, Bootstrap-style cards, and responsive admin forms
 - Maintenance windows can be built with datetime pickers and still support text rules for recurring windows
 - Status pills, rows, dashboard cards, and status center counters use clear green, yellow, red, and gray signal colors
 - Cleaner responsive form layouts with aligned labels and controls

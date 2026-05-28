@@ -1,10 +1,16 @@
 # Changelog
 
+## 0.9.2 - 2026-05-28
+
+- Removed the remaining cool-toned UI accents and moved the operator interface to a Discord-like neutral gray palette.
+- Overrode AdminLTE/Bootstrap primary buttons, links, callouts, focus rings, navigation highlights, and label chips so the UI stays gray outside explicit status colors.
+- Tightened custom panels to behave more like AdminLTE cards with card headers, card backgrounds, and table-style monitor rows.
+
 ## 0.9.1 - 2026-05-28
 
 - Polished the AdminLTE operator interface with a more coherent shell, card, table, form, and monitor-detail treatment.
 - Added explicit `Dark`, `Bright`, and `Auto` color modes, with dark mode as the default and auto mode following the operating system preference.
-- Replaced the remaining blue-leaning surfaces with a neutral charcoal and bright palette plus restrained teal accents.
+- Replaced the remaining color-heavy surfaces with a neutral charcoal and bright palette.
 - Improved dashboard rows, embed controls, status surfaces, focused inputs, and theme persistence.
 
 ## 0.9.0 - 2026-05-28

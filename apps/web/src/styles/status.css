@@ -25,7 +25,7 @@
 
 .metric-warning .info-box-icon {
   background: var(--bs-warning);
-  color: #111827;
+  color: #111;
 }
 
 .metric-danger .info-box-icon {
@@ -33,7 +33,7 @@
 }
 
 .metric-secondary .info-box-icon {
-  background: #64748b;
+  background: var(--bs-info);
 }
 
 .metric-success {
@@ -139,5 +139,5 @@
 .row:has(.status-unknown),
 .group-row:has(.status-paused),
 .group-row:has(.status-unknown) {
-  border-left: 3px solid #64748b;
+  border-left: 3px solid var(--bs-info);
 }

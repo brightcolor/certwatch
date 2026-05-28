@@ -3,9 +3,10 @@
 .login-panel,
 .table {
   border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius-lg);
-  background: var(--bs-body-bg);
-  box-shadow: var(--bs-box-shadow-sm);
+  border-radius: var(--bs-card-border-radius, var(--bs-border-radius));
+  background: var(--bs-card-bg);
+  color: var(--bs-card-color);
+  box-shadow: 0 0 1px rgba(0, 0, 0, .125), 0 1px 3px rgba(0, 0, 0, .2);
   transition: border-color .15s ease, box-shadow .15s ease;
 }
 
@@ -14,7 +15,7 @@
 .login-panel {
   display: grid;
   gap: 1rem;
-  padding: 1.15rem;
+  padding: 1rem;
 }
 
 .panel > h3,
@@ -22,8 +23,11 @@
   display: flex;
   align-items: center;
   gap: .5rem;
+  margin: -1rem -1rem 0;
   border-bottom: 1px solid var(--bs-border-color);
-  padding-bottom: .75rem;
+  border-radius: var(--bs-card-border-radius, var(--bs-border-radius)) var(--bs-card-border-radius, var(--bs-border-radius)) 0 0;
+  background: var(--bs-secondary-bg);
+  padding: .85rem 1rem;
 }
 
 .panel.compact > h3 {
@@ -34,7 +38,6 @@
 .toolbar-panel {
   grid-template-columns: minmax(180px, 1fr) minmax(280px, 420px);
   align-items: center;
-  border-left: .25rem solid var(--bs-primary);
 }
 
 .toolbar {
@@ -70,7 +73,7 @@
 }
 
 .row:hover {
-  background: rgba(var(--bs-primary-rgb), .06);
+  background: rgba(var(--bs-primary-rgb), .12);
 }
 
 .row.head {
@@ -104,7 +107,7 @@
 }
 
 .detail-hero {
-  border-left: .25rem solid var(--bs-primary);
+  background: var(--bs-card-bg);
 }
 
 .detail-hero > .btn {
@@ -219,6 +222,13 @@
   border-radius: var(--bs-border-radius);
   background: var(--bs-tertiary-bg);
   padding: .9rem;
+}
+
+:root[data-theme="dark"] .panel,
+:root[data-theme="dark"] .detail-hero,
+:root[data-theme="dark"] .login-panel,
+:root[data-theme="dark"] .table {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .08);
 }
 
 .login-panel {
