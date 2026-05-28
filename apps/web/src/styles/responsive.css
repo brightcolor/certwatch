@@ -54,7 +54,9 @@
 
   .row,
   .stack-list > div,
-  .info {
+  .info,
+  .datetime-builder,
+  .datetime-preview {
     grid-template-columns: 1fr;
     gap: .5rem;
   }

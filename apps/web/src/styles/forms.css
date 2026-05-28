@@ -52,6 +52,32 @@
   gap: .9rem;
 }
 
+.datetime-builder {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-tertiary-bg);
+  padding: .85rem;
+}
+
+.datetime-preview {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(90px, auto) minmax(0, 1fr) auto;
+  gap: .7rem;
+  align-items: center;
+}
+
+.datetime-preview code {
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-body-bg);
+  padding: .45rem .6rem;
+}
+
 .tag-input {
   display: flex;
   min-height: 42px;
@@ -79,7 +105,12 @@
 }
 
 .tag-chip {
+  display: inline-flex;
+  align-items: center;
   min-height: 1.75rem;
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 700;
   border-color: rgba(var(--bs-primary-rgb), .25);
   background: rgba(var(--bs-primary-rgb), .12);
   color: var(--bs-primary);

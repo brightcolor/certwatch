@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { TagInput } from "../components/TagInput";
+import { MaintenanceWindowBuilder } from "../components/MaintenanceWindowBuilder";
 import { formatDateTime } from "../utils/date";
 
 export function Operations() {
@@ -64,6 +65,7 @@ export function Operations() {
           <h3>Maintenance windows</h3>
           <label>Name<input value={route.name} onChange={(e) => setRoute((current) => ({ ...current, name: e.target.value }))} /></label>
           <TagInput value={route.tags} onChange={(tags) => setRoute((current) => ({ ...current, tags }))} />
+          <MaintenanceWindowBuilder onUse={(value) => setRoute((current) => ({ ...current, window: value }))} buttonLabel="Use as window" />
           <label>Window<input value={route.window} onChange={(e) => setRoute((current) => ({ ...current, window: e.target.value }))} placeholder="daily 22:00-23:00" /></label>
           <button onClick={addMaintenance}>Add window</button>
           {maintenance.windows.map((item: any) => <Row key={item.id} title={item.name} detail={`${item.tags.join(", ")} - ${item.window}`} onDelete={() => save("/settings/maintenance", { windows: maintenance.windows.filter((entry: any) => entry.id !== item.id) })} />)}

@@ -14,10 +14,10 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck 
   return (
     <section className="content">
       <div className="metrics">
-        <Metric icon={<ShieldCheck />} label="Valid" value={stats.ok ?? 0} />
-        <Metric icon={<TriangleAlert />} label="Expiring soon" value={stats.warning ?? 0} />
-        <Metric icon={<Siren />} label="Critical" value={(stats.critical ?? 0) + (stats.down ?? 0)} />
-        <Metric icon={<TimerReset />} label="Paused" value={stats.paused ?? 0} />
+        <Metric icon={<ShieldCheck />} label="Valid" value={stats.ok ?? 0} tone="success" />
+        <Metric icon={<TriangleAlert />} label="Expiring soon" value={stats.warning ?? 0} tone="warning" />
+        <Metric icon={<Siren />} label="Critical" value={(stats.critical ?? 0) + (stats.down ?? 0)} tone="danger" />
+        <Metric icon={<TimerReset />} label="Paused" value={stats.paused ?? 0} tone="secondary" />
       </div>
       <div className="panel toolbar-panel">
         <div>
@@ -52,9 +52,9 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck 
   );
 }
 
-function Metric({ icon, label, value }: any) {
+function Metric({ icon, label, value, tone }: any) {
   return (
-    <div className="info-box shadow-sm">
+    <div className={`info-box shadow-sm metric-${tone}`}>
       <span className="info-box-icon">{icon}</span>
       <div className="info-box-content">
         <span className="info-box-text">{label}</span>

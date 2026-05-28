@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.1 - 2026-05-28
+
+- Reworked the dark theme to use a neutral dark blue/gray palette and removed the green/olive cast.
+- Strengthened status colors across pills, table rows, dashboard info boxes, and status counters with clear green/yellow/red/gray states.
+- Added datetime range builders for global and per-monitor maintenance windows while keeping text rules for recurring schedules.
+
 ## 0.8.0 - 2026-05-28
 
 - Made AdminLTE 4 the only frontend shell and removed the previous native/AdminLTE skin switch.

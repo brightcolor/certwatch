@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import type { Monitor } from "../api/client";
 import { TagInput } from "../components/TagInput";
+import { MaintenanceWindowBuilder } from "../components/MaintenanceWindowBuilder";
 import { collectsCertificate, serviceSecurityMode, transportSecurityProtocols } from "../utils/monitorTypes";
 
 const blank = {
@@ -87,6 +88,10 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
     set("notificationChannelIds", [...current]);
   };
   const setRecipient = (id: string, value: string) => set("notificationRecipients", { ...(form.notificationRecipients ?? {}), [id]: value });
+  const appendMaintenanceWindow = (value: string) => {
+    const current = String(form.maintenanceWindows ?? "").trim();
+    set("maintenanceWindows", [current, value].filter(Boolean).join("\n"));
+  };
 
   return (
     <div className="modal">
@@ -118,6 +123,7 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
           <label>Warning days<input type="number" min="1" value={form.warningDays} onChange={(e) => set("warningDays", e.target.value)} /></label>
           <label>Critical days<input type="number" min="0" value={form.criticalDays} onChange={(e) => set("criticalDays", e.target.value)} /></label>
           <label>Alert grace period seconds<input type="number" min="0" max="604800" value={form.gracePeriodSeconds ?? 0} onChange={(e) => set("gracePeriodSeconds", e.target.value)} /></label>
+          <MaintenanceWindowBuilder onUse={appendMaintenanceWindow} buttonLabel="Append range" />
           <label>Maintenance windows<textarea value={form.maintenanceWindows ?? ""} placeholder="daily 22:00-23:00&#10;mon-fri 01:00-02:00&#10;2026-06-01T20:00:00/2026-06-01T22:00:00" onChange={(e) => set("maintenanceWindows", e.target.value)} /></label>
         </FormSection>
         {collectsCertificate(form.type, form.config, Number(form.port)) && <FormSection title="TLS validation">
