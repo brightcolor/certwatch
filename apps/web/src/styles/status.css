@@ -106,29 +106,29 @@
 }
 
 .status-ok {
-  border-color: rgba(var(--bs-success-rgb), .38);
-  background: rgba(var(--bs-success-rgb), .18);
-  color: var(--bs-success);
+  border-color: rgba(var(--bs-success-rgb), .85);
+  background: var(--bs-success);
+  color: #07140b;
 }
 
 .status-warning {
-  border-color: rgba(var(--bs-warning-rgb), .45);
-  background: rgba(var(--bs-warning-rgb), .22);
-  color: var(--bs-warning);
+  border-color: rgba(var(--bs-warning-rgb), .9);
+  background: var(--bs-warning);
+  color: #171006;
 }
 
 .status-critical,
 .status-down {
-  border-color: rgba(var(--bs-danger-rgb), .42);
-  background: rgba(var(--bs-danger-rgb), .2);
-  color: var(--bs-danger);
+  border-color: rgba(var(--bs-danger-rgb), .9);
+  background: var(--bs-danger);
+  color: #fff;
 }
 
 .status-paused,
 .status-unknown {
-  border-color: rgba(var(--bs-secondary-color-rgb), .34);
-  background: rgba(var(--bs-secondary-color-rgb), .16);
-  color: var(--bs-secondary-color);
+  border-color: rgba(var(--bs-secondary-color-rgb), .72);
+  background: var(--bs-info);
+  color: #111;
 }
 
 .row:has(.status-ok),

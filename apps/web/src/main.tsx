@@ -210,6 +210,12 @@ function App() {
     await refresh();
     setToast("Monitor deleted");
   };
+  const cloneMonitor = async (id: string) => {
+    const cloned = await api.request<Monitor>(`/monitors/${id}/clone`, { method: "POST", body: "{}" });
+    await refresh();
+    navigate("dashboard", cloned.id);
+    setToast("Monitor cloned as paused");
+  };
   const navigate = (nextPage: string, nextSelected: string | null = null) => {
     setPage(nextPage);
     setSelected(nextSelected);
@@ -298,12 +304,13 @@ function App() {
           onBack={backToOverview}
           onEdit={() => setEditing(selectedMonitor)}
           onCheck={() => checkNow(selectedMonitor.id)}
+          onClone={() => cloneMonitor(selectedMonitor.id)}
           onDelete={() => deleteMonitor(selectedMonitor.id)}
           onAck={async (id: string, assignee: string) => { await api.request(`/incidents/${id}/ack`, { method: "POST", body: JSON.stringify({ assignee }) }); await loadMonitorData(selectedMonitor.id); }}
           onNote={async (id: string, text: string) => { await api.request(`/incidents/${id}/notes`, { method: "POST", body: JSON.stringify({ text }) }); await loadMonitorData(selectedMonitor.id); }}
         />
       ) : (
-        <Dashboard monitors={monitors} stats={stats} query={query} setQuery={setQuery} onSelect={(id: string) => navigate("dashboard", id)} onCheck={checkNow} />
+        <Dashboard monitors={monitors} stats={stats} query={query} setQuery={setQuery} onSelect={(id: string) => navigate("dashboard", id)} onCheck={checkNow} onClone={cloneMonitor} />
       )}
       {editing && <MonitorForm channels={channels} monitor={editing === "new" ? null : editing} onCancel={() => setEditing(null)} onSave={saveMonitor} onSaveAndCheck={saveAndCheck} />}
     </Layout>

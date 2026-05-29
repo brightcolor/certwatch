@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.5 - 2026-05-30
+
+- Made dashboard monitor rows denser with shorter row height, tighter text spacing, and compact icon actions.
+- Added monitor cloning from the dashboard and monitor detail view; cloned monitors are created paused to avoid duplicate checks and alerts.
+- Preserved monitor secrets during server-side cloning while continuing to redact them in API responses.
+- Strengthened filled status indicators for OK, Warning, Critical, Down, Paused, and Unknown states.
+- Fixed status filter chip behavior so clicking a status selects that status from the All view, and colored every chip by its status.
+- Adjusted dashboard row hover styling so text cells, pills, and action areas visually move with the hovered row.
+
 ## 0.9.4 - 2026-05-29
 
 - Removed the sidebar live overview block and made dashboard monitor rows more compact.

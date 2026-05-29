@@ -22,6 +22,14 @@ monitorRoutes.post("/", requireTenantRole("owner", "admin", "member"), async (re
   res.status(201).json(publicMonitor(monitor));
 });
 
+monitorRoutes.post("/:id/clone", requireTenantRole("owner", "admin", "member"), (req, res) => {
+  const source = monitors.get(req.params.id, req.currentTenant!.id);
+  if (!source) return res.status(404).json({ error: "Monitor not found." });
+  if (!monitorQuotaAvailable(req.currentTenant!.id)) return res.status(402).json({ error: "Workspace monitor limit reached." });
+  const monitor = monitors.create(cloneMonitor(source, req.currentTenant!.id));
+  res.status(201).json(publicMonitor(monitor));
+});
+
 monitorRoutes.post("/bulk", requireTenantRole("owner", "admin", "member"), (req, res) => {
   const lines = String(req.body?.text ?? "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const created = [];
@@ -117,6 +125,31 @@ monitorRoutes.get("/:id/incidents", (req, res) => {
 });
 
 const publicMonitor = (monitor: Monitor) => ({ ...monitor, config: redactConfigSecrets(monitor.config ?? {}) });
+
+const cloneMonitor = (monitor: Monitor, tenantId: string): Omit<Monitor, "id" | "lastStatus" | "createdAt" | "updatedAt" | "nextCheckAt"> => ({
+  tenantId,
+  name: `${monitor.name.slice(0, 113)} copy`,
+  host: monitor.host,
+  port: monitor.port,
+  type: monitor.type,
+  enabled: false,
+  intervalSeconds: monitor.intervalSeconds,
+  timeoutSeconds: monitor.timeoutSeconds,
+  warningDays: monitor.warningDays,
+  criticalDays: monitor.criticalDays,
+  gracePeriodSeconds: monitor.gracePeriodSeconds,
+  sniEnabled: monitor.sniEnabled,
+  sniHost: monitor.sniHost,
+  validateCertificate: monitor.validateCertificate,
+  allowSelfSigned: monitor.allowSelfSigned,
+  tags: monitor.tags,
+  notes: monitor.notes,
+  owner: monitor.owner,
+  notificationChannelIds: monitor.notificationChannelIds,
+  notificationRecipients: monitor.notificationRecipients,
+  config: monitor.config,
+  maintenanceWindows: monitor.maintenanceWindows
+});
 
 const mergeMaskedSecrets = (previous: Record<string, unknown>, next: Record<string, unknown>) =>
   Object.fromEntries(Object.entries(next ?? {}).map(([key, value]) => [

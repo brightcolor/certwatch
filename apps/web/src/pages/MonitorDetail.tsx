@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { Copy } from "lucide-react";
 import type { CheckResult, Incident, Monitor } from "../api/client";
 import { StatusPill } from "../components/StatusPill";
 import { certificateUnavailableMessage, collectsCertificate } from "../utils/monitorTypes";
 import { formatDateTime } from "../utils/date";
 
-export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onCheck, onDelete, onAck, onNote }: { monitor: Monitor; results: CheckResult[]; incidents: Incident[]; onBack: () => void; onEdit: () => void; onCheck: () => void; onDelete: () => void; onAck: (id: string, assignee: string) => Promise<void>; onNote: (id: string, text: string) => Promise<void> }) {
+export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onCheck, onClone, onDelete, onAck, onNote }: { monitor: Monitor; results: CheckResult[]; incidents: Incident[]; onBack: () => void; onEdit: () => void; onCheck: () => void; onClone: () => void; onDelete: () => void; onAck: (id: string, assignee: string) => Promise<void>; onNote: (id: string, text: string) => Promise<void> }) {
   const [assignee, setAssignee] = useState("");
   const [note, setNote] = useState("");
   const latest = results[0] ?? monitor.latestResult;
@@ -29,7 +30,7 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
             <p>{monitor.host}:{monitor.port} - {monitor.type}</p>
             <small>{monitor.tags.join(", ") || "unlabeled"}</small>
           </div>
-          <div className="actions"><button className="btn btn-primary" onClick={onCheck}>Check now</button><button className="btn btn-outline-secondary" onClick={onEdit}>Edit</button><button className="btn btn-outline-danger" onClick={() => { if (confirm(`Delete monitor "${monitor.name}"?`)) onDelete(); }}>Delete</button></div>
+          <div className="actions"><button className="btn btn-primary" onClick={onCheck}>Check now</button><button className="btn btn-outline-secondary" onClick={onClone}><Copy size={16} /> Clone</button><button className="btn btn-outline-secondary" onClick={onEdit}>Edit</button><button className="btn btn-outline-danger" onClick={() => { if (confirm(`Delete monitor "${monitor.name}"?`)) onDelete(); }}>Delete</button></div>
         </div>
       </div>
       {hasCertificateDetails ? <div className="grid two">

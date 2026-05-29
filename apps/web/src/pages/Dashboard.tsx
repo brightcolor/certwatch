@@ -1,23 +1,23 @@
 import { Fragment, useMemo, useState } from "react";
-import { Search, ShieldCheck, Siren, TimerReset, TriangleAlert } from "lucide-react";
+import { Copy, RefreshCw, Search, ShieldCheck, Siren, TimerReset, TriangleAlert } from "lucide-react";
 import type { Monitor } from "../api/client";
 import { StatusPill } from "../components/StatusPill";
 import { collectsCertificate } from "../utils/monitorTypes";
 import { formatDate } from "../utils/date";
 
-export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck }: any) {
+export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck, onClone }: any) {
   const [viewMode, setViewMode] = useState<"grouped" | "list">("grouped");
-  const [statusFilters, setStatusFilters] = useState<string[]>(statusOptions.map((item) => item.status));
+  const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const filtered = monitors.filter((monitor: Monitor) =>
     [monitor.name, monitor.host, monitor.tags.join(" ")].join(" ").toLowerCase().includes(query.toLowerCase())
-    && statusFilters.includes(monitor.lastStatus)
+    && (!statusFilters.length || statusFilters.includes(monitor.lastStatus))
   );
   const groups = useMemo(() => groupMonitors(filtered), [filtered]);
   const statusCounts = useMemo(() => countStatuses(monitors), [monitors]);
-  const allSelected = statusFilters.length === statusOptions.length;
+  const allSelected = statusFilters.length === 0;
 
   const toggleStatus = (status: string) => {
-    setStatusFilters((current) => current.includes(status) ? current.filter((item) => item !== status) : [...current, status]);
+    setStatusFilters((current) => current.length === 0 ? [status] : current.includes(status) ? current.filter((item) => item !== status) : [...current, status]);
   };
 
   return (
@@ -40,7 +40,7 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck 
             <button type="button" className={`btn ${viewMode === "list" ? "btn-secondary" : "btn-outline-secondary"}`} onClick={() => setViewMode("list")}>List</button>
           </div>
           <div className="status-filter" aria-label="Status filters">
-            <button type="button" className={`filter-chip ${allSelected ? "active" : ""}`} onClick={() => setStatusFilters(statusOptions.map((item) => item.status))}>All</button>
+            <button type="button" className={`filter-chip filter-all ${allSelected ? "active" : ""}`} onClick={() => setStatusFilters([])}>All</button>
             {statusOptions.map((item) => (
               <button type="button" className={`filter-chip filter-${item.status.toLowerCase()} ${statusFilters.includes(item.status) ? "active" : ""}`} key={item.status} onClick={() => toggleStatus(item.status)}>
                 {item.label}<span>{statusCounts[item.status] ?? 0}</span>
@@ -58,15 +58,15 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck 
               <div><StatusPill status={group.status} /><strong>{group.name}</strong><span>{group.monitors.length} monitor{group.monitors.length === 1 ? "" : "s"}</span></div>
               <small>{group.summary}</small>
             </div>
-            {group.monitors.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} key={monitor.id} />)}
+            {group.monitors.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} key={monitor.id} />)}
           </Fragment>
-        )) : filtered.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} key={monitor.id} />)}
+        )) : filtered.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} key={monitor.id} />)}
       </div>
     </section>
   );
 }
 
-function MonitorRow({ monitor, onSelect, onCheck }: { monitor: Monitor; onSelect: (id: string) => void; onCheck: (id: string) => void }) {
+function MonitorRow({ monitor, onSelect, onCheck, onClone }: { monitor: Monitor; onSelect: (id: string) => void; onCheck: (id: string) => void; onClone: (id: string) => void }) {
   return (
     <div className="row" onClick={() => onSelect(monitor.id)}>
       <span><StatusPill status={monitor.lastStatus} /></span>
@@ -78,7 +78,10 @@ function MonitorRow({ monitor, onSelect, onCheck }: { monitor: Monitor; onSelect
         <small>{monitor.latestResult?.tlsVersion ?? ""}</small>
         <ProblemBadges monitor={monitor} />
       </span>
-      <span><button className="btn btn-sm btn-outline-secondary" onClick={(e) => { e.stopPropagation(); onCheck(monitor.id); }}>Check now</button></span>
+      <span className="monitor-actions">
+        <button className="btn btn-sm btn-outline-secondary monitor-action" title="Check now" aria-label={`Check ${monitor.name} now`} onClick={(e) => { e.stopPropagation(); onCheck(monitor.id); }}><RefreshCw size={14} /></button>
+        <button className="btn btn-sm btn-outline-secondary monitor-action" title="Clone monitor" aria-label={`Clone ${monitor.name}`} onClick={(e) => { e.stopPropagation(); onClone(monitor.id); }}><Copy size={14} /></button>
+      </span>
     </div>
   );
 }
@@ -113,7 +116,7 @@ const sslLabsPill = (monitor: Monitor) =>
 function ProblemBadges({ monitor }: { monitor: Monitor }) {
   const problems = problemSummary(monitor);
   if (!problems.length) return null;
-  const visible = problems.slice(0, 2);
+  const visible = problems.slice(0, 1);
   const remaining = problems.length - visible.length;
   return (
     <span className="problem-list" title={problems.join("\n")}>

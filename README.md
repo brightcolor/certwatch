@@ -21,7 +21,7 @@ This stack keeps the application easy to self-host while still supporting real T
 ## Features
 
 - Dashboard with OK, warning, critical, down, paused, and unknown status counts
-- Compact dashboard monitor list with grouped/list view switching and multi-select status filters
+- Compact dashboard monitor list with grouped/list view switching, color-coded multi-select status filters, and monitor cloning
 - Live-refreshing UI views that update visible status, monitor details, operations, reports, users, workspaces, and settings without a manual reload
 - Dashboard problem chips that show certificate, TLS, DNS, SSL Labs, and service issues directly in the monitor overview
 - SaaS-ready workspace model with tenant-scoped monitors, notification providers, settings, and role-based memberships
