@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Copy, RefreshCw, Search, ShieldCheck, Siren, TimerReset, TriangleAlert } from "lucide-react";
 import type { Monitor } from "../api/client";
 import { StatusPill } from "../components/StatusPill";
@@ -15,6 +15,7 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
   const groups = useMemo(() => groupMonitors(filtered), [filtered]);
   const statusCounts = useMemo(() => countStatuses(monitors), [monitors]);
   const allSelected = statusFilters.length === 0;
+  const health = healthScore(monitors);
 
   const toggleStatus = (status: string) => {
     setStatusFilters((current) => current.length === 0 ? [status] : current.includes(status) ? current.filter((item) => item !== status) : [...current, status]);
@@ -22,7 +23,24 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
 
   return (
     <section className="content">
-      <div className="metrics">
+      <div className={`dashboard-hero hero-${health.tone}`}>
+        <div className="score-ring" style={{ "--score": `${health.percent}%` } as any}>
+          <strong>{health.score}</strong>
+          <span>/10</span>
+        </div>
+        <div className="hero-copy">
+          <span className="eyebrow">Overall health</span>
+          <h2>{health.title}</h2>
+          <p>{health.description}</p>
+          <div className="hero-badges">
+            <span className="filter-chip filter-ok active">OK {statusCounts.OK ?? 0}</span>
+            <span className="filter-chip filter-warning active">Warnings {statusCounts.WARNING ?? 0}</span>
+            <span className="filter-chip filter-critical active">Critical {(statusCounts.CRITICAL ?? 0) + (statusCounts.DOWN ?? 0)}</span>
+            <span className="filter-chip filter-unknown active">Other {(statusCounts.PAUSED ?? 0) + (statusCounts.UNKNOWN ?? 0)}</span>
+          </div>
+        </div>
+      </div>
+      <div className="metrics dashboard-facts">
         <Metric icon={<ShieldCheck />} label="Valid" value={stats.ok ?? 0} tone="success" />
         <Metric icon={<TriangleAlert />} label="Expiring soon" value={stats.warning ?? 0} tone="warning" />
         <Metric icon={<Siren />} label="Critical" value={(stats.critical ?? 0) + (stats.down ?? 0)} tone="danger" />
@@ -49,17 +67,21 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
           </div>
         </div>
       </div>
-      <div className="table monitor-table">
-        <div className="row head"><span>Status</span><span>Check</span><span>Target</span><span>Certificate</span><span>Last result / reason</span><span></span></div>
+      <div className="monitor-checklist">
         {!filtered.length && <div className="empty-row"><strong>No monitors found</strong><span className="muted">Create a monitor to start checking certificates, services, or logins.</span></div>}
         {viewMode === "grouped" ? groups.map((group) => (
-          <Fragment key={group.name}>
-            <div className="group-row">
-              <div><StatusPill status={group.status} /><strong>{group.name}</strong><span>{group.monitors.length} monitor{group.monitors.length === 1 ? "" : "s"}</span></div>
-              <small>{group.summary}</small>
+          <section className="monitor-group" key={group.name}>
+            <div className="monitor-group-head">
+              <div>
+                <h3>{group.name}</h3>
+                <p>{group.summary}</p>
+              </div>
+              <div className="group-badges">
+                {statusOptions.slice(0, 4).map((item) => <span className={`mini-count mini-${item.status.toLowerCase()}`} key={item.status}>{group.counts[item.status] ?? 0}</span>)}
+              </div>
             </div>
             {group.monitors.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} key={monitor.id} />)}
-          </Fragment>
+          </section>
         )) : filtered.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} key={monitor.id} />)}
       </div>
     </section>
@@ -68,20 +90,20 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
 
 function MonitorRow({ monitor, onSelect, onCheck, onClone }: { monitor: Monitor; onSelect: (id: string) => void; onCheck: (id: string) => void; onClone: (id: string) => void }) {
   return (
-    <div className="row" onClick={() => onSelect(monitor.id)}>
-      <span><StatusPill status={monitor.lastStatus} /></span>
-      <span><strong>{monitor.name}</strong><small>{monitor.tags.join(", ") || "unlabeled"}</small></span>
-      <span>{monitor.host}:{monitor.port}<small>{monitor.type}</small></span>
-      <span>{certificateSummary(monitor)}{gradePill(monitor)}{sslLabsPill(monitor)}<small>{certificateDetail(monitor)}</small></span>
-      <span className="result-cell">
+    <div className={`monitor-row tone-${monitor.lastStatus.toLowerCase()}`} onClick={() => onSelect(monitor.id)}>
+      <span className={`status-mark mark-${monitor.lastStatus.toLowerCase()}`}>{statusMark(monitor.lastStatus)}</span>
+      <div className="monitor-main">
+        <strong>{monitor.name}</strong>
         <span>{resultReason(monitor)}</span>
-        <small>{monitor.latestResult?.tlsVersion ?? ""}</small>
         <ProblemBadges monitor={monitor} />
-      </span>
-      <span className="monitor-actions">
+      </div>
+      <div className="monitor-target"><strong>{monitor.host}:{monitor.port}</strong><small>{monitor.type} · {monitor.tags.join(", ") || "unlabeled"}</small></div>
+      <div className="monitor-cert">{certificateSummary(monitor)}{gradePill(monitor)}{sslLabsPill(monitor)}<small>{certificateDetail(monitor)}</small></div>
+      <div className="monitor-state"><StatusPill status={monitor.lastStatus} /><strong>{monitor.latestResult?.durationMs ? `${monitor.latestResult.durationMs} ms` : ""}</strong></div>
+      <div className="monitor-actions">
         <button className="btn btn-sm btn-outline-secondary monitor-action" title="Check now" aria-label={`Check ${monitor.name} now`} onClick={(e) => { e.stopPropagation(); onCheck(monitor.id); }}><RefreshCw size={14} /></button>
         <button className="btn btn-sm btn-outline-secondary monitor-action" title="Clone monitor" aria-label={`Clone ${monitor.name}`} onClick={(e) => { e.stopPropagation(); onClone(monitor.id); }}><Copy size={14} /></button>
-      </span>
+      </div>
     </div>
   );
 }
@@ -157,6 +179,20 @@ const statusOptions = [
 const countStatuses = (monitors: Monitor[]) =>
   monitors.reduce<Record<string, number>>((acc, monitor) => ({ ...acc, [monitor.lastStatus]: (acc[monitor.lastStatus] ?? 0) + 1 }), {});
 
+const healthScore = (monitors: Monitor[]) => {
+  const counts = countStatuses(monitors);
+  const total = monitors.length || 1;
+  const weighted = (counts.OK ?? 0) + (counts.WARNING ?? 0) * .55 + (counts.PAUSED ?? 0) * .35;
+  const score = Math.max(0, Math.min(10, weighted / total * 10));
+  const critical = (counts.CRITICAL ?? 0) + (counts.DOWN ?? 0);
+  const title = critical ? "Attention required" : (counts.WARNING ?? 0) ? "Mostly healthy, watch warnings" : "All monitored checks look healthy";
+  const description = critical ? "Critical or down monitors need action before customers notice service or certificate problems." : (counts.WARNING ?? 0) ? "The platform is operating, but some checks are approaching thresholds or changed state." : "Certificate, service, and login checks are currently inside their expected operating range.";
+  const tone = critical ? "critical" : (counts.WARNING ?? 0) ? "warning" : "ok";
+  return { score: score.toFixed(1), percent: Math.round(score * 10), title, description, tone };
+};
+
+const statusMark = (status: string) => ({ OK: "OK", WARNING: "!", CRITICAL: "×", DOWN: "×", PAUSED: "Ⅱ", UNKNOWN: "?" }[status] ?? "?");
+
 const groupMonitors = (monitors: Monitor[]) => {
   const buckets = new Map<string, Monitor[]>();
   for (const monitor of monitors) {
@@ -167,7 +203,8 @@ const groupMonitors = (monitors: Monitor[]) => {
     name,
     monitors: items,
     status: rollupStatus(items),
-    summary: summaryFor(items)
+    summary: summaryFor(items),
+    counts: countStatuses(items)
   }));
 };
 

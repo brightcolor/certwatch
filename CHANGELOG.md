@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.6 - 2026-05-30
+
+- Reworked the dashboard into a dark, colorful score-and-checklist layout inspired by audit result interfaces.
+- Added an overall health score ring with contextual headline, description, and status summary chips.
+- Replaced the monitor table with compact status rows that show a colored status mark, monitor reason, target, certificate details, and actions.
+- Fixed monitor row hover styling by removing the old table-cell surface model and making each monitor row a single interactive surface.
+- Switched informational accent color to cyan for a darker but more colorful interface.
+
 ## 0.9.5 - 2026-05-30
 
 - Made dashboard monitor rows denser with shorter row height, tighter text spacing, and compact icon actions.

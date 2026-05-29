@@ -42,8 +42,8 @@
   --bs-warning-rgb: 245, 158, 11;
   --bs-danger: #ef4444;
   --bs-danger-rgb: 239, 68, 68;
-  --bs-info: #949ba4;
-  --bs-info-rgb: 148, 155, 164;
+  --bs-info: #22d3ee;
+  --bs-info-rgb: 34, 211, 238;
   --bs-light: #e4e7ec;
   --bs-light-rgb: 228, 231, 236;
   --bs-dark: #1e1f22;
@@ -79,8 +79,8 @@
   --bs-warning-rgb: 217, 119, 6;
   --bs-danger: #dc2626;
   --bs-danger-rgb: 220, 38, 38;
-  --bs-info: #6d6f78;
-  --bs-info-rgb: 109, 111, 120;
+  --bs-info: #0891b2;
+  --bs-info-rgb: 8, 145, 178;
   --bs-border-color: #d4d7dc;
   --bs-border-color-translucent: rgba(95, 98, 106, .22);
   --bs-link-color: #2e3338;
