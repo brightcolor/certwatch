@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { Search, ShieldCheck, Siren, TimerReset, TriangleAlert } from "lucide-react";
 import type { Monitor } from "../api/client";
 import { StatusPill } from "../components/StatusPill";
@@ -6,10 +6,19 @@ import { collectsCertificate } from "../utils/monitorTypes";
 import { formatDate } from "../utils/date";
 
 export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck }: any) {
+  const [viewMode, setViewMode] = useState<"grouped" | "list">("grouped");
+  const [statusFilters, setStatusFilters] = useState<string[]>(statusOptions.map((item) => item.status));
   const filtered = monitors.filter((monitor: Monitor) =>
     [monitor.name, monitor.host, monitor.tags.join(" ")].join(" ").toLowerCase().includes(query.toLowerCase())
+    && statusFilters.includes(monitor.lastStatus)
   );
-  const groups = groupMonitors(filtered);
+  const groups = useMemo(() => groupMonitors(filtered), [filtered]);
+  const statusCounts = useMemo(() => countStatuses(monitors), [monitors]);
+  const allSelected = statusFilters.length === statusOptions.length;
+
+  const toggleStatus = (status: string) => {
+    setStatusFilters((current) => current.includes(status) ? current.filter((item) => item !== status) : [...current, status]);
+  };
 
   return (
     <section className="content">
@@ -25,34 +34,52 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck 
           <p className="muted">{filtered.length} of {monitors.length} checks visible</p>
         </div>
         <div className="toolbar"><Search size={18} /><input placeholder="Search name, host, label, owner" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
+        <div className="dashboard-controls">
+          <div className="btn-group btn-group-sm" role="group" aria-label="Dashboard view">
+            <button type="button" className={`btn ${viewMode === "grouped" ? "btn-secondary" : "btn-outline-secondary"}`} onClick={() => setViewMode("grouped")}>Grouped</button>
+            <button type="button" className={`btn ${viewMode === "list" ? "btn-secondary" : "btn-outline-secondary"}`} onClick={() => setViewMode("list")}>List</button>
+          </div>
+          <div className="status-filter" aria-label="Status filters">
+            <button type="button" className={`filter-chip ${allSelected ? "active" : ""}`} onClick={() => setStatusFilters(statusOptions.map((item) => item.status))}>All</button>
+            {statusOptions.map((item) => (
+              <button type="button" className={`filter-chip filter-${item.status.toLowerCase()} ${statusFilters.includes(item.status) ? "active" : ""}`} key={item.status} onClick={() => toggleStatus(item.status)}>
+                {item.label}<span>{statusCounts[item.status] ?? 0}</span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
-      <div className="table">
-        <div className="row head"><span>Status</span><span>Check</span><span>Target</span><span>Certificate</span><span>Last result / problems</span><span></span></div>
+      <div className="table monitor-table">
+        <div className="row head"><span>Status</span><span>Check</span><span>Target</span><span>Certificate</span><span>Last result / reason</span><span></span></div>
         {!filtered.length && <div className="empty-row"><strong>No monitors found</strong><span className="muted">Create a monitor to start checking certificates, services, or logins.</span></div>}
-        {groups.map((group) => (
+        {viewMode === "grouped" ? groups.map((group) => (
           <Fragment key={group.name}>
             <div className="group-row">
               <div><StatusPill status={group.status} /><strong>{group.name}</strong><span>{group.monitors.length} monitor{group.monitors.length === 1 ? "" : "s"}</span></div>
               <small>{group.summary}</small>
             </div>
-            {group.monitors.map((monitor: Monitor) => (
-              <div className="row" key={monitor.id} onClick={() => onSelect(monitor.id)}>
-                <span><StatusPill status={monitor.lastStatus} /></span>
-                <span><strong>{monitor.name}</strong><small>{monitor.tags.join(", ") || "unlabeled"}</small></span>
-                <span>{monitor.host}:{monitor.port}<small>{monitor.type}</small></span>
-                <span>{certificateSummary(monitor)}{gradePill(monitor)}{sslLabsPill(monitor)}<small>{certificateDetail(monitor)}</small></span>
-                <span className="result-cell">
-                  <span>{monitor.latestResult?.message ?? "No result yet"}</span>
-                  <small>{monitor.latestResult?.tlsVersion ?? ""}</small>
-                  <ProblemBadges monitor={monitor} />
-                </span>
-                <span><button className="btn btn-sm btn-outline-secondary" onClick={(e) => { e.stopPropagation(); onCheck(monitor.id); }}>Check now</button></span>
-              </div>
-            ))}
+            {group.monitors.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} key={monitor.id} />)}
           </Fragment>
-        ))}
+        )) : filtered.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} key={monitor.id} />)}
       </div>
     </section>
+  );
+}
+
+function MonitorRow({ monitor, onSelect, onCheck }: { monitor: Monitor; onSelect: (id: string) => void; onCheck: (id: string) => void }) {
+  return (
+    <div className="row" onClick={() => onSelect(monitor.id)}>
+      <span><StatusPill status={monitor.lastStatus} /></span>
+      <span><strong>{monitor.name}</strong><small>{monitor.tags.join(", ") || "unlabeled"}</small></span>
+      <span>{monitor.host}:{monitor.port}<small>{monitor.type}</small></span>
+      <span>{certificateSummary(monitor)}{gradePill(monitor)}{sslLabsPill(monitor)}<small>{certificateDetail(monitor)}</small></span>
+      <span className="result-cell">
+        <span>{resultReason(monitor)}</span>
+        <small>{monitor.latestResult?.tlsVersion ?? ""}</small>
+        <ProblemBadges monitor={monitor} />
+      </span>
+      <span><button className="btn btn-sm btn-outline-secondary" onClick={(e) => { e.stopPropagation(); onCheck(monitor.id); }}>Check now</button></span>
+    </div>
   );
 }
 
@@ -98,13 +125,34 @@ function ProblemBadges({ monitor }: { monitor: Monitor }) {
 
 const problemSummary = (monitor: Monitor) => [...new Set([
   ...(monitor.latestResult?.problems ?? []),
+  ...(monitor.latestResult?.tlsGradeReasons ?? []).map((item) => `TLS grade: ${item.reason} (-${item.points})`),
   ...(monitor.latestResult?.sslLabsFindings ?? []),
   ...(monitor.latestResult?.dns?.mismatches ?? [])
 ].filter(Boolean))];
 
+const resultReason = (monitor: Monitor) => {
+  if (!monitor.enabled || monitor.lastStatus === "PAUSED") return "Paused. Scheduled checks and alerts are disabled.";
+  if (monitor.latestResult?.message) return monitor.latestResult.message;
+  if (monitor.lastStatus === "UNKNOWN") return "No check has run yet.";
+  if (monitor.lastStatus === "OK") return "Last check completed without active problems.";
+  return monitor.latestResult?.problems?.[0] ?? "No detailed reason was recorded for this status.";
+};
+
 const problemTone = (status: string) =>
   status === "WARNING" ? "warning" :
     status === "CRITICAL" || status === "DOWN" ? "danger" : "secondary";
+
+const statusOptions = [
+  { status: "OK", label: "Ok" },
+  { status: "WARNING", label: "Warning" },
+  { status: "CRITICAL", label: "Critical" },
+  { status: "DOWN", label: "Down" },
+  { status: "PAUSED", label: "Paused" },
+  { status: "UNKNOWN", label: "Unknown" }
+];
+
+const countStatuses = (monitors: Monitor[]) =>
+  monitors.reduce<Record<string, number>>((acc, monitor) => ({ ...acc, [monitor.lastStatus]: (acc[monitor.lastStatus] ?? 0) + 1 }), {});
 
 const groupMonitors = (monitors: Monitor[]) => {
   const buckets = new Map<string, Monitor[]>();

@@ -13,6 +13,19 @@
   box-shadow: var(--bs-box-shadow-sm);
 }
 
+.metrics .info-box-number {
+  color: var(--bs-emphasis-color);
+  font-size: 2.45rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.metrics .info-box-text {
+  color: var(--bs-secondary-color);
+  font-size: .82rem;
+  font-weight: 700;
+}
+
 .metrics .info-box-icon {
   min-width: 4.25rem;
   color: #fff;

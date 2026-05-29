@@ -19,6 +19,7 @@ describe("certificate status classification", () => {
     const result = classifyResult(monitor, healthy(14));
     expect(result.status).toBe("WARNING");
     expect(result.daysRemaining).toBe(14);
+    expect(result.problems.join(" ")).toContain("warning threshold");
   });
 
   it("marks expired certificates as CRITICAL", () => {

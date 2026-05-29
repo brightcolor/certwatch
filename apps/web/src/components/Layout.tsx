@@ -95,11 +95,6 @@ export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, 
               <li className="nav-item"><a className="nav-link" href="/api/export/monitors.json"><Download className="nav-icon" size={18} /><p>Export</p></a></li>
             </ul>
           </nav>
-          <div className="sidebar-health">
-            <span>Live overview</span>
-            <strong>{stats.ok ?? 0} OK</strong>
-            <small>{stats.warning ?? 0} warning / {critical} critical</small>
-          </div>
         </div>
       </aside>
       <main className="app-main">

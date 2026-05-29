@@ -184,20 +184,6 @@
   width: min(340px, 92vw);
 }
 
-.sidebar-health {
-  display: grid;
-  gap: .2rem;
-  margin: auto 1rem 1rem;
-  border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius);
-  background: rgba(var(--bs-body-bg-rgb), .72);
-  padding: .85rem;
-}
-
-:root[data-theme="dark"] .sidebar-health {
-  background: #232428;
-}
-
 .adminlte-titlebar {
   display: flex;
   align-items: center;

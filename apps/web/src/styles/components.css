@@ -155,54 +155,6 @@
   white-space: nowrap;
 }
 
-.result-cell {
-  display: grid;
-  gap: .25rem;
-}
-
-.row .problem-list {
-  display: flex;
-  min-width: 0;
-  gap: .35rem;
-  flex-wrap: wrap;
-  overflow: visible;
-}
-
-.row .problem-chip {
-  display: inline-flex;
-  max-width: 100%;
-  min-width: 0;
-  align-items: center;
-  border: 1px solid var(--bs-border-color);
-  border-radius: .45rem;
-  padding: .16rem .45rem;
-  overflow: hidden;
-  font-size: .72rem;
-  font-weight: 700;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.problem-danger {
-  border-color: rgba(var(--bs-danger-rgb), .42);
-  background: rgba(var(--bs-danger-rgb), .14);
-  color: var(--bs-danger);
-}
-
-.problem-warning {
-  border-color: rgba(var(--bs-warning-rgb), .45);
-  background: rgba(var(--bs-warning-rgb), .16);
-  color: var(--bs-warning);
-}
-
-.problem-secondary,
-.problem-more {
-  border-color: rgba(var(--bs-secondary-color-rgb), .35);
-  background: rgba(var(--bs-secondary-color-rgb), .12);
-  color: var(--bs-secondary-color);
-}
-
 .empty-row,
 .empty-state {
   display: grid;

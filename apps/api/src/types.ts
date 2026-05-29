@@ -81,6 +81,7 @@ export interface CheckResult {
   cipherSuite?: string | null;
   tlsGrade?: string | null;
   tlsScore?: number | null;
+  tlsGradeReasons?: TlsGradeReason[];
   tlsSupportedVersions?: string[];
   sslLabsGrade?: string | null;
   sslLabsScore?: number | null;
@@ -93,6 +94,11 @@ export interface CheckResult {
   chain: CertificateChainItem[];
   problems: string[];
   rawError?: string | null;
+}
+
+export interface TlsGradeReason {
+  reason: string;
+  points: number;
 }
 
 export interface DnsResolutionSummary {

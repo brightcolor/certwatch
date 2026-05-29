@@ -46,6 +46,7 @@ export interface CheckResult {
   cipherSuite?: string | null;
   tlsGrade?: string | null;
   tlsScore?: number | null;
+  tlsGradeReasons?: Array<{ reason: string; points: number }>;
   tlsSupportedVersions?: string[];
   sslLabsGrade?: string | null;
   sslLabsScore?: number | null;

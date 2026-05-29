@@ -21,6 +21,7 @@ This stack keeps the application easy to self-host while still supporting real T
 ## Features
 
 - Dashboard with OK, warning, critical, down, paused, and unknown status counts
+- Compact dashboard monitor list with grouped/list view switching and multi-select status filters
 - Live-refreshing UI views that update visible status, monitor details, operations, reports, users, workspaces, and settings without a manual reload
 - Dashboard problem chips that show certificate, TLS, DNS, SSL Labs, and service issues directly in the monitor overview
 - SaaS-ready workspace model with tenant-scoped monitors, notification providers, settings, and role-based memberships
@@ -36,6 +37,7 @@ This stack keeps the application easy to self-host while still supporting real T
 - Prometheus-compatible metrics at `/metrics`
 - SSL Labs-style TLS security grading with a compact A-F score per TLS result, including secure service checks on the dashboard overview
 - Optional intensive TLS assessment that probes supported TLS versions and flags deprecated protocol support, weak cipher patterns, missing forward secrecy, small certificate keys, and incomplete chains
+- TLS grading explains persisted score deductions and deterioration alerts include the concrete reason for a grade drop
 - Optional external Qualys SSL Labs v4 assessments for public HTTPS hosts on port `443`, cached per host for at least 24 hours
 - Configurable notifications when a monitor's TLS grade or score deteriorates compared with the previous check
 - Flapping detection for monitors that repeatedly bounce between healthy and failed states

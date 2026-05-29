@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.4 - 2026-05-29
+
+- Removed the sidebar live overview block and made dashboard monitor rows more compact.
+- Added dashboard view switching between grouped and flat list modes.
+- Added multi-select status filters so operators can combine states such as OK and Warning while excluding Critical or Down.
+- Enlarged dashboard summary numbers for quicker scanning.
+- Added explicit TLS grade deduction reasons, persisted them with check results, and included them in TLS/SSL Labs deterioration alerts.
+- Added status reason text to monitor details so operators can see why the latest status was assigned.
+- Added certificate expiry threshold reasons to warning and critical status classification.
+
 ## 0.9.3 - 2026-05-29
 
 - Added live UI refresh for visible pages so dashboards, monitor details, users, workspaces, settings, operations, and reports update without manual reloads.

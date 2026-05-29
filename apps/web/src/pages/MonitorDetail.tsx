@@ -86,7 +86,9 @@ function Panel({ title, children }: any) {
 
 function ResultPanel({ latest, title }: { latest?: CheckResult | null; title: string }) {
   return <Panel title={title}>
+    <Info label="Status Reason" value={resultReason(latest)} />
     <Info label="Security Grade" value={latest?.tlsGrade ? `${latest.tlsGrade} (${latest.tlsScore ?? 0}/100)` : "-"} />
+    <GradeReasons reasons={latest?.tlsGradeReasons ?? []} />
     <Info label="SSL Labs Grade" value={latest?.sslLabsGrade ? `${latest.sslLabsGrade} (${latest.sslLabsStatus ?? "ready"})` : latest?.sslLabsStatus} />
     <Info label="SSL Labs Check" value={dateTime(latest?.sslLabsCheckedAt)} />
     {latest?.sslLabsUrl && <Info label="SSL Labs URL" value={latest.sslLabsUrl} />}
@@ -98,6 +100,18 @@ function ResultPanel({ latest, title }: { latest?: CheckResult | null; title: st
     <Info label="Duration" value={latest ? `${latest.durationMs} ms` : ""} />
     <Info label="Problems" value={[...(latest?.problems ?? []), ...(latest?.sslLabsFindings ?? [])].join("; ") || "None"} />
   </Panel>;
+}
+
+function GradeReasons({ reasons }: { reasons: Array<{ reason: string; points: number }> }) {
+  if (!reasons.length) return <Info label="TLS Grade Reasons" value="No deductions recorded." />;
+  return <div className="info stacked-info"><span>TLS Grade Reasons</span><strong>{reasons.map((item) => `${item.reason} (-${item.points})`).join(" ")}</strong></div>;
+}
+
+function resultReason(latest?: CheckResult | null) {
+  if (!latest) return "No check result has been recorded yet.";
+  if (latest.message) return latest.message;
+  if (latest.status === "OK") return "Last check completed without active problems.";
+  return latest.problems[0] ?? "No detailed reason was recorded for this status.";
 }
 
 function DnsPanel({ result }: { result?: CheckResult | null }) {

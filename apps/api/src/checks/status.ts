@@ -26,15 +26,18 @@ export const classifyResult = (monitor: Monitor, input: StatusInput) => {
   if (input.selfSigned && !monitor.allowSelfSigned) problems.push("Certificate appears to be self-signed.");
 
   const daysRemaining = input.validUntil ? daysBetween(new Date(), input.validUntil) : null;
-  if (input.validUntil && input.validUntil.getTime() < Date.now()) problems.push("Certificate has expired.");
+  const expired = Boolean(input.validUntil && input.validUntil.getTime() < Date.now());
+  if (expired) problems.push("Certificate has expired.");
   if (input.validFrom && input.validFrom.getTime() > Date.now()) problems.push("Certificate is not valid yet.");
   if (input.tlsVersion && ["TLSv1", "TLSv1.1"].includes(input.tlsVersion)) problems.push(`Weak TLS protocol negotiated: ${input.tlsVersion}.`);
 
   const critical = !input.reachable || !input.handshakeOk || input.startTlsMissing || !input.hostnameMatch;
-  const invalid = input.validUntil && input.validUntil.getTime() < Date.now();
+  const invalid = expired;
   const belowCritical = daysRemaining !== null && daysRemaining <= monitor.criticalDays;
   const belowWarning = daysRemaining !== null && daysRemaining <= monitor.warningDays;
   const certChanged = Boolean(input.previousFingerprint && input.fingerprint && input.previousFingerprint !== input.fingerprint);
+  if (!expired && belowCritical) problems.push(`Certificate expires in ${daysRemaining} days, at or below the critical threshold of ${monitor.criticalDays} days.`);
+  else if (!expired && belowWarning) problems.push(`Certificate expires in ${daysRemaining} days, at or below the warning threshold of ${monitor.warningDays} days.`);
 
   if (critical || invalid || belowCritical || (!input.trusted && monitor.validateCertificate) || (input.selfSigned && !monitor.allowSelfSigned)) {
     return { status: "CRITICAL" as const, severity: "critical" as Severity, daysRemaining, problems };

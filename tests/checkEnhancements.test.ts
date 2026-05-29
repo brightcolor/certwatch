@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { markFlapping } from "../apps/api/src/checks/flapping.js";
-import { gradeTls } from "../apps/api/src/checks/tlsGrade.js";
+import { explainTlsGrade, gradeTls } from "../apps/api/src/checks/tlsGrade.js";
 import { assessTlsSecurity } from "../apps/api/src/checks/tlsSecurity.js";
 import { applyResultWatches } from "../apps/api/src/checks/changeWatch.js";
 import { isInMaintenance, windowActive } from "../apps/api/src/checks/maintenance.js";
@@ -21,6 +21,13 @@ describe("TLS security grading", () => {
 
     expect(grade.tlsGrade).toBe("F");
     expect(grade.tlsScore).toBeLessThan(50);
+  });
+
+  it("explains TLS grade deductions", () => {
+    const reasons = explainTlsGrade({ status: "WARNING", problems: [], tlsVersion: "TLSv1.2", cipherSuite: "TLS_AES_256_GCM_SHA384", daysRemaining: 10, subjectAltNames: ["example.com"] });
+
+    expect(reasons.map((item) => item.reason).join(" ")).toContain("WARNING");
+    expect(reasons.map((item) => item.reason).join(" ")).toContain("expires");
   });
 
   it("reports intensive TLS assessment findings", () => {
@@ -47,6 +54,7 @@ describe("TLS security grading", () => {
 
     expect(result.status).toBe("WARNING");
     expect(result.message).toContain("TLS security deteriorated");
+    expect(result.message).toContain("Reason:");
   });
 
   it("warns when the SSL Labs grade deteriorates", () => {
