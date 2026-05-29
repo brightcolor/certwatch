@@ -13,6 +13,7 @@ import { Applications } from "./pages/Applications";
 import { Operations } from "./pages/Operations";
 import { Reports } from "./pages/Reports";
 import { TenantsPage } from "./pages/Tenants";
+import { useLiveRefresh } from "./hooks/useLiveRefresh";
 import { applyStatusFavicon } from "./utils/favicon";
 import "./styles/app.css";
 
@@ -54,6 +55,7 @@ function App() {
   const [page, setPage] = useState("dashboard");
   const [themeMode, setThemeMode] = useState(initialThemeMode);
   const [resolvedTheme, setResolvedTheme] = useState(resolveTheme(initialThemeMode));
+  const [liveRefreshKey, setLiveRefreshKey] = useState(0);
   const [toast, setToast] = useState("");
 
   useEffect(() => {
@@ -99,14 +101,6 @@ function App() {
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, [user]);
-  useEffect(() => {
-    if (!user) return;
-    const timer = window.setInterval(() => {
-      void api.request<any>("/status").then(setStats).catch(() => undefined);
-    }, 30_000);
-    return () => window.clearInterval(timer);
-  }, [user]);
-
   const refresh = async () => {
     const [monitorData, statusData, channelData] = await Promise.all([
       api.request<Monitor[]>("/monitors"),
@@ -134,6 +128,15 @@ function App() {
     setTenants(await api.request<TenantMembership[]>("/tenants"));
     await loadTenantMembers();
     if (user?.role === "admin") setUsers(await api.request<any[]>("/users"));
+  };
+
+  const refreshOverview = async () => {
+    const [monitorData, statusData] = await Promise.all([
+      api.request<Monitor[]>("/monitors"),
+      api.request<any>("/status")
+    ]);
+    setMonitors(monitorData);
+    setStats(statusData);
   };
 
   const applyTenants = (items: TenantMembership[]) => {
@@ -170,6 +173,18 @@ function App() {
     setResults(resultData);
     setIncidents(incidentData);
   };
+
+  useLiveRefresh({
+    active: Boolean(user && tenantId),
+    paused: Boolean(editing),
+    page,
+    selected,
+    refresh,
+    refreshOverview,
+    loadMonitorData,
+    onTick: () => setLiveRefreshKey((current) => current + 1)
+  });
+
   const saveMonitor = async (data: any) => {
     const path = editing && editing !== "new" ? `/monitors/${editing.id}` : "/monitors";
     const method = editing && editing !== "new" ? "PUT" : "POST";
@@ -272,9 +287,9 @@ function App() {
       ) : page === "applications" ? (
         <Applications monitors={monitors} onSelect={(id) => navigate("dashboard", id)} />
       ) : page === "operations" ? (
-        <Operations />
+        <Operations liveRefreshKey={liveRefreshKey} />
       ) : page === "reports" ? (
-        <Reports />
+        <Reports liveRefreshKey={liveRefreshKey} />
       ) : selectedMonitor ? (
         <MonitorDetail
           monitor={selectedMonitor}

@@ -4,7 +4,7 @@ import { TagInput } from "../components/TagInput";
 import { MaintenanceWindowBuilder } from "../components/MaintenanceWindowBuilder";
 import { formatDateTime } from "../utils/date";
 
-export function Operations() {
+export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) {
   const [maintenance, setMaintenance] = useState<any>({ windows: [] });
   const [tlsPolicy, setTlsPolicy] = useState<any>({ profile: "modern", minimumTlsVersion: "TLSv1.2", weakCipherPenalty: 40, requireSan: true, intensiveScan: true });
   const [sslLabs, setSslLabs] = useState<any>({ enabled: false, registeredEmail: "", intervalHours: 24, maxAgeHours: 24, timeoutSeconds: 90, startNewScans: false, publishResults: false });
@@ -34,7 +34,7 @@ export function Operations() {
     ]);
     setMaintenance(m); setTlsPolicy(t); setSslLabs(ssl); setStatusPages(s); setDiscovery(d); setBackupSettings(b); setBackups(backupList); setTokens(tokenList); setDeliveries(deliveryList);
   };
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(); }, [liveRefreshKey]);
 
   const save = async (path: string, body: any) => { await api.request(path, { method: "PUT", body: JSON.stringify(body) }); await load(); };
   const addMaintenance = () => {

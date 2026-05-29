@@ -27,7 +27,7 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck 
         <div className="toolbar"><Search size={18} /><input placeholder="Search name, host, label, owner" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
       </div>
       <div className="table">
-        <div className="row head"><span>Status</span><span>Check</span><span>Target</span><span>Certificate</span><span>Last result</span><span></span></div>
+        <div className="row head"><span>Status</span><span>Check</span><span>Target</span><span>Certificate</span><span>Last result / problems</span><span></span></div>
         {!filtered.length && <div className="empty-row"><strong>No monitors found</strong><span className="muted">Create a monitor to start checking certificates, services, or logins.</span></div>}
         {groups.map((group) => (
           <Fragment key={group.name}>
@@ -41,7 +41,11 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck 
                 <span><strong>{monitor.name}</strong><small>{monitor.tags.join(", ") || "unlabeled"}</small></span>
                 <span>{monitor.host}:{monitor.port}<small>{monitor.type}</small></span>
                 <span>{certificateSummary(monitor)}{gradePill(monitor)}{sslLabsPill(monitor)}<small>{certificateDetail(monitor)}</small></span>
-                <span>{monitor.latestResult?.message ?? "No result yet"}<small>{monitor.latestResult?.tlsVersion ?? ""}</small></span>
+                <span className="result-cell">
+                  <span>{monitor.latestResult?.message ?? "No result yet"}</span>
+                  <small>{monitor.latestResult?.tlsVersion ?? ""}</small>
+                  <ProblemBadges monitor={monitor} />
+                </span>
                 <span><button className="btn btn-sm btn-outline-secondary" onClick={(e) => { e.stopPropagation(); onCheck(monitor.id); }}>Check now</button></span>
               </div>
             ))}
@@ -78,6 +82,29 @@ const gradePill = (monitor: Monitor) =>
 
 const sslLabsPill = (monitor: Monitor) =>
   monitor.latestResult?.sslLabsGrade ? <span className={`grade-pill grade-${monitor.latestResult.sslLabsGrade.toLowerCase().slice(0, 1)}`}>SSL Labs {monitor.latestResult.sslLabsGrade}</span> : null;
+
+function ProblemBadges({ monitor }: { monitor: Monitor }) {
+  const problems = problemSummary(monitor);
+  if (!problems.length) return null;
+  const visible = problems.slice(0, 2);
+  const remaining = problems.length - visible.length;
+  return (
+    <span className="problem-list" title={problems.join("\n")}>
+      {visible.map((problem) => <span className={`problem-chip problem-${problemTone(monitor.lastStatus)}`} key={problem}>{problem}</span>)}
+      {remaining > 0 && <span className="problem-chip problem-more">+{remaining} more</span>}
+    </span>
+  );
+}
+
+const problemSummary = (monitor: Monitor) => [...new Set([
+  ...(monitor.latestResult?.problems ?? []),
+  ...(monitor.latestResult?.sslLabsFindings ?? []),
+  ...(monitor.latestResult?.dns?.mismatches ?? [])
+].filter(Boolean))];
+
+const problemTone = (status: string) =>
+  status === "WARNING" ? "warning" :
+    status === "CRITICAL" || status === "DOWN" ? "danger" : "secondary";
 
 const groupMonitors = (monitors: Monitor[]) => {
   const buckets = new Map<string, Monitor[]>();

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 
-export function Reports() {
+export function Reports({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) {
   const [days, setDays] = useState(30);
   const [rows, setRows] = useState<any[]>([]);
-  useEffect(() => { void api.request<any[]>(`/reports/availability?days=${days}`).then(setRows); }, [days]);
+  useEffect(() => { void api.request<any[]>(`/reports/availability?days=${days}`).then(setRows); }, [days, liveRefreshKey]);
 
   return (
     <section className="content">

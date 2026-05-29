@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.3 - 2026-05-29
+
+- Added live UI refresh for visible pages so dashboards, monitor details, users, workspaces, settings, operations, and reports update without manual reloads.
+- Refreshed visible data immediately when the browser tab becomes active again while pausing refreshes during form editing.
+- Added dashboard problem chips that surface certificate, TLS, DNS, SSL Labs, and service issues directly in the monitor overview.
+
 ## 0.9.2 - 2026-05-28
 
 - Removed the remaining cool-toned UI accents and moved the operator interface to a Discord-like neutral gray palette.

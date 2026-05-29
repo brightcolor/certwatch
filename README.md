@@ -21,6 +21,8 @@ This stack keeps the application easy to self-host while still supporting real T
 ## Features
 
 - Dashboard with OK, warning, critical, down, paused, and unknown status counts
+- Live-refreshing UI views that update visible status, monitor details, operations, reports, users, workspaces, and settings without a manual reload
+- Dashboard problem chips that show certificate, TLS, DNS, SSL Labs, and service issues directly in the monitor overview
 - SaaS-ready workspace model with tenant-scoped monitors, notification providers, settings, and role-based memberships
 - Dynamic browser favicon that glows green when healthy and blinks red when attention is required
 - Monitor types for HTTPS, custom TCP TLS, SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, XMPP TLS, SMTP STARTTLS, IMAP STARTTLS, POP3 STARTTLS, and explicit FTP AUTH TLS
