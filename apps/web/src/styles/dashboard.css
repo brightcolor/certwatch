@@ -266,7 +266,7 @@ button.mini-count,
   grid-template-columns: 3rem minmax(230px, 1.3fr) minmax(175px, .8fr) minmax(270px, 1fr) 4.75rem;
   gap: .85rem;
   align-items: center;
-  border-bottom: 1px solid var(--bs-border-color);
+  border-bottom: 1px solid #15191d;
   background: #202427;
   padding: .62rem 1rem .62rem 1.15rem;
   cursor: pointer;
@@ -282,8 +282,13 @@ button.mini-count,
 }
 
 .monitor-row:hover {
-  background: #293035;
-  box-shadow: inset 0 0 0 999px rgba(var(--row-rgb), .035);
+  background:
+    linear-gradient(0deg, rgba(var(--row-rgb), .075), rgba(var(--row-rgb), .075)),
+    #202427;
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--row-rgb), .78),
+    inset 0 0 0 999px rgba(var(--row-rgb), .035),
+    0 0 1.2rem rgba(var(--row-rgb), .12);
 }
 
 .monitor-row:hover .monitor-main,
@@ -338,25 +343,25 @@ button.status-mark,
 }
 
 .mark-ok {
-  background: rgba(var(--bs-success-rgb), .16);
-  color: var(--bs-success);
+  background: var(--bs-success) !important;
+  color: #07140b !important;
 }
 
 .mark-warning {
-  background: rgba(var(--bs-warning-rgb), .18);
-  color: var(--bs-warning);
+  background: var(--bs-warning) !important;
+  color: #171006 !important;
 }
 
 .mark-critical,
 .mark-down {
-  background: rgba(var(--bs-danger-rgb), .16);
-  color: var(--bs-danger);
+  background: var(--bs-danger) !important;
+  color: #fff !important;
 }
 
 .mark-paused,
 .mark-unknown {
-  background: rgba(var(--bs-info-rgb), .18);
-  color: var(--bs-info);
+  background: var(--bs-info) !important;
+  color: #071115 !important;
 }
 
 .monitor-main,

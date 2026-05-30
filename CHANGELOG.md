@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.8 - 2026-05-30
+
+- Made dashboard list view the default monitor layout.
+- Filled monitor row status markers with their status color and added status-colored row and metric-card hover treatment.
+- Darkened dashboard card borders so they sit below the card background instead of reading as light outlines.
+
 ## 0.11.7 - 2026-05-30
 
 - Darkened the dashboard KPI cards and restored padded rounded status icon blocks inside each card.

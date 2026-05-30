@@ -5,7 +5,7 @@ import { collectsCertificate } from "../utils/monitorTypes";
 import { formatDate } from "../utils/date";
 
 export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck, onClone }: any) {
-  const [viewMode, setViewMode] = useState<"grouped" | "list">("grouped");
+  const [viewMode, setViewMode] = useState<"grouped" | "list">("list");
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [issueFilters, setIssueFilters] = useState<string[]>([]);
   const [expandedIssueMonitor, setExpandedIssueMonitor] = useState<string | null>(null);
