@@ -8,9 +8,25 @@
   min-height: 7rem;
   overflow: hidden;
   border: 1px solid var(--bs-border-color);
-  background: var(--bs-body-bg);
+  background: #202427;
   border-radius: var(--bs-border-radius-lg);
   box-shadow: var(--bs-box-shadow-sm);
+}
+
+.metrics button.info-box,
+.metrics .metric-button {
+  background: #202427 !important;
+  color: var(--bs-body-color) !important;
+  padding: .85rem !important;
+  text-align: left;
+}
+
+.metrics button.info-box:hover,
+.metrics .metric-button:hover {
+  background: #252a2f !important;
+  border-color: rgba(var(--bs-secondary-color-rgb), .45) !important;
+  filter: none !important;
+  transform: translateY(-1px);
 }
 
 .metrics .info-box-number {
@@ -28,8 +44,13 @@
 
 .metrics .info-box-icon {
   min-width: 4.25rem;
+  min-height: 4.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
   color: #fff;
-  border-radius: var(--bs-border-radius) 0 0 var(--bs-border-radius);
+  border-radius: var(--bs-border-radius);
 }
 
 .metric-success .info-box-icon {

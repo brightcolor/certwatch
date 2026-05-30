@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.7 - 2026-05-30
+
+- Darkened the dashboard KPI cards and restored padded rounded status icon blocks inside each card.
+
 ## 0.11.6 - 2026-05-30
 
 - Restored the earlier dark colorful dashboard checklist styling from the repository history.
