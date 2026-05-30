@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.6 - 2026-05-30
+
+- Restored the earlier dark colorful dashboard checklist styling from the repository history.
+- Removed the circular health score from that restored layout while keeping clickable status, KPI, message, and problem filters.
+
 ## 0.11.5 - 2026-05-30
 
 - Restored the larger dark dashboard health header and KPI card styling while removing the old circular score display.

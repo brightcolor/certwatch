@@ -15,116 +15,119 @@
 
 button.filter-chip,
 .filter-chip {
-  --chip-active-rgb: var(--bs-secondary-color-rgb);
-  --chip-contrast: var(--bs-emphasis-color);
   display: inline-flex;
   min-height: 2rem !important;
   align-items: center;
   gap: .35rem;
-  border: 1px solid rgba(var(--bs-secondary-color-rgb), .38) !important;
+  border: 1px solid var(--bs-border-color) !important;
   border-radius: 999px;
-  background: rgba(var(--bs-secondary-color-rgb), .08) !important;
+  background: var(--bs-body-bg) !important;
   color: var(--bs-secondary-color) !important;
   padding: .25rem .65rem !important;
   font-size: .78rem;
   font-weight: 700;
   box-shadow: none !important;
-  transition: background .14s ease, border-color .14s ease, color .14s ease, transform .14s ease;
-}
-
-button.filter-chip,
-button.metric-button,
-button.mini-count,
-button.status-mark,
-button.message-filter,
-button.problem-chip,
-button.issue-filter-chip,
-button.issue-filter-clear {
-  appearance: none;
-  font: inherit;
   cursor: pointer;
 }
 
 .filter-chip span {
   min-width: 1.25rem;
   border-radius: 999px;
-  background: rgba(var(--bs-secondary-color-rgb), .16);
-  color: inherit;
+  background: rgba(var(--bs-secondary-color-rgb), .14);
+  color: var(--bs-secondary-color);
   padding: .05rem .35rem;
   text-align: center;
 }
 
 .filter-all {
-  --chip-active-rgb: var(--bs-secondary-color-rgb);
+  border-color: rgba(var(--bs-secondary-color-rgb), .4);
+  background: rgba(var(--bs-secondary-color-rgb), .08);
+  color: var(--bs-secondary-color);
 }
 
-.filter-chip:hover {
-  transform: translateY(-1px);
-  border-color: rgba(var(--bs-secondary-color-rgb), .62);
-  background: rgba(var(--bs-secondary-color-rgb), .14);
+.filter-chip.active {
+  color: var(--bs-emphasis-color);
 }
 
-.filter-chip.active,
-button.filter-chip.active {
-  border-color: rgba(var(--chip-active-rgb), .88) !important;
-  background: rgb(var(--chip-active-rgb)) !important;
-  color: var(--chip-contrast) !important;
-}
-
-.filter-chip.active:hover {
-  border-color: rgba(var(--chip-active-rgb), 1);
-  background: rgb(var(--chip-active-rgb));
-}
-
-.filter-all.active {
-  --chip-contrast: #fff;
+.filter-all.active,
+button.filter-all.active {
+  border-color: rgba(var(--bs-secondary-color-rgb), .75);
+  background: var(--bs-info) !important;
+  color: #111 !important;
 }
 
 .filter-ok {
-  --chip-active-rgb: var(--bs-success-rgb);
+  border-color: rgba(var(--bs-success-rgb), .38);
+  background: rgba(var(--bs-success-rgb), .1);
+  color: var(--bs-success);
+}
+
+.filter-ok span {
+  background: rgba(var(--bs-success-rgb), .16);
+  color: var(--bs-success);
 }
 
 .filter-ok.active {
-  --chip-contrast: #07140b;
-  color: #07140b;
+  border-color: rgba(var(--bs-success-rgb), .9);
+  background: var(--bs-success) !important;
+  color: #07140b !important;
 }
 
 .filter-warning {
-  --chip-active-rgb: var(--bs-warning-rgb);
+  border-color: rgba(var(--bs-warning-rgb), .42);
+  background: rgba(var(--bs-warning-rgb), .12);
+  color: var(--bs-warning);
+}
+
+.filter-warning span {
+  background: rgba(var(--bs-warning-rgb), .18);
+  color: var(--bs-warning);
 }
 
 .filter-warning.active {
-  --chip-contrast: #171006;
-  color: #171006;
+  border-color: rgba(var(--bs-warning-rgb), .9);
+  background: var(--bs-warning) !important;
+  color: #171006 !important;
 }
 
 .filter-critical,
 .filter-down {
-  --chip-active-rgb: var(--bs-danger-rgb);
+  border-color: rgba(var(--bs-danger-rgb), .4);
+  background: rgba(var(--bs-danger-rgb), .11);
+  color: var(--bs-danger);
+}
+
+.filter-critical span,
+.filter-down span {
+  background: rgba(var(--bs-danger-rgb), .16);
+  color: var(--bs-danger);
 }
 
 .filter-critical.active,
 .filter-down.active {
-  --chip-contrast: #fff;
-  color: #fff;
+  border-color: rgba(var(--bs-danger-rgb), .9);
+  background: var(--bs-danger) !important;
+  color: #fff !important;
 }
 
-.filter-paused {
-  --chip-active-rgb: var(--bs-secondary-color-rgb);
-}
-
+.filter-paused,
 .filter-unknown {
-  --chip-active-rgb: var(--bs-info-rgb);
+  border-color: rgba(var(--bs-secondary-color-rgb), .36);
+  background: rgba(var(--bs-secondary-color-rgb), .1);
+  color: var(--bs-secondary-color);
 }
 
-.filter-paused.active {
-  --chip-contrast: #fff;
-  color: #fff;
+.filter-paused span,
+.filter-unknown span {
+  background: rgba(var(--bs-secondary-color-rgb), .16);
+  color: var(--bs-secondary-color);
 }
 
+.filter-paused.active,
 .filter-unknown.active {
-  --chip-contrast: #071115;
-  color: #071115;
+  border-color: rgba(var(--bs-secondary-color-rgb), .8);
+  background: var(--bs-info) !important;
+  color: #111 !important;
 }
 
 .filter-chip.active span {
@@ -133,29 +136,17 @@ button.filter-chip.active {
 }
 
 .dashboard-hero {
-  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 1.35rem;
   align-items: center;
-  min-height: 13.25rem;
   border: 1px solid var(--bs-border-color);
   border-radius: var(--bs-border-radius-lg);
   background:
-    linear-gradient(90deg, rgba(var(--hero-rgb), .18), rgba(var(--hero-rgb), .05) 13rem, transparent 28rem),
-    radial-gradient(circle at 9% 28%, rgba(var(--hero-rgb), .22), transparent 18rem),
-    linear-gradient(135deg, #24282b, #1d1f22);
-  padding: 2rem 2.35rem;
-  box-shadow: 0 1rem 2.4rem rgba(0, 0, 0, .26), inset 0 1px 0 rgba(255, 255, 255, .035);
-  overflow: hidden;
-}
-
-.dashboard-hero::before {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: .34rem;
-  background: linear-gradient(180deg, rgba(var(--hero-rgb), .92), rgba(var(--hero-rgb), .28));
-  content: "";
+    radial-gradient(circle at 8% 20%, rgba(var(--hero-rgb), .18), transparent 25rem),
+    linear-gradient(135deg, #23272a, #1e1f22);
+  padding: 1.25rem 1.45rem;
+  box-shadow: var(--bs-box-shadow-sm);
 }
 
 .hero-ok {
@@ -174,97 +165,27 @@ button.filter-chip.active {
 }
 
 .hero-copy h2 {
-  max-width: 72rem;
-  margin: .4rem 0 .45rem;
+  margin: .25rem 0 .35rem;
   color: var(--bs-emphasis-color);
-  font-size: clamp(2.4rem, 3.9vw, 4.05rem);
-  font-weight: 650;
-  letter-spacing: 0;
-  line-height: 1.04;
+  font-size: clamp(1.7rem, 2.7vw, 2.65rem);
+  font-weight: 800;
 }
 
 .hero-copy p {
   margin: 0;
   color: var(--bs-secondary-color);
-  font-size: 1.15rem;
-  line-height: 1.45;
+  font-size: 1rem;
 }
 
 .hero-badges {
   display: flex;
-  gap: .65rem;
+  gap: .5rem;
   flex-wrap: wrap;
-  margin-top: 1.45rem;
-}
-
-.hero-badges .filter-chip {
-  min-height: 2.35rem !important;
-  padding: .42rem .88rem !important;
-  font-size: .86rem;
-  box-shadow: 0 .55rem 1rem rgba(0, 0, 0, .18) !important;
+  margin-top: 1.1rem;
 }
 
 .dashboard-facts .info-box {
-  background: #2b2f34;
-}
-
-.metric-button.info-box,
-button.metric-button.info-box {
-  width: 100%;
-  min-height: 8.75rem !important;
-  display: flex;
-  justify-content: flex-start;
-  border-color: var(--bs-border-color) !important;
-  background: #2b2f34 !important;
-  color: var(--bs-body-color) !important;
-  padding: 0 !important;
-  text-align: left;
-  box-shadow: 0 .85rem 1.8rem rgba(0, 0, 0, .22) !important;
-}
-
-.metric-button.info-box:hover,
-button.metric-button.info-box:hover {
-  border-color: rgba(var(--bs-secondary-color-rgb), .55) !important;
-  background: #33383e !important;
-  filter: none !important;
-  transform: translateY(-1px);
-}
-
-.issue-filter-bar {
-  display: flex;
-  grid-column: 1 / -1;
-  align-items: center;
-  gap: .45rem;
-  flex-wrap: wrap;
-  border-top: 1px solid var(--bs-border-color);
-  padding-top: .75rem;
-}
-
-.issue-filter-chip,
-.issue-filter-clear {
-  display: inline-flex;
-  max-width: min(34rem, 100%);
-  min-height: 1.75rem;
-  align-items: center;
-  border-radius: 999px;
-  padding: .18rem .55rem;
-  overflow: hidden;
-  font-size: .72rem;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.issue-filter-chip {
-  border-color: rgba(var(--bs-warning-rgb), .42) !important;
-  background: rgba(var(--bs-warning-rgb), .16) !important;
-  color: var(--bs-warning) !important;
-}
-
-.issue-filter-clear {
-  border-color: var(--bs-border-color) !important;
-  background: transparent !important;
-  color: var(--bs-secondary-color) !important;
+  background: #202427;
 }
 
 .monitor-checklist {
@@ -306,8 +227,8 @@ button.metric-button.info-box:hover {
   gap: .4rem;
 }
 
-.mini-count,
-button.mini-count {
+button.mini-count,
+.mini-count {
   display: inline-flex;
   min-width: 2.15rem;
   min-height: 1.5rem !important;
@@ -318,36 +239,31 @@ button.mini-count {
   border-radius: 999px;
   padding: .16rem .5rem !important;
   font-size: .78rem;
-  font-weight: 700;
+  font-weight: 800;
   box-shadow: none !important;
-}
-
-button.mini-count:hover,
-button.status-mark:hover,
-button.problem-chip:hover {
-  filter: brightness(1.08) !important;
+  cursor: pointer;
 }
 
 .mini-ok {
-  background: rgba(var(--bs-success-rgb), .2) !important;
-  color: var(--bs-success) !important;
+  background: rgba(var(--bs-success-rgb), .2);
+  color: var(--bs-success);
 }
 
 .mini-warning {
-  background: rgba(var(--bs-warning-rgb), .24) !important;
-  color: var(--bs-warning) !important;
+  background: rgba(var(--bs-warning-rgb), .24);
+  color: var(--bs-warning);
 }
 
 .mini-critical,
 .mini-down {
-  background: rgba(var(--bs-danger-rgb), .2) !important;
-  color: var(--bs-danger) !important;
+  background: rgba(var(--bs-danger-rgb), .2);
+  color: var(--bs-danger);
 }
 
 .monitor-row {
   position: relative;
   display: grid;
-  grid-template-columns: 3rem minmax(230px, 1.35fr) minmax(175px, .8fr) minmax(270px, 1fr) 4.75rem;
+  grid-template-columns: 3rem minmax(230px, 1.3fr) minmax(175px, .8fr) minmax(270px, 1fr) 4.75rem;
   gap: .85rem;
   align-items: center;
   border-bottom: 1px solid var(--bs-border-color);
@@ -373,6 +289,7 @@ button.problem-chip:hover {
 .monitor-row:hover .monitor-main,
 .monitor-row:hover .monitor-target,
 .monitor-row:hover .monitor-cert,
+.monitor-row:hover .monitor-state,
 .monitor-row:hover .monitor-actions {
   background: transparent;
 }
@@ -403,8 +320,8 @@ button.problem-chip:hover {
   --row-rgb: var(--bs-info-rgb);
 }
 
-.status-mark,
-button.status-mark {
+button.status-mark,
+.status-mark {
   display: inline-flex;
   width: 1.85rem;
   height: 1.85rem;
@@ -415,35 +332,37 @@ button.status-mark {
   border-radius: .45rem;
   padding: 0 !important;
   font-size: .75rem;
-  font-weight: 800;
+  font-weight: 900;
   box-shadow: none !important;
+  cursor: pointer;
 }
 
 .mark-ok {
-  background: rgba(var(--bs-success-rgb), .16) !important;
-  color: var(--bs-success) !important;
+  background: rgba(var(--bs-success-rgb), .16);
+  color: var(--bs-success);
 }
 
 .mark-warning {
-  background: rgba(var(--bs-warning-rgb), .18) !important;
-  color: var(--bs-warning) !important;
+  background: rgba(var(--bs-warning-rgb), .18);
+  color: var(--bs-warning);
 }
 
 .mark-critical,
 .mark-down {
-  background: rgba(var(--bs-danger-rgb), .16) !important;
-  color: var(--bs-danger) !important;
+  background: rgba(var(--bs-danger-rgb), .16);
+  color: var(--bs-danger);
 }
 
 .mark-paused,
 .mark-unknown {
-  background: rgba(var(--bs-info-rgb), .18) !important;
-  color: var(--bs-info) !important;
+  background: rgba(var(--bs-info-rgb), .18);
+  color: var(--bs-info);
 }
 
 .monitor-main,
 .monitor-target,
-.monitor-cert {
+.monitor-cert,
+.monitor-state {
   display: grid;
   min-width: 0;
   gap: .12rem;
@@ -453,7 +372,7 @@ button.status-mark {
 .monitor-target strong {
   overflow: hidden;
   color: var(--bs-emphasis-color);
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.15;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -485,6 +404,7 @@ button.status-mark {
   text-overflow: ellipsis;
   white-space: nowrap;
   box-shadow: none !important;
+  cursor: pointer;
 }
 
 .monitor-main .message-filter:hover {
@@ -494,30 +414,20 @@ button.status-mark {
 
 .monitor-cert {
   color: var(--bs-emphasis-color);
-  font-weight: 700;
+  font-weight: 800;
 }
 
-.cert-line {
-  display: flex;
-  min-width: 0;
-  align-items: baseline;
-  gap: .35rem;
-  flex-wrap: wrap;
+.monitor-state {
+  justify-items: end;
 }
 
-.cert-line > strong {
-  font-weight: 700;
-  line-height: 1.15;
+.monitor-state .status {
+  min-width: 6rem;
 }
 
-.cert-line > small {
+.monitor-state strong {
   color: var(--bs-secondary-color);
-  font-size: .72rem;
-  font-weight: 600;
-}
-
-.cert-line .grade-pill {
-  margin-left: .1rem;
+  font-size: .78rem;
 }
 
 .monitor-actions {
@@ -545,48 +455,51 @@ button.status-mark {
   overflow: visible;
 }
 
-.monitor-row .problem-chip,
-.monitor-row button.problem-chip {
+.monitor-row button.problem-chip,
+.monitor-row .problem-chip {
   display: inline-flex;
   max-width: 100%;
   min-width: 0;
   min-height: 0 !important;
   align-items: center;
-  border: 1px solid var(--bs-border-color);
+  border: 1px solid var(--bs-border-color) !important;
   border-radius: .45rem;
-  padding: .1rem .36rem;
+  padding: .1rem .36rem !important;
   overflow: hidden;
   font-size: .68rem;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
   box-shadow: none !important;
+  cursor: pointer;
 }
 
 .monitor-row .problem-chip:hover,
-.monitor-row .problem-chip.active {
+.monitor-row .problem-chip.active,
+button.mini-count:hover,
+button.status-mark:hover {
   filter: brightness(1.08) !important;
   transform: none;
 }
 
 .problem-danger {
-  border-color: rgba(var(--bs-danger-rgb), .42) !important;
-  background: rgba(var(--bs-danger-rgb), .14) !important;
-  color: var(--bs-danger) !important;
+  border-color: rgba(var(--bs-danger-rgb), .42);
+  background: rgba(var(--bs-danger-rgb), .14);
+  color: var(--bs-danger);
 }
 
 .problem-warning {
-  border-color: rgba(var(--bs-warning-rgb), .45) !important;
-  background: rgba(var(--bs-warning-rgb), .16) !important;
-  color: var(--bs-warning) !important;
+  border-color: rgba(var(--bs-warning-rgb), .45);
+  background: rgba(var(--bs-warning-rgb), .16);
+  color: var(--bs-warning);
 }
 
 .problem-secondary,
 .problem-more {
-  border-color: rgba(var(--bs-info-rgb), .4) !important;
-  background: rgba(var(--bs-info-rgb), .14) !important;
-  color: #19c8f2 !important;
+  border-color: rgba(var(--bs-info-rgb), .4);
+  background: rgba(var(--bs-info-rgb), .14);
+  color: #19c8f2;
 }
 
 @media (max-width: 1180px) {
@@ -609,6 +522,7 @@ button.status-mark {
     padding-left: 1rem;
   }
 
+  .monitor-state,
   .monitor-actions {
     justify-items: start;
     justify-content: flex-start;
