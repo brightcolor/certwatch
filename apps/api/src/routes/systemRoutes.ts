@@ -6,7 +6,7 @@ import { nowIso } from "../utils/time.js";
 import { env } from "../config/env.js";
 import { alerts, appSettings, channels, incidents, monitors, results, subscriptions, tenantGroups, tenantInvites, tenants, userAlerts, users } from "../storage/repositories.js";
 import { testChannel } from "../notifications/service.js";
-import { requireAdmin, requireTenantRole } from "../auth/auth.js";
+import { createImpersonationSession, requireSuperAdmin, requireTenantRole, setSessionCookie } from "../auth/auth.js";
 import { discoverMonitors } from "../checks/discovery.js";
 import rootPackage from "../../../../package.json" with { type: "json" };
 
@@ -217,31 +217,50 @@ systemRoutes.post("/notification-channels/test", async (req, res) => {
   res.json({ ok: true });
 });
 
-systemRoutes.get("/users", requireAdmin, (_req, res) => {
+systemRoutes.get("/platform-settings", requireSuperAdmin, (_req, res) => {
+  res.json(appSettings.platform());
+});
+
+systemRoutes.put("/platform-settings", requireSuperAdmin, (req, res) => {
+  const parsed = platformSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid platform settings." });
+  appSettings.set("platform", parsed.data);
+  res.json(parsed.data);
+});
+
+systemRoutes.get("/users", requireSuperAdmin, (_req, res) => {
   res.json(users.list().map(publicUser));
 });
 
-systemRoutes.post("/users", requireAdmin, async (req, res) => {
+systemRoutes.post("/users", requireSuperAdmin, async (req, res) => {
   const parsed = userSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid user." });
   if (users.findByEmail(parsed.data.email)) return res.status(409).json({ error: "A user with this email already exists." });
   const user = users.create(parsed.data.email, await bcrypt.hash(parsed.data.password, 12), parsed.data.role);
-  tenants.addMember(req.currentTenant!.id, user.id, parsed.data.role === "admin" ? "admin" : "viewer");
+  tenants.addMember(req.currentTenant!.id, user.id, parsed.data.workspaceRole);
   res.status(201).json(publicUser(user));
 });
 
-systemRoutes.put("/users/:id", requireAdmin, async (req, res) => {
+systemRoutes.put("/users/:id", requireSuperAdmin, async (req, res) => {
   const parsed = updateUserSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid user." });
+  if (req.user?.id === req.params.id && parsed.data.role !== "super_admin") return res.status(409).json({ error: "You cannot remove your own super admin role." });
   const hash = parsed.data.password ? await bcrypt.hash(parsed.data.password, 12) : undefined;
   users.update(req.params.id, parsed.data.role, hash);
   res.json({ ok: true });
 });
 
-systemRoutes.delete("/users/:id", requireAdmin, (req, res) => {
+systemRoutes.delete("/users/:id", requireSuperAdmin, (req, res) => {
   if (req.user?.id === req.params.id) return res.status(409).json({ error: "You cannot delete your own user." });
   users.delete(req.params.id);
   res.status(204).end();
+});
+
+systemRoutes.post("/users/:id/impersonate", requireSuperAdmin, (req, res) => {
+  const result = createImpersonationSession(req.params.id, req.user!.id);
+  if (!result) return res.status(404).json({ error: "User cannot be impersonated." });
+  setSessionCookie(res, result.token);
+  res.json({ user: result.user, csrfToken: result.csrfToken, impersonator: result.impersonator, tenants: tenants.forUser(result.user.id).map(publicMembership) });
 });
 
 const channelSchema = z.object({
@@ -319,13 +338,18 @@ const discoverSchema = z.object({
 const userSchema = z.object({
   email: z.string().trim().email().transform((email) => email.toLowerCase()),
   password: z.string().min(12, "Password must be at least 12 characters long."),
-  role: z.enum(["admin", "viewer"])
+  role: z.enum(["super_admin", "admin", "viewer"]).default("viewer"),
+  workspaceRole: z.enum(["owner", "admin", "member", "viewer"]).default("viewer")
 });
 
 const updateUserSchema = z.object({
   password: z.string().min(12).optional().or(z.literal("")),
-  role: z.enum(["admin", "viewer"])
+  role: z.enum(["super_admin", "admin", "viewer"])
 }).transform((value) => ({ ...value, password: value.password || undefined }));
+
+const platformSchema = z.object({
+  publicRegistrationEnabled: z.boolean()
+});
 
 const smtpSchema = z.object({
   host: z.string().max(255),

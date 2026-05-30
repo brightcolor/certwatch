@@ -14,6 +14,7 @@ declare global {
       currentTenant?: Tenant;
       tenantRole?: TenantRole;
       tenantMemberships?: TenantMembership[];
+      impersonator?: User;
     }
   }
 }
@@ -27,6 +28,16 @@ export const login = async (email: string, password: string) => {
   const csrfToken = randomBytes(24).toString("hex");
   sessions.create(user.id, token, csrfToken);
   return { token, csrfToken, user: publicUser(user) };
+};
+
+export const createImpersonationSession = (targetUserId: string, impersonatorUserId: string) => {
+  const target = users.findById(targetUserId);
+  const impersonator = users.findById(impersonatorUserId);
+  if (!target || !impersonator || impersonator.role !== "super_admin" || target.id === impersonator.id) return null;
+  const token = randomBytes(32).toString("hex");
+  const csrfToken = randomBytes(24).toString("hex");
+  sessions.create(target.id, token, csrfToken, impersonator.id);
+  return { token, csrfToken, user: publicUser(target), impersonator: publicUser(impersonator) };
 };
 
 export const attachSession = (req: Request, _res: Response, next: NextFunction) => {
@@ -49,6 +60,7 @@ export const attachSession = (req: Request, _res: Response, next: NextFunction) 
   if (user) {
     req.user = user;
     req.csrfToken = session.csrf_token;
+    if (session.impersonator_user_id) req.impersonator = users.findById(session.impersonator_user_id) ?? undefined;
   }
   next();
 };
@@ -82,7 +94,12 @@ export const requireTenantRole = (...roles: TenantRole[]) => (req: Request, res:
 };
 
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if (req.user?.role !== "admin") return res.status(403).json({ error: "Admin role required." });
+  if (req.user?.role !== "super_admin" && req.user?.role !== "admin") return res.status(403).json({ error: "Admin role required." });
+  next();
+};
+
+export const requireSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (req.user?.role !== "super_admin" || req.impersonator) return res.status(403).json({ error: "Super admin role required." });
   next();
 };
 

@@ -145,9 +145,11 @@ export interface User {
   id: string;
   email: string;
   passwordHash: string;
-  role: "admin" | "viewer";
+  role: UserRole;
   createdAt: string;
 }
+
+export type UserRole = "super_admin" | "admin" | "viewer";
 
 export interface Tenant {
   id: string;
@@ -372,4 +374,8 @@ export interface SmtpSettings {
   from: string;
   secure: boolean;
   starttls: boolean;
+}
+
+export interface PlatformSettings {
+  publicRegistrationEnabled: boolean;
 }

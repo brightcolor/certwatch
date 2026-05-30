@@ -88,7 +88,8 @@ export const migrate = () => {
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL,
-      created_at TEXT NOT NULL
+      created_at TEXT NOT NULL,
+      impersonator_user_id TEXT
     );
     CREATE TABLE IF NOT EXISTS sessions (
       token TEXT PRIMARY KEY,
@@ -291,10 +292,16 @@ export const migrate = () => {
       created_at TEXT NOT NULL
     );
   `);
+  try {
+    db.exec("ALTER TABLE sessions ADD COLUMN impersonator_user_id TEXT;");
+  } catch {
+    // Existing databases already have the column.
+  }
+  db.prepare("UPDATE users SET role = 'super_admin' WHERE role = 'admin'").run();
   db.prepare("INSERT OR IGNORE INTO tenants VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(DEFAULT_TENANT_ID, "Default workspace", "default", "team", "active", 1000, 100, new Date().toISOString());
   db.prepare(`
     INSERT OR IGNORE INTO tenant_memberships (tenant_id, user_id, role, created_at)
-    SELECT ?, id, CASE WHEN role = 'admin' THEN 'owner' ELSE 'viewer' END, ?
+    SELECT ?, id, CASE WHEN role IN ('admin', 'super_admin') THEN 'owner' ELSE 'viewer' END, ?
     FROM users
   `).run(DEFAULT_TENANT_ID, new Date().toISOString());
   try {

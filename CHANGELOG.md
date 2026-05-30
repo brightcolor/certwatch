@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.12.0 - 2026-05-30
+
+- Added a `super_admin` platform role and migrated existing platform admins to super admins.
+- Made first-run setup create a super admin account.
+- Added super-admin user management for creating users, changing platform roles, rotating passwords, deleting users, and impersonating users for support.
+- Added an impersonation banner action so super admins can return to their own account.
+- Added a platform setting to disable public organization registration from the web UI while keeping invite links usable.
+
 ## 0.11.9 - 2026-05-30
 
 - Removed the redundant `Selfhosted TLS monitoring` eyebrow from the application title bar.

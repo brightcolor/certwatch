@@ -13,7 +13,7 @@ const navItems = [
   { page: "users", label: "Users", icon: Users }
 ];
 
-export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, onPage, version, stats = {}, monitors = [], onSelectMonitor, tenants = [], tenantId, onTenant }: any) {
+export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, onPage, version, stats = {}, monitors = [], onSelectMonitor, tenants = [], tenantId, onTenant, user, impersonator, onStopImpersonation }: any) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
@@ -66,6 +66,9 @@ export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, 
             )}
           </form>
           <div className="navbar-nav ms-auto align-items-center gap-2">
+            {impersonator && <button className="btn btn-warning btn-sm" type="button" onClick={onStopImpersonation} title={`Impersonating ${user?.email}`}>
+              Stop impersonation
+            </button>}
             {tenants.length > 1 && <select className="form-select form-select-sm tenant-select" value={tenantId ?? ""} onChange={(event) => onTenant?.(event.target.value)} aria-label="Workspace">
               {tenants.map((item: any) => <option key={item.tenantId} value={item.tenantId}>{item.tenant.name}</option>)}
             </select>}
@@ -95,7 +98,7 @@ export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, 
         <div className="sidebar-wrapper">
           <nav className="mt-2">
             <ul className="nav sidebar-menu flex-column" role="navigation" aria-label="Main navigation">
-              {navItems.map((item) => <NavItem key={item.page} item={item} active={page === item.page} stats={stats} onClick={() => navigate(item.page)} />)}
+              {navItems.filter((item) => item.page !== "users" || (user?.role === "super_admin" && !impersonator)).map((item) => <NavItem key={item.page} item={item} active={page === item.page} stats={stats} onClick={() => navigate(item.page)} />)}
               <li className="nav-item"><a className="nav-link" href="/api/export/monitors.json" title="Export"><Download className="nav-icon" size={18} /><p>Export</p></a></li>
             </ul>
           </nav>

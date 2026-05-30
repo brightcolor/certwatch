@@ -51,6 +51,8 @@ function App() {
   const [tenantGroups, setTenantGroups] = useState<TenantGroup[]>([]);
   const [tenantId, setTenantId] = useState(localStorage.getItem("tenantId") ?? "");
   const [users, setUsers] = useState<any[]>([]);
+  const [platformSettings, setPlatformSettings] = useState<any>({ publicRegistrationEnabled: true });
+  const [impersonator, setImpersonator] = useState<any>(null);
   const [version, setVersion] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [results, setResults] = useState<CheckResult[]>([]);
@@ -93,7 +95,7 @@ function App() {
           setAuthMode("login");
           return null;
         }
-        return api.request<any>("/auth/me").then((r) => { api.setCsrf(r.csrfToken); applyTenants(r.tenants ?? []); setUser(r.user); });
+        return api.request<any>("/auth/me").then((r) => { api.setCsrf(r.csrfToken); applyTenants(r.tenants ?? []); setUser(r.user); setImpersonator(r.impersonator ?? null); });
       })
       .catch(() => setUser(null))
       .finally(() => setBooted(true));
@@ -143,7 +145,11 @@ function App() {
     setVersion((await api.request<any>("/version")).version);
     setTenants(await api.request<TenantMembership[]>("/tenants"));
     await loadTenantMembers();
-    if (user?.role === "admin") setUsers(await api.request<any[]>("/users"));
+    if (user?.role === "super_admin" && !impersonator) {
+      const [userData, platformData] = await Promise.all([api.request<any[]>("/users"), api.request<any>("/platform-settings")]);
+      setUsers(userData);
+      setPlatformSettings(platformData);
+    }
   };
 
   const refreshOverview = async () => {
@@ -267,8 +273,10 @@ function App() {
     else navigate("dashboard");
   };
   const finishLogin = (result: any) => {
+    api.setCsrf(result.csrfToken);
     applyTenants(result.tenants ?? []);
     setUser(result.user);
+    setImpersonator(result.impersonator ?? null);
     setSetupRequired(false);
     if (inviteToken) window.history.replaceState(window.history.state, "", window.location.pathname);
   };
@@ -305,6 +313,9 @@ function App() {
       tenants={tenants}
       tenantId={tenantId}
       onTenant={switchTenant}
+      user={user}
+      impersonator={impersonator}
+      onStopImpersonation={async () => finishLogin(await api.request("/auth/stop-impersonation", { method: "POST", body: "{}" }))}
     >
       {toast && <div className="toast" onAnimationEnd={() => setToast("")}>{toast}</div>}
       {page === "settings" ? (
@@ -339,7 +350,16 @@ function App() {
           onRestore={async (backup: any) => { const result = await api.request("/export/restore", { method: "POST", body: JSON.stringify(backup) }); await refresh(); return result; }}
         />
       ) : page === "users" ? (
-        <UsersPage users={users} onCreate={async (data: any) => { await api.request("/users", { method: "POST", body: JSON.stringify(data) }); await refresh(); }} onUpdate={async (id: string, data: any) => { await api.request(`/users/${id}`, { method: "PUT", body: JSON.stringify(data) }); await refresh(); }} onDelete={async (id: string) => { await api.request(`/users/${id}`, { method: "DELETE" }); await refresh(); }} />
+        <UsersPage
+          users={users}
+          currentUser={user}
+          platformSettings={platformSettings}
+          onSavePlatformSettings={async (data: any) => { setPlatformSettings(await api.request("/platform-settings", { method: "PUT", body: JSON.stringify(data) })); await refresh(); }}
+          onCreate={async (data: any) => { await api.request("/users", { method: "POST", body: JSON.stringify(data) }); await refresh(); }}
+          onUpdate={async (id: string, data: any) => { await api.request(`/users/${id}`, { method: "PUT", body: JSON.stringify(data) }); await refresh(); }}
+          onDelete={async (id: string) => { await api.request(`/users/${id}`, { method: "DELETE" }); await refresh(); }}
+          onImpersonate={async (id: string) => finishLogin(await api.request(`/users/${id}/impersonate`, { method: "POST", body: "{}" }))}
+        />
       ) : page === "tenants" ? (
         <TenantsPage
           tenants={tenants}

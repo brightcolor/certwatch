@@ -1,7 +1,7 @@
 import { db, rowToApiToken, rowToChannel, rowToDelivery, rowToIncident, rowToInvite, rowToMembership, rowToMonitor, rowToResult, rowToSubscription, rowToTenant, rowToTenantGroup, rowToUser, rowToUserAlertSettings } from "./db.js";
 import { id } from "../utils/id.js";
 import { addSecondsIso, nowIso } from "../utils/time.js";
-import type { AlertingSettings, ApiToken, BackupSettings, CheckResult, CtWatchSettings, DiscoverySettings, Incident, IncidentNote, MaintenanceSettings, Monitor, NotificationChannel, NotificationDelivery, NotificationRoute, RetentionSettings, SslLabsSettings, StatusPageSettings, StatusSubscription, SmtpSettings, Tenant, TenantGroup, TenantInvite, TenantMembership, TenantRole, TlsPolicySettings, User, UserAlertSettings } from "../types.js";
+import type { AlertingSettings, ApiToken, BackupSettings, CheckResult, CtWatchSettings, DiscoverySettings, Incident, IncidentNote, MaintenanceSettings, Monitor, NotificationChannel, NotificationDelivery, NotificationRoute, PlatformSettings, RetentionSettings, SslLabsSettings, StatusPageSettings, StatusSubscription, SmtpSettings, Tenant, TenantGroup, TenantInvite, TenantMembership, TenantRole, TlsPolicySettings, User, UserAlertSettings, UserRole } from "../types.js";
 import { DEFAULT_TENANT_ID } from "../types.js";
 import { decryptConfigSecrets, encryptConfigSecrets } from "../utils/secrets.js";
 
@@ -21,13 +21,13 @@ export const users = {
   list(): User[] {
     return db.prepare("SELECT * FROM users ORDER BY email").all().map(rowToUser);
   },
-  create(email: string, passwordHash: string, role: "admin" | "viewer"): User {
+  create(email: string, passwordHash: string, role: UserRole): User {
     const createdAt = nowIso();
     const user = { id: id(), email: email.toLowerCase(), passwordHash, role, createdAt };
     db.prepare("INSERT INTO users VALUES (?, ?, ?, ?, ?)").run(user.id, user.email, user.passwordHash, user.role, user.createdAt);
     return user;
   },
-  update(userId: string, role: "admin" | "viewer", passwordHash?: string) {
+  update(userId: string, role: UserRole, passwordHash?: string) {
     if (passwordHash) db.prepare("UPDATE users SET role = ?, password_hash = ? WHERE id = ?").run(role, passwordHash, userId);
     else db.prepare("UPDATE users SET role = ? WHERE id = ?").run(role, userId);
   },
@@ -217,13 +217,17 @@ export const userAlerts = {
 };
 
 export const sessions = {
-  create(userId: string, token: string, csrfToken: string) {
-    db.prepare("INSERT INTO sessions VALUES (?, ?, ?, ?, ?)").run(
+  create(userId: string, token: string, csrfToken: string, impersonatorUserId?: string | null) {
+    db.prepare(`
+      INSERT INTO sessions (token, user_id, csrf_token, expires_at, created_at, impersonator_user_id)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
       token,
       userId,
       csrfToken,
       addSecondsIso(60 * 60 * 24 * 14),
-      nowIso()
+      nowIso(),
+      impersonatorUserId ?? null
     );
   },
   find(token: string) {
@@ -516,6 +520,9 @@ export const alerts = {
 };
 
 export const appSettings = {
+  platform(): PlatformSettings {
+    return this.get("platform", { publicRegistrationEnabled: true });
+  },
   alerting(tenantId?: string): AlertingSettings {
     return this.get("alerting", {
       resendAfterHours: 24,
