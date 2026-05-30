@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import initSqlJs, { Database as SqlJsDatabase, SqlValue } from "sql.js";
 import { env } from "../config/env.js";
-import type { ApiToken, CheckResult, Incident, Monitor, NotificationChannel, NotificationDelivery, StatusSubscription, Tenant, TenantMembership, User } from "../types.js";
+import type { ApiToken, CheckResult, Incident, Monitor, NotificationChannel, NotificationDelivery, StatusSubscription, Tenant, TenantInvite, TenantMembership, User } from "../types.js";
 import { DEFAULT_TENANT_ID } from "../types.js";
 import { decryptConfigSecrets } from "../utils/secrets.js";
 
@@ -122,6 +122,17 @@ export const migrate = () => {
       role TEXT NOT NULL,
       created_at TEXT NOT NULL,
       PRIMARY KEY (tenant_id, user_id)
+    );
+    CREATE TABLE IF NOT EXISTS tenant_invites (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      email TEXT NOT NULL,
+      role TEXT NOT NULL,
+      token TEXT UNIQUE NOT NULL,
+      invited_by_user_id TEXT,
+      accepted_at TEXT,
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS monitors (
       id TEXT PRIMARY KEY,
@@ -481,4 +492,16 @@ export const rowToMembership = (row: any): TenantMembership => ({
   createdAt: row.created_at,
   tenant: rowToTenant(row),
   userEmail: row.email
+});
+
+export const rowToInvite = (row: any): TenantInvite => ({
+  id: row.id,
+  tenantId: row.tenant_id,
+  email: row.email,
+  role: row.role,
+  token: row.token,
+  invitedByUserId: row.invited_by_user_id,
+  acceptedAt: row.accepted_at,
+  expiresAt: row.expires_at,
+  createdAt: row.created_at
 });

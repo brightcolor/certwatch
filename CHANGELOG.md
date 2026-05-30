@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.10.0 - 2026-05-30
+
+- Added public registration that creates an isolated organization workspace for new users.
+- Added workspace invite links so owners and admins can invite users who do not yet have an account.
+- Added environment switches for the public frontpage and public registration while keeping first-run admin setup direct.
+- Updated the workspace UI to show pending invites, copy invite links, and revoke unused invites.
+- Added an Operations UI action to register an SSL Labs v4 API email directly through crt.watch and save it for assessments.
+- Made dashboard status filter chips visibly color-coded in active and inactive states.
+
 ## 0.9.9 - 2026-05-30
 
 - Added a public crt.watch frontpage that explains the service, links to GitHub, and keeps setup or sign-in one click away.

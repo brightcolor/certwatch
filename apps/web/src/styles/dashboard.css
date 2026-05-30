@@ -14,117 +14,101 @@
 }
 
 .filter-chip {
+  --chip-rgb: var(--bs-secondary-color-rgb);
+  --chip-contrast: var(--bs-emphasis-color);
   display: inline-flex;
   min-height: 2rem;
   align-items: center;
   gap: .35rem;
-  border: 1px solid var(--bs-border-color);
+  border: 1px solid rgba(var(--chip-rgb), .55);
   border-radius: 999px;
-  background: var(--bs-body-bg);
-  color: var(--bs-secondary-color);
+  background: rgba(var(--chip-rgb), .15);
+  color: rgb(var(--chip-rgb));
   padding: .25rem .65rem;
   font-size: .78rem;
   font-weight: 700;
   box-shadow: none;
+  transition: background .14s ease, border-color .14s ease, color .14s ease, transform .14s ease;
 }
 
 .filter-chip span {
   min-width: 1.25rem;
   border-radius: 999px;
-  background: rgba(var(--bs-secondary-color-rgb), .14);
-  color: var(--bs-secondary-color);
+  background: rgba(var(--chip-rgb), .2);
+  color: inherit;
   padding: .05rem .35rem;
   text-align: center;
 }
 
 .filter-all {
+  --chip-rgb: var(--bs-secondary-color-rgb);
   border-color: rgba(var(--bs-secondary-color-rgb), .4);
   background: rgba(var(--bs-secondary-color-rgb), .08);
   color: var(--bs-secondary-color);
 }
 
-.filter-chip.active {
-  color: var(--bs-emphasis-color);
+.filter-chip:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--chip-rgb), .8);
+  background: rgba(var(--chip-rgb), .22);
 }
 
 .filter-all.active {
   border-color: rgba(var(--bs-secondary-color-rgb), .75);
-  background: var(--bs-info);
-  color: #111;
+  background: rgb(var(--bs-secondary-color-rgb));
+  color: #fff;
 }
 
 .filter-ok {
-  border-color: rgba(var(--bs-success-rgb), .38);
-  background: rgba(var(--bs-success-rgb), .1);
-  color: var(--bs-success);
-}
-
-.filter-ok span {
-  background: rgba(var(--bs-success-rgb), .16);
-  color: var(--bs-success);
+  --chip-rgb: var(--bs-success-rgb);
 }
 
 .filter-ok.active {
   border-color: rgba(var(--bs-success-rgb), .9);
-  background: var(--bs-success);
+  background: rgb(var(--bs-success-rgb));
   color: #07140b;
 }
 
 .filter-warning {
-  border-color: rgba(var(--bs-warning-rgb), .42);
-  background: rgba(var(--bs-warning-rgb), .12);
-  color: var(--bs-warning);
-}
-
-.filter-warning span {
-  background: rgba(var(--bs-warning-rgb), .18);
-  color: var(--bs-warning);
+  --chip-rgb: var(--bs-warning-rgb);
 }
 
 .filter-warning.active {
   border-color: rgba(var(--bs-warning-rgb), .9);
-  background: var(--bs-warning);
+  background: rgb(var(--bs-warning-rgb));
   color: #171006;
 }
 
 .filter-critical,
 .filter-down {
-  border-color: rgba(var(--bs-danger-rgb), .4);
-  background: rgba(var(--bs-danger-rgb), .11);
-  color: var(--bs-danger);
-}
-
-.filter-critical span,
-.filter-down span {
-  background: rgba(var(--bs-danger-rgb), .16);
-  color: var(--bs-danger);
+  --chip-rgb: var(--bs-danger-rgb);
 }
 
 .filter-critical.active,
 .filter-down.active {
   border-color: rgba(var(--bs-danger-rgb), .9);
-  background: var(--bs-danger);
+  background: rgb(var(--bs-danger-rgb));
   color: #fff;
 }
 
-.filter-paused,
+.filter-paused {
+  --chip-rgb: var(--bs-secondary-color-rgb);
+}
+
 .filter-unknown {
-  border-color: rgba(var(--bs-secondary-color-rgb), .36);
-  background: rgba(var(--bs-secondary-color-rgb), .1);
-  color: var(--bs-secondary-color);
+  --chip-rgb: var(--bs-info-rgb);
 }
 
-.filter-paused span,
-.filter-unknown span {
-  background: rgba(var(--bs-secondary-color-rgb), .16);
-  color: var(--bs-secondary-color);
-}
-
-.filter-paused.active,
-.filter-unknown.active {
+.filter-paused.active {
   border-color: rgba(var(--bs-secondary-color-rgb), .8);
-  background: var(--bs-info);
-  color: #111;
+  background: rgb(var(--bs-secondary-color-rgb));
+  color: #fff;
+}
+
+.filter-unknown.active {
+  border-color: rgba(var(--bs-info-rgb), .85);
+  background: rgb(var(--bs-info-rgb));
+  color: #071115;
 }
 
 .filter-chip.active span {

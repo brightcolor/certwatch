@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { api, Monitor, CheckResult, Incident, StatusSubscription, TenantMembership } from "./api/client";
+import { api, Monitor, CheckResult, Incident, StatusSubscription, TenantInvite, TenantMembership } from "./api/client";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./pages/Dashboard";
 import { FrontPage } from "./pages/FrontPage";
 import { Login } from "./pages/Login";
+import { Register } from "./pages/Register";
 import { MonitorDetail } from "./pages/MonitorDetail";
 import { MonitorForm } from "./pages/MonitorForm";
 import { Settings } from "./pages/Settings";
@@ -45,6 +46,7 @@ function App() {
   const [subscriptions, setSubscriptions] = useState<StatusSubscription[]>([]);
   const [tenants, setTenants] = useState<TenantMembership[]>([]);
   const [tenantMembers, setTenantMembers] = useState<any[]>([]);
+  const [tenantInvites, setTenantInvites] = useState<TenantInvite[]>([]);
   const [tenantId, setTenantId] = useState(localStorage.getItem("tenantId") ?? "");
   const [users, setUsers] = useState<any[]>([]);
   const [version, setVersion] = useState("");
@@ -58,7 +60,9 @@ function App() {
   const [resolvedTheme, setResolvedTheme] = useState(resolveTheme(initialThemeMode));
   const [liveRefreshKey, setLiveRefreshKey] = useState(0);
   const [toast, setToast] = useState("");
-  const [showAuth, setShowAuth] = useState(false);
+  const [publicConfig, setPublicConfig] = useState({ frontPageEnabled: true, publicRegistrationEnabled: true });
+  const [inviteToken] = useState(() => new URLSearchParams(window.location.search).get("invite"));
+  const [authMode, setAuthMode] = useState<"front" | "login" | "register">(() => inviteToken ? "register" : "front");
 
   useEffect(() => {
     const apply = () => {
@@ -76,10 +80,17 @@ function App() {
     return () => media.removeEventListener("change", apply);
   }, [themeMode]);
   useEffect(() => {
-    api.request<any>("/auth/setup-status")
+    api.request<any>("/auth/config")
       .then((status) => {
+        setPublicConfig({
+          frontPageEnabled: Boolean(status.frontPageEnabled),
+          publicRegistrationEnabled: Boolean(status.publicRegistrationEnabled)
+        });
         setSetupRequired(status.setupRequired);
-        if (status.setupRequired) return null;
+        if (status.setupRequired) {
+          setAuthMode("login");
+          return null;
+        }
         return api.request<any>("/auth/me").then((r) => { api.setCsrf(r.csrfToken); applyTenants(r.tenants ?? []); setUser(r.user); });
       })
       .catch(() => setUser(null))
@@ -159,11 +170,20 @@ function App() {
 
   const loadTenantMembers = async () => {
     const id = localStorage.getItem("tenantId");
-    if (!id) return setTenantMembers([]);
+    if (!id) {
+      setTenantMembers([]);
+      return setTenantInvites([]);
+    }
     try {
-      setTenantMembers(await api.request<any[]>(`/tenants/${id}/members`));
+      const [members, invites] = await Promise.all([
+        api.request<any[]>(`/tenants/${id}/members`),
+        api.request<TenantInvite[]>(`/tenants/${id}/invites`)
+      ]);
+      setTenantMembers(members);
+      setTenantInvites(invites);
     } catch {
       setTenantMembers([]);
+      setTenantInvites([]);
     }
   };
 
@@ -231,10 +251,28 @@ function App() {
     if (window.history.state?.crtwatch && window.history.state.selected) window.history.back();
     else navigate("dashboard");
   };
+  const finishLogin = (result: any) => {
+    applyTenants(result.tenants ?? []);
+    setUser(result.user);
+    setSetupRequired(false);
+    if (inviteToken) window.history.replaceState(window.history.state, "", window.location.pathname);
+  };
 
   if (!booted) return <main className="login"><div className="login-panel"><span className="eyebrow">crt.watch</span><h1>Loading</h1></div></main>;
-  if (!user && !showAuth) return <FrontPage setupRequired={setupRequired} onAuth={() => setShowAuth(true)} />;
-  if (!user) return <Login setupRequired={setupRequired} onBack={() => setShowAuth(false)} onLogin={(result) => { applyTenants(result.tenants ?? []); setUser(result.user); setSetupRequired(false); }} />;
+  if (!user && setupRequired) return <Login setupRequired registrationEnabled={false} onLogin={finishLogin} />;
+  if (!user && authMode === "register") return <Register inviteToken={inviteToken} onBack={() => setAuthMode("login")} onLogin={finishLogin} />;
+  if (!user && publicConfig.frontPageEnabled && authMode === "front") {
+    return <FrontPage setupRequired={setupRequired} registrationEnabled={publicConfig.publicRegistrationEnabled} onAuth={() => setAuthMode("login")} onRegister={() => setAuthMode("register")} />;
+  }
+  if (!user) {
+    return <Login
+      setupRequired={false}
+      registrationEnabled={publicConfig.publicRegistrationEnabled}
+      onBack={publicConfig.frontPageEnabled ? () => setAuthMode("front") : undefined}
+      onRegister={() => setAuthMode("register")}
+      onLogin={finishLogin}
+    />;
+  }
   const selectedMonitor = monitors.find((monitor) => monitor.id === selected);
 
   return (
@@ -289,9 +327,11 @@ function App() {
         <TenantsPage
           tenants={tenants}
           members={tenantMembers}
+          invites={tenantInvites}
           onCreateTenant={async (name) => { const created = await api.request<any>("/tenants", { method: "POST", body: JSON.stringify({ name }) }); api.setTenant(created.tenantId); setTenantId(created.tenantId); await refresh(); }}
-          onAddMember={async (email, role) => { await api.request(`/tenants/${tenantId}/members`, { method: "POST", body: JSON.stringify({ email, role }) }); await loadTenantMembers(); }}
+          onInviteMember={async (email, role) => { const result = await api.request<any>(`/tenants/${tenantId}/invites`, { method: "POST", body: JSON.stringify({ email, role }) }); await loadTenantMembers(); return result.invite ?? null; }}
           onRemoveMember={async (userId) => { await api.request(`/tenants/${tenantId}/members/${userId}`, { method: "DELETE" }); await loadTenantMembers(); }}
+          onDeleteInvite={async (inviteId) => { await api.request(`/tenants/${tenantId}/invites/${inviteId}`, { method: "DELETE" }); await loadTenantMembers(); }}
         />
       ) : page === "applications" ? (
         <Applications monitors={monitors} onSelect={(id) => navigate("dashboard", id)} />

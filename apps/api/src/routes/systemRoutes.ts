@@ -3,7 +3,8 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { id } from "../utils/id.js";
 import { nowIso } from "../utils/time.js";
-import { alerts, appSettings, channels, incidents, monitors, results, subscriptions, tenants, users } from "../storage/repositories.js";
+import { env } from "../config/env.js";
+import { alerts, appSettings, channels, incidents, monitors, results, subscriptions, tenantInvites, tenants, users } from "../storage/repositories.js";
 import { testChannel } from "../notifications/service.js";
 import { requireAdmin, requireTenantRole } from "../auth/auth.js";
 import { discoverMonitors } from "../checks/discovery.js";
@@ -64,6 +65,35 @@ systemRoutes.delete("/tenants/:id/members/:userId", requireTenantRole("owner", "
   if (req.params.id !== req.currentTenant!.id) return res.status(403).json({ error: "Select the workspace first." });
   if (req.params.userId === req.user!.id) return res.status(409).json({ error: "You cannot remove your own workspace membership." });
   tenants.removeMember(req.currentTenant!.id, req.params.userId);
+  res.status(204).end();
+});
+systemRoutes.get("/tenants/:id/invites", requireTenantRole("owner", "admin"), (req, res) => {
+  if (req.params.id !== req.currentTenant!.id) return res.status(403).json({ error: "Select the workspace first." });
+  res.json(tenantInvites.list(req.currentTenant!.id).map(publicInvite));
+});
+systemRoutes.post("/tenants/:id/invites", requireTenantRole("owner", "admin"), (req, res) => {
+  if (req.params.id !== req.currentTenant!.id) return res.status(403).json({ error: "Select the workspace first." });
+  const parsed = memberSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid invitation." });
+  const tenant = tenants.get(req.currentTenant!.id);
+  const memberCount = tenants.members(req.currentTenant!.id).length;
+  const inviteCount = tenantInvites.list(req.currentTenant!.id).length;
+  if (tenant && tenant.userLimit > 0 && memberCount + inviteCount >= tenant.userLimit) return res.status(402).json({ error: "Workspace user limit reached." });
+
+  const user = users.findByEmail(parsed.data.email);
+  if (user) {
+    tenants.addMember(req.currentTenant!.id, user.id, parsed.data.role);
+    const member = tenants.members(req.currentTenant!.id).find((item) => item.userId === user.id);
+    return res.status(201).json({ member: member ? publicMember(member) : null, invite: null });
+  }
+
+  const existing = tenantInvites.list(req.currentTenant!.id).find((item) => item.email === parsed.data.email);
+  const invite = existing ?? tenantInvites.create(req.currentTenant!.id, parsed.data.email, parsed.data.role, req.user!.id);
+  res.status(existing ? 200 : 201).json({ member: null, invite: publicInvite(invite) });
+});
+systemRoutes.delete("/tenants/:id/invites/:inviteId", requireTenantRole("owner", "admin"), (req, res) => {
+  if (req.params.id !== req.currentTenant!.id) return res.status(403).json({ error: "Select the workspace first." });
+  tenantInvites.delete(req.params.inviteId, req.currentTenant!.id);
   res.status(204).end();
 });
 systemRoutes.get("/settings/ct-watch", (req, res) => res.json(appSettings.ctWatch(req.currentTenant!.id)));
@@ -260,6 +290,15 @@ const redactChannel = (channel: any) => ({
 const publicUser = (user: any) => ({ id: user.id, email: user.email, role: user.role, createdAt: user.createdAt });
 const publicMembership = (membership: any) => ({ tenantId: membership.tenantId, role: membership.role, tenant: membership.tenant });
 const publicMember = (membership: any) => ({ userId: membership.userId, email: membership.userEmail, role: membership.role, createdAt: membership.createdAt });
+const publicInvite = (invite: any) => ({
+  id: invite.id,
+  tenantId: invite.tenantId,
+  email: invite.email,
+  role: invite.role,
+  expiresAt: invite.expiresAt,
+  createdAt: invite.createdAt,
+  inviteUrl: `${env.baseUrl.replace(/\/$/, "")}/?invite=${encodeURIComponent(invite.token)}`
+});
 
 const checkCtWatch = async (tenantId: string) => {
   const settings = appSettings.ctWatch(tenantId);

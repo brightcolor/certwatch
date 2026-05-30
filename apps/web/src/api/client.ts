@@ -110,6 +110,16 @@ export interface TenantMembership {
   };
 }
 
+export interface TenantInvite {
+  id: string;
+  tenantId: string;
+  email: string;
+  role: "owner" | "admin" | "member" | "viewer";
+  expiresAt: string;
+  createdAt: string;
+  inviteUrl: string;
+}
+
 let csrfToken = localStorage.getItem("csrfToken") ?? "";
 
 export const api = {

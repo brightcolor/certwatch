@@ -8,6 +8,8 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
   const [maintenance, setMaintenance] = useState<any>({ windows: [] });
   const [tlsPolicy, setTlsPolicy] = useState<any>({ profile: "modern", minimumTlsVersion: "TLSv1.2", weakCipherPenalty: 40, requireSan: true, intensiveScan: true });
   const [sslLabs, setSslLabs] = useState<any>({ enabled: false, registeredEmail: "", intervalHours: 24, maxAgeHours: 24, timeoutSeconds: 90, startNewScans: false, publishResults: false });
+  const [sslLabsRegistration, setSslLabsRegistration] = useState({ firstName: "", lastName: "", email: "", organization: "" });
+  const [sslLabsStatus, setSslLabsStatus] = useState("");
   const [statusPages, setStatusPages] = useState<any>({ pages: [] });
   const [discovery, setDiscovery] = useState<any>({ enabled: false, intervalHours: 24, domains: [], suggestions: [] });
   const [backupSettings, setBackupSettings] = useState<any>({ enabled: false, intervalHours: 24, keep: 7 });
@@ -57,6 +59,16 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
     await api.request("/discovery/import", { method: "POST", body: JSON.stringify({ monitors: items }) });
     await load();
   };
+  const registerSslLabs = async () => {
+    setSslLabsStatus("Registering with SSL Labs...");
+    try {
+      const result = await api.request<any>("/ssl-labs/register", { method: "POST", body: JSON.stringify(sslLabsRegistration) });
+      setSslLabs(result.settings);
+      setSslLabsStatus("SSL Labs registration completed. The registered email was saved.");
+    } catch (error) {
+      setSslLabsStatus(error instanceof Error ? error.message : "SSL Labs registration failed.");
+    }
+  };
 
   return (
     <section className="content">
@@ -90,6 +102,18 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
           <label><input type="checkbox" checked={sslLabs.startNewScans} onChange={(e) => setSslLabs({ ...sslLabs, startNewScans: e.target.checked })} /> Start fresh scans when due</label>
           <label><input type="checkbox" checked={sslLabs.publishResults} onChange={(e) => setSslLabs({ ...sslLabs, publishResults: e.target.checked })} /> Publish on SSL Labs boards</label>
           <button onClick={() => save("/settings/ssl-labs", sslLabs)}>Save SSL Labs</button>
+          <div className="form-section">
+            <h3>Register SSL Labs API email</h3>
+            <p className="muted">Submit the one-time SSL Labs v4 registration and save the returned email for assessments.</p>
+            <div className="grid two">
+              <label>First name<input value={sslLabsRegistration.firstName} onChange={(e) => setSslLabsRegistration({ ...sslLabsRegistration, firstName: e.target.value })} /></label>
+              <label>Last name<input value={sslLabsRegistration.lastName} onChange={(e) => setSslLabsRegistration({ ...sslLabsRegistration, lastName: e.target.value })} /></label>
+              <label>Email<input type="email" value={sslLabsRegistration.email} onChange={(e) => setSslLabsRegistration({ ...sslLabsRegistration, email: e.target.value })} /></label>
+              <label>Organization<input value={sslLabsRegistration.organization} onChange={(e) => setSslLabsRegistration({ ...sslLabsRegistration, organization: e.target.value })} /></label>
+            </div>
+            <button className="ghost" onClick={registerSslLabs}>Register and use email</button>
+            {sslLabsStatus && <p className="muted">{sslLabsStatus}</p>}
+          </div>
         </div>
       </div>
       <div className="grid two">

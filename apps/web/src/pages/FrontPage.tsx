@@ -3,7 +3,14 @@ import type { ReactNode } from "react";
 
 const githubUrl = "https://github.com/brightcolor/crt.watch";
 
-export function FrontPage({ setupRequired, onAuth }: { setupRequired: boolean; onAuth: () => void }) {
+export function FrontPage({ setupRequired, registrationEnabled, onAuth, onRegister }: {
+  setupRequired: boolean;
+  registrationEnabled: boolean;
+  onAuth: () => void;
+  onRegister: () => void;
+}) {
+  const primaryAction = setupRequired ? onAuth : registrationEnabled ? onRegister : onAuth;
+  const primaryLabel = setupRequired ? "Create first admin" : registrationEnabled ? "Create organization" : "Open dashboard";
   return (
     <main className="frontpage">
       <header className="frontpage-nav">
@@ -15,6 +22,7 @@ export function FrontPage({ setupRequired, onAuth }: { setupRequired: boolean; o
           <a href="#features">Features</a>
           <a href="#operations">Operations</a>
           <a href={githubUrl} target="_blank" rel="noreferrer"><Github size={16} /> GitHub</a>
+          {!setupRequired && registrationEnabled && <button type="button" onClick={onRegister}>Register</button>}
           <button type="button" onClick={onAuth}>{setupRequired ? "Set up" : "Sign in"}</button>
         </nav>
       </header>
@@ -28,7 +36,7 @@ export function FrontPage({ setupRequired, onAuth }: { setupRequired: boolean; o
             public status pages, and notifications from one self-hosted operator interface.
           </p>
           <div className="frontpage-actions">
-            <button type="button" onClick={onAuth}>{setupRequired ? "Create first admin" : "Open dashboard"} <ArrowRight size={16} /></button>
+            <button type="button" onClick={primaryAction}>{primaryLabel} <ArrowRight size={16} /></button>
             <a className="button-link ghost-link" href={githubUrl} target="_blank" rel="noreferrer"><Github size={16} /> View on GitHub</a>
           </div>
         </div>

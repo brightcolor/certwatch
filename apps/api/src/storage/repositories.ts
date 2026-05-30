@@ -1,7 +1,7 @@
-import { db, rowToApiToken, rowToChannel, rowToDelivery, rowToIncident, rowToMembership, rowToMonitor, rowToResult, rowToSubscription, rowToTenant, rowToUser } from "./db.js";
+import { db, rowToApiToken, rowToChannel, rowToDelivery, rowToIncident, rowToInvite, rowToMembership, rowToMonitor, rowToResult, rowToSubscription, rowToTenant, rowToUser } from "./db.js";
 import { id } from "../utils/id.js";
 import { addSecondsIso, nowIso } from "../utils/time.js";
-import type { AlertingSettings, ApiToken, BackupSettings, CheckResult, CtWatchSettings, DiscoverySettings, Incident, IncidentNote, MaintenanceSettings, Monitor, NotificationChannel, NotificationDelivery, NotificationRoute, RetentionSettings, SslLabsSettings, StatusPageSettings, StatusSubscription, SmtpSettings, Tenant, TenantMembership, TenantRole, TlsPolicySettings, User } from "../types.js";
+import type { AlertingSettings, ApiToken, BackupSettings, CheckResult, CtWatchSettings, DiscoverySettings, Incident, IncidentNote, MaintenanceSettings, Monitor, NotificationChannel, NotificationDelivery, NotificationRoute, RetentionSettings, SslLabsSettings, StatusPageSettings, StatusSubscription, SmtpSettings, Tenant, TenantInvite, TenantMembership, TenantRole, TlsPolicySettings, User } from "../types.js";
 import { DEFAULT_TENANT_ID } from "../types.js";
 import { decryptConfigSecrets, encryptConfigSecrets } from "../utils/secrets.js";
 
@@ -17,13 +17,6 @@ export const users = {
   findById(userId: string): User | null {
     const row = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
     return row ? rowToUser(row) : null;
-  },
-  createAdmin(email: string, passwordHash: string): User {
-    const createdAt = nowIso();
-    const user = { id: id(), email: email.toLowerCase(), passwordHash, role: "admin" as const, createdAt };
-    db.prepare("INSERT INTO users VALUES (?, ?, ?, ?, ?)").run(user.id, user.email, user.passwordHash, user.role, user.createdAt);
-    ensureDefaultMembership(user.id, "owner");
-    return user;
   },
   list(): User[] {
     return db.prepare("SELECT * FROM users ORDER BY email").all().map(rowToUser);
@@ -83,6 +76,45 @@ export const tenants = {
   },
   removeMember(tenantId: string, userId: string) {
     db.prepare("DELETE FROM tenant_memberships WHERE tenant_id = ? AND user_id = ?").run(tenantId, userId);
+  }
+};
+
+export const tenantInvites = {
+  list(tenantId: string): TenantInvite[] {
+    return db.prepare(`
+      SELECT * FROM tenant_invites
+      WHERE tenant_id = ? AND accepted_at IS NULL AND expires_at > ?
+      ORDER BY created_at DESC
+    `).all(tenantId, nowIso()).map(rowToInvite);
+  },
+  create(tenantId: string, email: string, role: TenantRole, invitedByUserId?: string): TenantInvite {
+    const invite = {
+      id: id(),
+      tenantId,
+      email: email.toLowerCase(),
+      role,
+      token: id().replaceAll("-", ""),
+      invitedByUserId: invitedByUserId ?? null,
+      acceptedAt: null,
+      expiresAt: addSecondsIso(60 * 60 * 24 * 14),
+      createdAt: nowIso()
+    };
+    db.prepare(`
+      INSERT INTO tenant_invites (id, tenant_id, email, role, token, invited_by_user_id, accepted_at, expires_at, created_at)
+      VALUES (@id, @tenantId, @email, @role, @token, @invitedByUserId, @acceptedAt, @expiresAt, @createdAt)
+    `).run(invite);
+    return invite;
+  },
+  findByToken(token: string): TenantInvite | null {
+    const row = db.prepare("SELECT * FROM tenant_invites WHERE token = ? AND accepted_at IS NULL AND expires_at > ?").get(token, nowIso());
+    return row ? rowToInvite(row) : null;
+  },
+  accept(invite: TenantInvite, userId: string) {
+    tenants.addMember(invite.tenantId, userId, invite.role);
+    db.prepare("UPDATE tenant_invites SET accepted_at = ? WHERE id = ?").run(nowIso(), invite.id);
+  },
+  delete(inviteId: string, tenantId: string) {
+    db.prepare("DELETE FROM tenant_invites WHERE id = ? AND tenant_id = ?").run(inviteId, tenantId);
   }
 };
 
@@ -477,10 +509,6 @@ const isPlainSettingsObject = (value: unknown): value is Record<string, unknown>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
 const settingKey = (key: string, tenantId?: string) => tenantId && tenantId !== DEFAULT_TENANT_ID ? `tenant:${tenantId}:${key}` : key;
-
-const ensureDefaultMembership = (userId: string, role: TenantRole) => {
-  db.prepare("INSERT OR IGNORE INTO tenant_memberships VALUES (?, ?, ?, ?)").run(DEFAULT_TENANT_ID, userId, role, nowIso());
-};
 
 const slugify = (value: string) =>
   value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "workspace";

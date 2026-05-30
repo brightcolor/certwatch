@@ -19,6 +19,8 @@ export const env = {
   sessionSecret: process.env.SESSION_SECRET ?? "dev-only-change-me",
   trustProxy: boolFromEnv("TRUST_PROXY", true),
   cookieSecure: boolFromEnv("COOKIE_SECURE", false),
+  frontPageEnabled: boolFromEnv("FRONT_PAGE_ENABLED", true),
+  publicRegistrationEnabled: boolFromEnv("PUBLIC_REGISTRATION_ENABLED", true),
   allowPrivateTargets: boolFromEnv("ALLOW_PRIVATE_TARGETS", false),
   checkConcurrency: numberFromEnv("CHECK_CONCURRENCY", 4),
   defaultIntervalSeconds: numberFromEnv("DEFAULT_INTERVAL_SECONDS", 3600),

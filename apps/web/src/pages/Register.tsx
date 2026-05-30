@@ -1,0 +1,48 @@
+import { useState } from "react";
+import { api } from "../api/client";
+
+export function Register({ inviteToken, onLogin, onBack }: { inviteToken?: string | null; onLogin: (result: any) => void; onBack: () => void }) {
+  const [form, setForm] = useState({ email: "", password: "", confirm: "", organizationName: "" });
+  const [error, setError] = useState("");
+  const invited = Boolean(inviteToken);
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError("");
+    if (form.password !== form.confirm) return setError("Passwords do not match.");
+    try {
+      const result = await api.request<any>("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+          organizationName: invited ? undefined : form.organizationName,
+          inviteToken: inviteToken || undefined
+        })
+      });
+      api.setCsrf(result.csrfToken);
+      onLogin(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Registration failed.");
+    }
+  };
+
+  return (
+    <main className="login">
+      <form onSubmit={submit} className="login-panel">
+        <span className="eyebrow">crt.watch</span>
+        <h1>{invited ? "Join workspace" : "Create workspace"}</h1>
+        <p className="muted">
+          {invited ? "Create your account to accept this workspace invitation." : "Create a user account and an isolated organization workspace."}
+        </p>
+        <label>Email<input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required /></label>
+        {!invited && <label>Organization<input value={form.organizationName} onChange={(e) => setForm({ ...form, organizationName: e.target.value })} required /></label>}
+        <label>Password<input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required /></label>
+        <label>Confirm password<input type="password" value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} required /></label>
+        {error && <p className="error">{error}</p>}
+        <button type="submit">{invited ? "Accept invite" : "Create organization"}</button>
+        <button className="ghost" type="button" onClick={onBack}>Back to sign in</button>
+      </form>
+    </main>
+  );
+}

@@ -16,6 +16,19 @@ opsRoutes.get("/settings/tls-policy", (req, res) => res.json(appSettings.tlsPoli
 opsRoutes.put("/settings/tls-policy", requireTenantRole("owner", "admin"), (req, res) => saveSetting(req, res, "tlsPolicy", tlsPolicySchema));
 opsRoutes.get("/settings/ssl-labs", (req, res) => res.json(appSettings.sslLabs(req.currentTenant!.id)));
 opsRoutes.put("/settings/ssl-labs", requireTenantRole("owner", "admin"), (req, res) => saveSetting(req, res, "sslLabs", sslLabsSchema));
+opsRoutes.post("/ssl-labs/register", requireTenantRole("owner", "admin"), async (req, res) => {
+  const parsed = sslLabsRegistrationSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid SSL Labs registration." });
+  try {
+    const providerResponse = await registerWithSslLabs(parsed.data);
+    const current = appSettings.sslLabs(req.currentTenant!.id);
+    const next = { ...current, registeredEmail: parsed.data.email };
+    appSettings.set("sslLabs", next, req.currentTenant!.id);
+    res.status(201).json({ ok: true, settings: next, providerResponse });
+  } catch (error) {
+    res.status(502).json({ error: error instanceof Error ? error.message : "SSL Labs registration failed." });
+  }
+});
 opsRoutes.get("/settings/status-pages", (req, res) => res.json(appSettings.statusPages(req.currentTenant!.id)));
 opsRoutes.put("/settings/status-pages", requireTenantRole("owner", "admin"), (req, res) => saveSetting(req, res, "statusPages", statusPagesSchema));
 opsRoutes.get("/settings/discovery", (req, res) => res.json(appSettings.discovery(req.currentTenant!.id)));
@@ -145,6 +158,13 @@ const sslLabsSchema = z.object({
   publishResults: z.boolean().default(false)
 });
 
+const sslLabsRegistrationSchema = z.object({
+  firstName: z.string().trim().min(1).max(120),
+  lastName: z.string().trim().min(1).max(120),
+  email: z.string().trim().email().max(255).transform((email) => email.toLowerCase()),
+  organization: z.string().trim().min(1).max(180)
+});
+
 const statusPagesSchema = z.object({
   pages: z.array(z.object({
     id: z.string().default(() => id()),
@@ -230,4 +250,38 @@ const monitorFromDiscovery = (item: DiscoveredMonitor) => ({
 const monitorQuotaAvailable = (tenantId: string, pending = 0) => {
   const tenant = tenants.get(tenantId);
   return !tenant || tenant.monitorLimit <= 0 || monitors.list(tenantId).length + pending < tenant.monitorLimit;
+};
+
+const registerWithSslLabs = async (payload: z.infer<typeof sslLabsRegistrationSchema>) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+  try {
+    const response = await fetch("https://api.ssllabs.com/api/v4/register", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+    const text = await response.text();
+    const body = parseProviderBody(text);
+    if (!response.ok) throw new Error(providerError(response.status, body, text));
+    return { status: response.status, body };
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+const parseProviderBody = (text: string) => {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text.slice(0, 500);
+  }
+};
+
+const providerError = (status: number, body: unknown, text: string) => {
+  if (body && typeof body === "object" && "message" in body) return `SSL Labs registration failed with HTTP ${status}: ${String((body as { message?: unknown }).message)}`;
+  const detail = typeof body === "string" ? body : text;
+  return `SSL Labs registration failed with HTTP ${status}${detail ? `: ${detail.slice(0, 180)}` : "."}`;
 };

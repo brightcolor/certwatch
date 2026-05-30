@@ -21,12 +21,12 @@ This stack keeps the application easy to self-host while still supporting real T
 ## Features
 
 - Dashboard with OK, warning, critical, down, paused, and unknown status counts
-- Public frontpage that explains crt.watch before operators sign in or create the first admin account
+- Public frontpage that explains crt.watch before operators sign in, controlled by `FRONT_PAGE_ENABLED`
 - Dark, colorful dashboard with a contextual health header, grouped checklist rows, color-coded multi-select status filters, and monitor cloning
 - Collapsible AdminLTE sidebar that can shrink to icon-only navigation while keeping labels available on hover
 - Live-refreshing UI views that update visible status, monitor details, operations, reports, users, workspaces, and settings without a manual reload
 - Dashboard problem chips that show certificate, TLS, DNS, SSL Labs, and service issues directly in the monitor overview
-- SaaS-ready workspace model with tenant-scoped monitors, notification providers, settings, and role-based memberships
+- SaaS-ready workspace model with tenant-scoped monitors, notification providers, settings, public registration, invite links, and role-based memberships
 - Dynamic browser favicon that glows green when healthy and blinks red when attention is required
 - Monitor types for HTTPS, custom TCP TLS, SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, XMPP TLS, SMTP STARTTLS, IMAP STARTTLS, POP3 STARTTLS, and explicit FTP AUTH TLS
 - Service health checks for HTTP, HTTP login flows, raw TCP ports, DNS records, SSH, FTP, SMTP, IMAP, and POP3 banners
@@ -67,7 +67,7 @@ This stack keeps the application easy to self-host while still supporting real T
 - Scheduled auto-discovery jobs for common web and mail endpoints
 - Availability reports with check counts, incident counts, availability percentage, and MTTR
 - Scheduled SQLite database backups with UI download and retention controls
-- Local user login with bcrypt password hashes, secure sessions, CSRF token header, and first-run admin setup
+- Local user login with bcrypt password hashes, secure sessions, CSRF token header, first-run admin setup, and organization self-registration
 - Admin-only user management with visible validation for password length and duplicate email addresses
 - Workspace roles for `owner`, `admin`, `member`, and `viewer`; existing self-hosted installs are migrated into a default workspace
 - Encrypted storage for monitor login secrets, SMTP settings, and notification provider secrets using `SESSION_SECRET`
@@ -149,6 +149,8 @@ http://localhost:8080
 ```
 
 On first launch, crt.watch shows a setup screen where the first user creates the administrator account.
+
+The public marketing frontpage is enabled by default. Disable it with `FRONT_PAGE_ENABLED=false` when crt.watch should open directly on the sign-in screen. Public organization signup is controlled separately with `PUBLIC_REGISTRATION_ENABLED`; invitation links keep working even when public signup is disabled.
 
 For local development, the Vite frontend runs on `http://localhost:5173` and proxies `/api`, `/metrics`, and `/public` to the API server on `http://localhost:8080`.
 
@@ -276,7 +278,7 @@ The Operations page contains production controls that are intentionally kept out
 - Maintenance windows for labels or individual monitors. Supported formats include `daily 22:00-23:00`, `mon-fri 01:00-02:00`, and ISO intervals such as `2026-06-01T20:00:00/2026-06-01T22:00:00`.
 - TLS policy profiles for grading, including minimum TLS version, weak cipher penalty, and SAN requirements.
 - Intensive TLS probing can be enabled in Operations. It performs additional handshakes to detect supported TLS versions and feeds those findings into the grade.
-- SSL Labs external assessment can be enabled in Operations with a registered SSL Labs API email. There is no API key field; SSL Labs v4 expects the registered organization email in the `email` header. crt.watch respects a minimum 24-hour per-host interval and can either use cached results or start fresh scans when due.
+- SSL Labs external assessment can be enabled in Operations with a registered SSL Labs API email. There is no API key field; SSL Labs v4 expects the registered organization email in the `email` header. The Operations UI can submit the one-time SSL Labs API registration for first name, last name, email, and organization, then save the email for future assessments. crt.watch respects a minimum 24-hour per-host interval and can either use cached results or start fresh scans when due.
 - Alert policy can notify on TLS grade or score deterioration. The score-drop threshold controls how sensitive these alerts are.
 - Alert policy can notify on certificate changes and DNS resolution changes. Individual monitors can override both policies and set their own DNS comparison interval.
 - Scheduled discovery for web and mail endpoints, with direct accept buttons for individual suggestions or all suggestions.
@@ -295,10 +297,12 @@ crt.watch now has a workspace layer that prepares the app for SaaS operation:
 - Each authenticated request is scoped to the selected workspace through the `X-Tenant-Id` header.
 - Monitors, notification providers, alert policy, SMTP settings, TLS policy, discovery, status page settings, and backups are tenant-scoped.
 - Workspace memberships support `owner`, `admin`, `member`, and `viewer` roles.
+- Public registration creates an isolated organization workspace for the new user when `PUBLIC_REGISTRATION_ENABLED=true`.
+- Owners and workspace admins can invite users by email; existing users are added directly and new users get a time-limited invite link.
 - Viewers can read workspace data, members can operate monitors, and owners/admins can manage settings, providers, and members.
 - Tenants include plan, status, monitor limit, and user limit fields so billing or subscription logic can be added later.
 
-Billing, hosted signup, invite emails, and per-tenant custom domains are intentionally not included yet.
+Billing, automated invite emails, and per-tenant custom domains are intentionally not included yet.
 
 ## Prometheus
 

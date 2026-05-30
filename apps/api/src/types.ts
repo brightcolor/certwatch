@@ -169,6 +169,18 @@ export interface TenantMembership {
   userEmail?: string;
 }
 
+export interface TenantInvite {
+  id: string;
+  tenantId: string;
+  email: string;
+  role: TenantRole;
+  token: string;
+  invitedByUserId?: string | null;
+  acceptedAt?: string | null;
+  expiresAt: string;
+  createdAt: string;
+}
+
 export interface AlertingSettings {
   resendAfterHours: number;
   recoveryEnabled: boolean;
