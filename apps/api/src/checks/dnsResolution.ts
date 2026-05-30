@@ -15,7 +15,6 @@ export const enrichWithDnsResolution = async (
   previous?: CheckResult
 ): Promise<CheckResult> => {
   if (monitor.config?.dnsCheckEnabled === false) return result;
-  if (!shouldRunDnsResolution(monitor, previous)) return { ...result, dns: previous?.dns ? { ...previous.dns, fresh: false } : null };
   try {
     return { ...result, dns: await inspectDnsResolution(monitor.host, monitor.timeoutSeconds * 1000) };
   } catch (error) {
@@ -27,11 +26,7 @@ export const enrichWithDnsResolution = async (
   }
 };
 
-export const shouldRunDnsResolution = (monitor: Pick<Monitor, "config">, previous?: Pick<CheckResult, "dns">) => {
-  const intervalSeconds = Math.min(604_800, Math.max(300, Number(monitor.config?.dnsCheckIntervalSeconds ?? 3600)));
-  if (!previous?.dns?.checkedAt) return true;
-  return Date.now() - new Date(previous.dns.checkedAt).getTime() >= intervalSeconds * 1000;
-};
+export const shouldRunDnsResolution = (_monitor: Pick<Monitor, "config">, _previous?: Pick<CheckResult, "dns">) => true;
 
 export const dnsChanged = (current?: DnsResolutionSummary | null, previous?: DnsResolutionSummary | null) =>
   Boolean(current?.fresh && previous?.fingerprint && current.fingerprint !== previous.fingerprint);

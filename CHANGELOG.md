@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.11.3 - 2026-05-30
+
+- Added clickable dashboard status summaries, metric cards, row status marks, result messages, and problem chips as filters.
+- Added issue filters so operators can isolate monitors with the same warning, error, DNS mismatch, TLS deduction, or SSL Labs finding.
+- Changed DNS resolver comparison to run fresh on every monitor check instead of reusing cached DNS samples.
+- Removed the per-monitor DNS comparison interval field from the monitor form.
+
 ## 0.11.2 - 2026-05-30
 
 - Fixed dashboard status filter chips so inactive filters stay neutral gray and only selected filters use status colors.

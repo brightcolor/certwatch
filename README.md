@@ -51,9 +51,9 @@ This stack keeps the application easy to self-host while still supporting real T
 - Discovery results can be accepted one by one or imported all at once; MX-derived suggestions receive `mail` and `mx` labels
 - Backup and restore UI for portable, non-secret JSON exports
 - Certificate detail view with CN, SANs, issuer, serial number, SHA256 fingerprint, validity, chain, TLS version, and cipher suite
-- DNS resolution details in monitor views, including resolved IPs, authoritative nameservers, and comparison against Cloudflare, Quad9, and Google public resolvers
+- DNS resolution details in monitor views, including fresh resolved IPs, authoritative nameservers, and comparison against Cloudflare, Quad9, and Google public resolvers on every check
 - Hostname mismatch, self-signed, expiry, weak TLS protocol, chain trust, and fingerprint-change detection
-- Optional DNS resolution change alerts with a per-monitor DNS comparison interval
+- Optional DNS resolution change alerts based on uncached resolver comparisons
 - Historical check results per monitor
 - Manual "check now" action and automatic periodic scheduler
 - Global and per-monitor warning and critical expiry thresholds
@@ -285,7 +285,7 @@ The Operations page contains production controls that are intentionally kept out
 - Intensive TLS probing can be enabled in Operations. It performs additional handshakes to detect supported TLS versions and feeds those findings into the grade.
 - SSL Labs external assessment can be enabled in Operations with a registered SSL Labs API email. There is no API key field; SSL Labs v4 expects the registered organization email in the `email` header. The Operations UI can submit the one-time SSL Labs API registration for first name, last name, email, and organization, then save the email for future assessments. Operators can also trigger a manual assessment from Operations or an eligible HTTPS monitor detail page. crt.watch respects the scheduled minimum 24-hour per-host interval and lets manual triggers choose cached or fresh SSL Labs scans.
 - Alert policy can notify on TLS grade or score deterioration. The score-drop threshold controls how sensitive these alerts are.
-- Alert policy can notify on certificate changes and DNS resolution changes. Individual monitors can override both policies and set their own DNS comparison interval.
+- Alert policy can notify on certificate changes and DNS resolution changes. Individual monitors can override both policies. DNS resolver comparisons are intentionally uncached and run fresh on each monitor check.
 - Scheduled discovery for web and mail endpoints, with direct accept buttons for individual suggestions or all suggestions.
 - Scheduled SQLite backups with retention and downloadable backup files.
 - API tokens with read-only or read/write scopes.

@@ -7,9 +7,11 @@ import { formatDate } from "../utils/date";
 export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck, onClone }: any) {
   const [viewMode, setViewMode] = useState<"grouped" | "list">("grouped");
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
+  const [issueFilters, setIssueFilters] = useState<string[]>([]);
   const filtered = monitors.filter((monitor: Monitor) =>
     [monitor.name, monitor.host, monitor.tags.join(" ")].join(" ").toLowerCase().includes(query.toLowerCase())
     && (!statusFilters.length || statusFilters.includes(monitor.lastStatus))
+    && (!issueFilters.length || issueFilters.some((issue) => issueTexts(monitor).includes(issue)))
   );
   const groups = useMemo(() => groupMonitors(filtered), [filtered]);
   const statusCounts = useMemo(() => countStatuses(monitors), [monitors]);
@@ -17,6 +19,10 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
 
   const toggleStatus = (status: string) => {
     setStatusFilters((current) => current.length === 0 ? [status] : current.includes(status) ? current.filter((item) => item !== status) : [...current, status]);
+  };
+  const setOnlyStatuses = (statuses: string[]) => setStatusFilters(statuses);
+  const toggleIssue = (issue: string) => {
+    setIssueFilters((current) => current.includes(issue) ? current.filter((item) => item !== issue) : [...current, issue]);
   };
 
   return (
@@ -27,18 +33,18 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
           <h2>{heroTitle(statusCounts)}</h2>
           <p>{heroDescription(statusCounts)}</p>
           <div className="hero-badges">
-            <span className="filter-chip filter-ok active">OK {statusCounts.OK ?? 0}</span>
-            <span className="filter-chip filter-warning active">Warnings {statusCounts.WARNING ?? 0}</span>
-            <span className="filter-chip filter-critical active">Critical {(statusCounts.CRITICAL ?? 0) + (statusCounts.DOWN ?? 0)}</span>
-            <span className="filter-chip filter-unknown active">Other {(statusCounts.PAUSED ?? 0) + (statusCounts.UNKNOWN ?? 0)}</span>
+            <button type="button" className="filter-chip filter-ok active" onClick={() => setOnlyStatuses(["OK"])}>OK {statusCounts.OK ?? 0}</button>
+            <button type="button" className="filter-chip filter-warning active" onClick={() => setOnlyStatuses(["WARNING"])}>Warnings {statusCounts.WARNING ?? 0}</button>
+            <button type="button" className="filter-chip filter-critical active" onClick={() => setOnlyStatuses(["CRITICAL", "DOWN"])}>Critical {(statusCounts.CRITICAL ?? 0) + (statusCounts.DOWN ?? 0)}</button>
+            <button type="button" className="filter-chip filter-unknown active" onClick={() => setOnlyStatuses(["PAUSED", "UNKNOWN"])}>Other {(statusCounts.PAUSED ?? 0) + (statusCounts.UNKNOWN ?? 0)}</button>
           </div>
         </div>
       </div>
       <div className="metrics dashboard-facts">
-        <Metric icon={<ShieldCheck />} label="Valid" value={stats.ok ?? 0} tone="success" />
-        <Metric icon={<TriangleAlert />} label="Expiring soon" value={stats.warning ?? 0} tone="warning" />
-        <Metric icon={<Siren />} label="Critical" value={(stats.critical ?? 0) + (stats.down ?? 0)} tone="danger" />
-        <Metric icon={<TimerReset />} label="Paused" value={stats.paused ?? 0} tone="secondary" />
+        <Metric icon={<ShieldCheck />} label="Valid" value={stats.ok ?? 0} tone="success" onClick={() => setOnlyStatuses(["OK"])} />
+        <Metric icon={<TriangleAlert />} label="Expiring soon" value={stats.warning ?? 0} tone="warning" onClick={() => setOnlyStatuses(["WARNING"])} />
+        <Metric icon={<Siren />} label="Critical" value={(stats.critical ?? 0) + (stats.down ?? 0)} tone="danger" onClick={() => setOnlyStatuses(["CRITICAL", "DOWN"])} />
+        <Metric icon={<TimerReset />} label="Paused" value={stats.paused ?? 0} tone="secondary" onClick={() => setOnlyStatuses(["PAUSED"])} />
       </div>
       <div className="panel toolbar-panel">
         <div>
@@ -60,6 +66,11 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
             ))}
           </div>
         </div>
+        {!!issueFilters.length && <div className="issue-filter-bar">
+          <span className="muted">Issue filter</span>
+          {issueFilters.map((issue) => <button type="button" className="issue-filter-chip" key={issue} onClick={() => toggleIssue(issue)}>{issue}</button>)}
+          <button type="button" className="issue-filter-clear" onClick={() => setIssueFilters([])}>Clear issues</button>
+        </div>}
       </div>
       <div className="monitor-checklist">
         {!filtered.length && <div className="empty-row"><strong>No monitors found</strong><span className="muted">Create a monitor to start checking certificates, services, or logins.</span></div>}
@@ -71,25 +82,26 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
                 <p>{group.summary}</p>
               </div>
               <div className="group-badges">
-                {statusOptions.slice(0, 4).map((item) => <span className={`mini-count mini-${item.status.toLowerCase()}`} key={item.status}><b>{item.short}</b>{group.counts[item.status] ?? 0}</span>)}
+                {statusOptions.slice(0, 4).map((item) => <button type="button" className={`mini-count mini-${item.status.toLowerCase()}`} key={item.status} onClick={() => setOnlyStatuses([item.status])}><b>{item.short}</b>{group.counts[item.status] ?? 0}</button>)}
               </div>
             </div>
-            {group.monitors.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} key={monitor.id} />)}
+            {group.monitors.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} onStatus={toggleStatus} onIssue={toggleIssue} issueFilters={issueFilters} key={monitor.id} />)}
           </section>
-        )) : filtered.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} key={monitor.id} />)}
+        )) : filtered.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} onStatus={toggleStatus} onIssue={toggleIssue} issueFilters={issueFilters} key={monitor.id} />)}
       </div>
     </section>
   );
 }
 
-function MonitorRow({ monitor, onSelect, onCheck, onClone }: { monitor: Monitor; onSelect: (id: string) => void; onCheck: (id: string) => void; onClone: (id: string) => void }) {
+function MonitorRow({ monitor, onSelect, onCheck, onClone, onStatus, onIssue, issueFilters }: { monitor: Monitor; onSelect: (id: string) => void; onCheck: (id: string) => void; onClone: (id: string) => void; onStatus: (status: string) => void; onIssue: (issue: string) => void; issueFilters: string[] }) {
+  const reason = resultReason(monitor);
   return (
     <div className={`monitor-row tone-${monitor.lastStatus.toLowerCase()}`} onClick={() => onSelect(monitor.id)}>
-      <span className={`status-mark mark-${monitor.lastStatus.toLowerCase()}`}>{statusMark(monitor.lastStatus)}</span>
+      <button type="button" className={`status-mark mark-${monitor.lastStatus.toLowerCase()}`} onClick={(event) => { event.stopPropagation(); onStatus(monitor.lastStatus); }}>{statusMark(monitor.lastStatus)}</button>
       <div className="monitor-main">
         <strong>{monitor.name}</strong>
-        <span>{resultReason(monitor)}</span>
-        <ProblemBadges monitor={monitor} />
+        <button type="button" className="message-filter" title="Filter by this message" onClick={(event) => { event.stopPropagation(); onIssue(reason); }}>{reason}</button>
+        <ProblemBadges monitor={monitor} onIssue={onIssue} issueFilters={issueFilters} />
       </div>
       <div className="monitor-target"><strong>{monitor.host}:{monitor.port}</strong><small>{monitor.type} - {monitor.tags.join(", ") || "unlabeled"}</small></div>
       <div className="monitor-cert"><span className="cert-line"><strong>{certificateSummary(monitor)}</strong><small>{certificateDetail(monitor)}</small>{gradePill(monitor)}{sslLabsPill(monitor)}</span></div>
@@ -101,15 +113,15 @@ function MonitorRow({ monitor, onSelect, onCheck, onClone }: { monitor: Monitor;
   );
 }
 
-function Metric({ icon, label, value, tone }: any) {
+function Metric({ icon, label, value, tone, onClick }: any) {
   return (
-    <div className={`info-box shadow-sm metric-${tone}`}>
+    <button type="button" className={`info-box shadow-sm metric-${tone} metric-button`} onClick={onClick}>
       <span className="info-box-icon">{icon}</span>
       <div className="info-box-content">
         <span className="info-box-text">{label}</span>
         <span className="info-box-number">{value}</span>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -128,15 +140,12 @@ const gradePill = (monitor: Monitor) =>
 const sslLabsPill = (monitor: Monitor) =>
   monitor.latestResult?.sslLabsGrade ? <span className={`grade-pill grade-${monitor.latestResult.sslLabsGrade.toLowerCase().slice(0, 1)}`}>SSL Labs {monitor.latestResult.sslLabsGrade}</span> : null;
 
-function ProblemBadges({ monitor }: { monitor: Monitor }) {
+function ProblemBadges({ monitor, onIssue, issueFilters }: { monitor: Monitor; onIssue: (issue: string) => void; issueFilters: string[] }) {
   const problems = problemSummary(monitor);
   if (!problems.length) return null;
-  const visible = problems.slice(0, 1);
-  const remaining = problems.length - visible.length;
   return (
     <span className="problem-list" title={problems.join("\n")}>
-      {visible.map((problem) => <span className={`problem-chip problem-${problemTone(monitor.lastStatus)}`} key={problem}>{problem}</span>)}
-      {remaining > 0 && <span className="problem-chip problem-more">+{remaining} more</span>}
+      {problems.map((problem) => <button type="button" className={`problem-chip problem-${problemTone(monitor.lastStatus)} ${issueFilters.includes(problem) ? "active" : ""}`} key={problem} onClick={(event) => { event.stopPropagation(); onIssue(problem); }}>{problem}</button>)}
     </span>
   );
 }
@@ -155,6 +164,8 @@ const resultReason = (monitor: Monitor) => {
   if (monitor.lastStatus === "OK") return "Last check completed without active problems.";
   return monitor.latestResult?.problems?.[0] ?? "No detailed reason was recorded for this status.";
 };
+
+const issueTexts = (monitor: Monitor) => [...new Set([resultReason(monitor), ...problemSummary(monitor)].filter(Boolean))];
 
 const problemTone = (status: string) =>
   status === "WARNING" ? "warning" :

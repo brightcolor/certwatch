@@ -94,9 +94,9 @@ describe("DNS resolver comparison", () => {
     expect(mismatches.join(" ")).toContain("Google differs");
   });
 
-  it("honors the custom DNS check interval", () => {
+  it("always performs fresh DNS resolver comparisons", () => {
     const previous = { dns: dnsResult(["203.0.113.10"], "same") };
-    expect(shouldRunDnsResolution({ config: { dnsCheckIntervalSeconds: 3600 } }, previous)).toBe(false);
+    expect(shouldRunDnsResolution({ config: { dnsCheckIntervalSeconds: 3600 } }, previous)).toBe(true);
   });
 });
 

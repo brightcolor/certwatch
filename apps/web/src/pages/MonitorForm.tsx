@@ -128,7 +128,6 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
         </FormSection>
         <FormSection title="DNS and change watches">
           <label><input type="checkbox" checked={form.config?.dnsCheckEnabled !== false} onChange={(e) => setConfig("dnsCheckEnabled", e.target.checked)} /> Collect resolved IPs and compare resolvers</label>
-          <label>DNS check interval seconds<input type="number" min="300" max="604800" value={String(form.config?.dnsCheckIntervalSeconds ?? 3600)} onChange={(e) => setConfig("dnsCheckIntervalSeconds", Number(e.target.value))} /></label>
           <label>DNS change alerts<select value={String(form.config?.dnsChangeAlertMode ?? "global")} onChange={(e) => setConfig("dnsChangeAlertMode", e.target.value)}>
             <option value="global">Use global policy</option>
             <option value="enabled">Always alert for this monitor</option>
@@ -139,7 +138,7 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
             <option value="enabled">Always alert for this monitor</option>
             <option value="disabled">Never alert for this monitor</option>
           </select></label>
-          <p className="muted">DNS comparison uses the authoritative nameservers plus Cloudflare, Quad9, and Google. Results are shown in monitor details; alerts only fire when enabled globally or for this monitor.</p>
+          <p className="muted">DNS comparison uses fresh lookups against the authoritative nameservers plus Cloudflare, Quad9, and Google on every check. Results are shown in monitor details; alerts only fire when enabled globally or for this monitor.</p>
         </FormSection>
         {collectsCertificate(form.type, form.config, Number(form.port)) && <FormSection title="TLS validation">
           <label>SNI hostname<input value={form.sniHost ?? ""} onChange={(e) => set("sniHost", e.target.value)} /></label>
