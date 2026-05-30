@@ -21,6 +21,7 @@ This stack keeps the application easy to self-host while still supporting real T
 ## Features
 
 - Dashboard with OK, warning, critical, down, paused, and unknown status counts
+- Public frontpage that explains crt.watch before operators sign in or create the first admin account
 - Dark, colorful dashboard with a contextual health header, grouped checklist rows, color-coded multi-select status filters, and monitor cloning
 - Collapsible AdminLTE sidebar that can shrink to icon-only navigation while keeping labels available on hover
 - Live-refreshing UI views that update visible status, monitor details, operations, reports, users, workspaces, and settings without a manual reload
@@ -94,7 +95,7 @@ Screenshots are not committed yet. Start the app and open `http://localhost:8080
 For a fresh Linux server with Docker already installed, run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/brightcolor/crt.watch/main/scripts/quickstart.sh | sudo bash
 ```
 
 The script clones the repository into `/opt/crt.watch`, creates `/opt/crt.watch/.env` with generated secrets, creates a local `data` bind-mount directory, pulls the published GHCR image, and starts the stack with Docker Compose.
@@ -102,19 +103,19 @@ The script clones the repository into `/opt/crt.watch`, creates `/opt/crt.watch/
 If the repository is private, use a GitHub token that can read the repository:
 
 ```bash
-curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo bash
+curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://raw.githubusercontent.com/brightcolor/crt.watch/main/scripts/quickstart.sh | sudo bash
 ```
 
 Optional overrides:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo CRTWATCH_PORT=8080 bash
+curl -fsSL https://raw.githubusercontent.com/brightcolor/crt.watch/main/scripts/quickstart.sh | sudo CRTWATCH_PORT=8080 bash
 ```
 
 To publish crt.watch on a different host port, set `CRTWATCH_PORT`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo CRTWATCH_PORT=8888 bash
+curl -fsSL https://raw.githubusercontent.com/brightcolor/crt.watch/main/scripts/quickstart.sh | sudo CRTWATCH_PORT=8888 bash
 ```
 
 For manual installs, use `HOST_PORT=8888` in `.env` and keep `PORT=8080` unless you intentionally want to change the internal application port too.

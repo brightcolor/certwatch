@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.9 - 2026-05-30
+
+- Added a public crt.watch frontpage that explains the service, links to GitHub, and keeps setup or sign-in one click away.
+- Updated README and quickstart URLs for the renamed GitHub repository at `brightcolor/crt.watch`.
+- Updated the local repository remote to the renamed GitHub repository.
+
 ## 0.9.8 - 2026-05-30
 
 - Rebranded the product UI, public status pages, notifications, documentation, logo, package metadata, and server logs to `crt.watch`.

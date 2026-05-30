@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_URL="${CRTWATCH_REPO_URL:-https://github.com/brightcolor/certwatch.git}"
+REPO_URL="${CRTWATCH_REPO_URL:-https://github.com/brightcolor/crt.watch.git}"
 INSTALL_DIR="${CRTWATCH_INSTALL_DIR:-/opt/crt.watch}"
 APP_PORT="${CRTWATCH_PORT:-8080}"
 CONTAINER_PORT="${CRTWATCH_CONTAINER_PORT:-8080}"

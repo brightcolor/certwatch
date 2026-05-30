@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "../api/client";
 
-export function Login({ setupRequired, onLogin }: { setupRequired: boolean; onLogin: (result: any) => void }) {
+export function Login({ setupRequired, onLogin, onBack }: { setupRequired: boolean; onLogin: (result: any) => void; onBack?: () => void }) {
   const [email, setEmail] = useState("admin@example.com");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -34,6 +34,7 @@ export function Login({ setupRequired, onLogin }: { setupRequired: boolean; onLo
         {setupRequired && <label>Confirm password<input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} /></label>}
         {error && <p className="error">{error}</p>}
         <button type="submit">{setupRequired ? "Create admin" : "Sign in"}</button>
+        {onBack && <button className="ghost" type="button" onClick={onBack}>Back to overview</button>}
       </form>
     </main>
   );

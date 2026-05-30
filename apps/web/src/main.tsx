@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { api, Monitor, CheckResult, Incident, StatusSubscription, TenantMembership } from "./api/client";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./pages/Dashboard";
+import { FrontPage } from "./pages/FrontPage";
 import { Login } from "./pages/Login";
 import { MonitorDetail } from "./pages/MonitorDetail";
 import { MonitorForm } from "./pages/MonitorForm";
@@ -57,6 +58,7 @@ function App() {
   const [resolvedTheme, setResolvedTheme] = useState(resolveTheme(initialThemeMode));
   const [liveRefreshKey, setLiveRefreshKey] = useState(0);
   const [toast, setToast] = useState("");
+  const [showAuth, setShowAuth] = useState(false);
 
   useEffect(() => {
     const apply = () => {
@@ -231,7 +233,8 @@ function App() {
   };
 
   if (!booted) return <main className="login"><div className="login-panel"><span className="eyebrow">crt.watch</span><h1>Loading</h1></div></main>;
-  if (!user) return <Login setupRequired={setupRequired} onLogin={(result) => { applyTenants(result.tenants ?? []); setUser(result.user); setSetupRequired(false); }} />;
+  if (!user && !showAuth) return <FrontPage setupRequired={setupRequired} onAuth={() => setShowAuth(true)} />;
+  if (!user) return <Login setupRequired={setupRequired} onBack={() => setShowAuth(false)} onLogin={(result) => { applyTenants(result.tenants ?? []); setUser(result.user); setSetupRequired(false); }} />;
   const selectedMonitor = monitors.find((monitor) => monitor.id === selected);
 
   return (
