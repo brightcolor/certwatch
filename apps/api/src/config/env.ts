@@ -15,7 +15,7 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: numberFromEnv("PORT", 8080),
   baseUrl: process.env.BASE_URL ?? "http://localhost:8080",
-  databasePath: process.env.DATABASE_PATH ?? path.resolve("data/certwatch.sqlite"),
+  databasePath: process.env.DATABASE_PATH ?? path.resolve("data/crtwatch.sqlite"),
   sessionSecret: process.env.SESSION_SECRET ?? "dev-only-change-me",
   trustProxy: boolFromEnv("TRUST_PROXY", true),
   cookieSecure: boolFromEnv("COOKIE_SECURE", false),

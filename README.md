@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="assets/certwatch-logo.svg" alt="CertWatch logo" width="720">
+  <img src="assets/crt.watch-logo.svg" alt="crt.watch logo" width="720">
 </p>
 
-# CertWatch
+# crt.watch
 
-CertWatch is a self-hosted monitoring service for SSL/TLS certificates, TLS service configuration, and lightweight service health checks. It is intentionally similar in operating style to Uptime Kuma, but focused on certificate expiry, hostname mismatches, certificate chain issues, STARTTLS services, protocol availability, and alert deduplication.
+crt.watch is a self-hosted monitoring service for SSL/TLS certificates, TLS service configuration, and lightweight service health checks. It is intentionally similar in operating style to Uptime Kuma, but focused on certificate expiry, hostname mismatches, certificate chain issues, STARTTLS services, protocol availability, and alert deduplication.
 
 The codebase is deliberately simple and compact. It also shows the signs of a fast AI-assisted build, so review the security and operational defaults before exposing it beyond a trusted network.
 
@@ -97,7 +97,7 @@ For a fresh Linux server with Docker already installed, run:
 curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo bash
 ```
 
-The script clones the repository into `/opt/certwatch`, creates `/opt/certwatch/.env` with generated secrets, creates a local `data` bind-mount directory, pulls the published GHCR image, and starts the stack with Docker Compose.
+The script clones the repository into `/opt/crt.watch`, creates `/opt/crt.watch/.env` with generated secrets, creates a local `data` bind-mount directory, pulls the published GHCR image, and starts the stack with Docker Compose.
 
 If the repository is private, use a GitHub token that can read the repository:
 
@@ -108,13 +108,13 @@ curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://raw.githubusercont
 Optional overrides:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo CERTWATCH_PORT=8080 bash
+curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo CRTWATCH_PORT=8080 bash
 ```
 
-To publish CertWatch on a different host port, set `CERTWATCH_PORT`:
+To publish crt.watch on a different host port, set `CRTWATCH_PORT`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo CERTWATCH_PORT=8888 bash
+curl -fsSL https://raw.githubusercontent.com/brightcolor/certwatch/main/scripts/quickstart.sh | sudo CRTWATCH_PORT=8888 bash
 ```
 
 For manual installs, use `HOST_PORT=8888` in `.env` and keep `PORT=8080` unless you intentionally want to change the internal application port too.
@@ -135,7 +135,7 @@ SESSION_SECRET=use-a-long-random-secret
 BASE_URL=http://localhost:8080
 ```
 
-3. Start CertWatch:
+3. Start crt.watch:
 
 ```bash
 docker compose up -d
@@ -147,7 +147,7 @@ docker compose up -d
 http://localhost:8080
 ```
 
-On first launch, CertWatch shows a setup screen where the first user creates the administrator account.
+On first launch, crt.watch shows a setup screen where the first user creates the administrator account.
 
 For local development, the Vite frontend runs on `http://localhost:5173` and proxies `/api`, `/metrics`, and `/public` to the API server on `http://localhost:8080`.
 
@@ -169,7 +169,7 @@ Use the same label on related monitors to model one application with multiple ch
 
 ## Service Checks
 
-CertWatch can monitor certificate-focused targets and general service availability from the same monitor list.
+crt.watch can monitor certificate-focused targets and general service availability from the same monitor list.
 
 - HTTP checks validate the status code and can optionally require a response substring.
 - HTTP login checks support Basic Auth or form POST checks. Login credentials are encrypted at rest and masked in API/UI responses.
@@ -275,7 +275,7 @@ The Operations page contains production controls that are intentionally kept out
 - Maintenance windows for labels or individual monitors. Supported formats include `daily 22:00-23:00`, `mon-fri 01:00-02:00`, and ISO intervals such as `2026-06-01T20:00:00/2026-06-01T22:00:00`.
 - TLS policy profiles for grading, including minimum TLS version, weak cipher penalty, and SAN requirements.
 - Intensive TLS probing can be enabled in Operations. It performs additional handshakes to detect supported TLS versions and feeds those findings into the grade.
-- SSL Labs external assessment can be enabled in Operations with a registered SSL Labs API email. There is no API key field; SSL Labs v4 expects the registered organization email in the `email` header. CertWatch respects a minimum 24-hour per-host interval and can either use cached results or start fresh scans when due.
+- SSL Labs external assessment can be enabled in Operations with a registered SSL Labs API email. There is no API key field; SSL Labs v4 expects the registered organization email in the `email` header. crt.watch respects a minimum 24-hour per-host interval and can either use cached results or start fresh scans when due.
 - Alert policy can notify on TLS grade or score deterioration. The score-drop threshold controls how sensitive these alerts are.
 - Alert policy can notify on certificate changes and DNS resolution changes. Individual monitors can override both policies and set their own DNS comparison interval.
 - Scheduled discovery for web and mail endpoints, with direct accept buttons for individual suggestions or all suggestions.
@@ -289,7 +289,7 @@ The Settings page includes the remaining interface preference for dark or light 
 
 ## SaaS Readiness
 
-CertWatch now has a workspace layer that prepares the app for SaaS operation:
+crt.watch now has a workspace layer that prepares the app for SaaS operation:
 
 - Each authenticated request is scoped to the selected workspace through the `X-Tenant-Id` header.
 - Monitors, notification providers, alert policy, SMTP settings, TLS policy, discovery, status page settings, and backups are tenant-scoped.
@@ -307,13 +307,13 @@ Scrape:
 http://localhost:8080/metrics
 ```
 
-Exported metrics include `certwatch_monitor_status`, `certwatch_cert_days_remaining`, `certwatch_last_check_timestamp`, and `certwatch_check_duration_seconds`.
+Exported metrics include `crtwatch_monitor_status`, `crtwatch_cert_days_remaining`, `crtwatch_last_check_timestamp`, and `crtwatch_check_duration_seconds`.
 
 ## Watchtower Updates
 
-The Compose file uses the published image `ghcr.io/brightcolor/certwatch:latest` and does not start its own Watchtower container. This keeps updates under your existing external Watchtower instance.
+The Compose file uses the published image `ghcr.io/brightcolor/crt-watch:latest` and does not start its own Watchtower container. This keeps updates under your existing external Watchtower instance.
 
-The CertWatch service keeps `com.centurylinklabs.watchtower.enable=true`, so an external Watchtower running with `--label-enable` can update it automatically.
+The crt.watch service keeps `com.centurylinklabs.watchtower.enable=true`, so an external Watchtower running with `--label-enable` can update it automatically.
 
 ## Local Image Builds
 
@@ -328,7 +328,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 Set:
 
 ```env
-BASE_URL=https://certwatch.example.com
+BASE_URL=https://crt.watch.example.com
 TRUST_PROXY=true
 COOKIE_SECURE=true
 ```
@@ -338,7 +338,7 @@ Example nginx config:
 ```nginx
 server {
   listen 443 ssl http2;
-  server_name certwatch.example.com;
+  server_name crt.watch.example.com;
 
   location / {
     proxy_pass http://127.0.0.1:8080;
@@ -354,7 +354,7 @@ server {
 
 The Import page includes a backup and restore UI for portable JSON exports of monitor definitions, provider definitions, notification routes, CT-watch settings, and non-secret settings. Secrets are masked in this export by design and must be re-entered after restore.
 
-SQLite data is stored in the host bind mount configured by `DATA_DIR` and mounted into the container at `/data`. The default is `./data`, so manual installs store the database under the repository checkout. For a full secret-bearing backup, back up `certwatch.sqlite` and its WAL files while the container is stopped, or use a SQLite online backup command from a maintenance shell.
+SQLite data is stored in the host bind mount configured by `DATA_DIR` and mounted into the container at `/data`. The default is `./data`, so manual installs store the database under the repository checkout. For a full secret-bearing backup, back up `crtwatch.sqlite` and its WAL files while the container is stopped, or use a SQLite online backup command from a maintenance shell.
 
 The Operations page can also create and retain full SQLite backup files inside `/data/backups`. These backups can be downloaded from the UI and are controlled by a keep-count retention setting.
 

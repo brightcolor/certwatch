@@ -88,9 +88,9 @@ function App() {
   useEffect(() => applyStatusFavicon(stats), [stats]);
   useEffect(() => {
     if (!user) return;
-    if (!window.history.state?.certwatch) window.history.replaceState({ certwatch: true, page: "dashboard", selected: null }, "");
+    if (!window.history.state?.crtwatch) window.history.replaceState({ crtwatch: true, page: "dashboard", selected: null }, "");
     const onPopState = () => {
-      const state = window.history.state?.certwatch ? window.history.state : { page: "dashboard", selected: null };
+      const state = window.history.state?.crtwatch ? window.history.state : { page: "dashboard", selected: null };
       setPage(state.page ?? "dashboard");
       setSelected(state.selected ?? null);
       if (!state.selected) {
@@ -223,14 +223,14 @@ function App() {
       setResults([]);
       setIncidents([]);
     }
-    window.history.pushState({ certwatch: true, page: nextPage, selected: nextSelected }, "");
+    window.history.pushState({ crtwatch: true, page: nextPage, selected: nextSelected }, "");
   };
   const backToOverview = () => {
-    if (window.history.state?.certwatch && window.history.state.selected) window.history.back();
+    if (window.history.state?.crtwatch && window.history.state.selected) window.history.back();
     else navigate("dashboard");
   };
 
-  if (!booted) return <main className="login"><div className="login-panel"><span className="eyebrow">CertWatch</span><h1>Loading</h1></div></main>;
+  if (!booted) return <main className="login"><div className="login-panel"><span className="eyebrow">crt.watch</span><h1>Loading</h1></div></main>;
   if (!user) return <Login setupRequired={setupRequired} onLogin={(result) => { applyTenants(result.tenants ?? []); setUser(result.user); setSetupRequired(false); }} />;
   const selectedMonitor = monitors.find((monitor) => monitor.id === selected);
 

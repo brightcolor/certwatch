@@ -64,7 +64,7 @@ describe("service checks", () => {
     const response = fakeResponse();
     metricsHandler({} as any, response as any);
 
-    expect(response.body).toContain("certwatch_monitor_status");
+    expect(response.body).toContain("crtwatch_monitor_status");
     expect(response.typeValue).toContain("text/plain");
   });
 });

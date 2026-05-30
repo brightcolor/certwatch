@@ -44,7 +44,7 @@ export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, 
   };
 
   return (
-    <div className={`app-wrapper layout-fixed sidebar-expand-lg sidebar-mini certwatch-adminlte${sidebarOpen ? " sidebar-open" : ""}${sidebarCollapsed ? " sidebar-collapse" : ""}`}>
+    <div className={`app-wrapper layout-fixed sidebar-expand-lg sidebar-mini crtwatch-adminlte${sidebarOpen ? " sidebar-open" : ""}${sidebarCollapsed ? " sidebar-collapse" : ""}`}>
       {sidebarOpen && <button className="sidebar-backdrop" type="button" aria-label="Close navigation" onClick={() => setSidebarOpen(false)} />}
       <nav className="app-header navbar navbar-expand bg-body border-bottom">
         <div className="container-fluid gap-2">
@@ -87,9 +87,9 @@ export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, 
       </nav>
       <aside className="app-sidebar bg-body-secondary shadow" data-bs-theme={theme === "dark" ? "dark" : "light"}>
         <div className="sidebar-brand">
-          <button className="brand-link" type="button" onClick={() => navigate("dashboard")} title="CertWatch">
+          <button className="brand-link" type="button" onClick={() => navigate("dashboard")} title="crt.watch">
             <span className="brand-image"><Activity size={18} /></span>
-            <span className="brand-text fw-semibold">CertWatch</span>
+            <span className="brand-text fw-semibold">crt.watch</span>
           </button>
         </div>
         <div className="sidebar-wrapper">
@@ -118,7 +118,7 @@ export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, 
         </div>
         <div className="app-content"><div className="container-fluid">{children}</div></div>
       </main>
-      <footer className="app-footer"><span>CertWatch v{version || "0.0.0"}</span><span className="ms-auto">Vibecoded with human review.</span></footer>
+      <footer className="app-footer"><span>crt.watch v{version || "0.0.0"}</span><span className="ms-auto">Vibecoded with human review.</span></footer>
     </div>
   );
 }

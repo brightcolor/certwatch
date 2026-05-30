@@ -25,5 +25,5 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/brightcolor/certwatch:latest
-            ghcr.io/brightcolor/certwatch:${{ github.sha }}
+            ghcr.io/brightcolor/crt-watch:latest
+            ghcr.io/brightcolor/crt-watch:${{ github.sha }}

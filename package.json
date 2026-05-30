@@ -1,6 +1,6 @@
 {
-  "name": "certwatch",
-  "version": "0.9.7",
+  "name": "crt.watch",
+  "version": "0.9.8",
   "private": true,
   "type": "module",
   "workspaces": [

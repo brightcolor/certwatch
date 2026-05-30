@@ -150,7 +150,7 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
             <label><input type="checkbox" checked={form.allowSelfSigned} onChange={(e) => set("allowSelfSigned", e.target.checked)} /> Allow self-signed</label>
             {sslLabsEligible(form.type, Number(form.port), form.config) && <label><input type="checkbox" checked={Boolean(form.config?.sslLabsEnabled)} onChange={(e) => setConfig("sslLabsEnabled", e.target.checked)} /> External SSL Labs check every 24h</label>}
           </div>
-          {!sslLabsEligible(form.type, Number(form.port), form.config) && <p className="muted">SSL Labs is available for public HTTPS hosts on port 443. STARTTLS, mail, and private targets continue to use CertWatch's local TLS checks.</p>}
+          {!sslLabsEligible(form.type, Number(form.port), form.config) && <p className="muted">SSL Labs is available for public HTTPS hosts on port 443. STARTTLS, mail, and private targets continue to use crt.watch's local TLS checks.</p>}
         </FormSection>}
         {usesServiceConfig(form.type) && <FormSection title="Service and login check">
             {usesHttpConfig(form.type) && <>

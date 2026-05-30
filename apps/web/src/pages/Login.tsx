@@ -26,9 +26,9 @@ export function Login({ setupRequired, onLogin }: { setupRequired: boolean; onLo
   return (
     <main className="login">
       <form onSubmit={submit} className="login-panel">
-        <span className="eyebrow">CertWatch</span>
+        <span className="eyebrow">crt.watch</span>
         <h1>{setupRequired ? "Create admin" : "Sign in"}</h1>
-        {setupRequired && <p className="muted">Create the first administrator account for this CertWatch instance.</p>}
+        {setupRequired && <p className="muted">Create the first administrator account for this crt.watch instance.</p>}
         <label>Email<input value={email} onChange={(e) => setEmail(e.target.value)} /></label>
         <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
         {setupRequired && <label>Confirm password<input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} /></label>}

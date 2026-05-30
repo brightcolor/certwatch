@@ -81,7 +81,7 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
         </div>
         <div className="panel">
           <h3>SSL Labs assessment</h3>
-          <p className="muted">Optional external SSL Labs v4 checks for public HTTPS hosts on port 443. CertWatch keeps local checks as the source of truth.</p>
+          <p className="muted">Optional external SSL Labs v4 checks for public HTTPS hosts on port 443. crt.watch keeps local checks as the source of truth.</p>
           <label><input type="checkbox" checked={sslLabs.enabled} onChange={(e) => setSslLabs({ ...sslLabs, enabled: e.target.checked })} /> Enabled</label>
           <label>Registered email<input value={sslLabs.registeredEmail ?? ""} onChange={(e) => setSslLabs({ ...sslLabs, registeredEmail: e.target.value })} placeholder="ops@example.com" /></label>
           <label>Interval hours<input type="number" min="24" value={sslLabs.intervalHours} onChange={(e) => setSslLabs({ ...sslLabs, intervalHours: Number(e.target.value) })} /></label>

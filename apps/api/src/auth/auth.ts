@@ -18,7 +18,7 @@ declare global {
   }
 }
 
-const cookieName = "certwatch_session";
+const cookieName = "crtwatch_session";
 
 export const login = async (email: string, password: string) => {
   const user = users.findByEmail(email);

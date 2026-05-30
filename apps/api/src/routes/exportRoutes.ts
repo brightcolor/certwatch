@@ -9,7 +9,7 @@ import { redactConfigSecrets } from "../utils/secrets.js";
 export const exportRoutes = Router();
 
 exportRoutes.get("/monitors.json", (req, res) => {
-  res.attachment("certwatch-monitors.json").json({ monitors: monitors.list(req.currentTenant!.id).map(publicMonitor) });
+  res.attachment("crtwatch-monitors.json").json({ monitors: monitors.list(req.currentTenant!.id).map(publicMonitor) });
 });
 
 exportRoutes.post("/monitors.json", (req, res) => {
@@ -23,7 +23,7 @@ exportRoutes.post("/monitors.json", (req, res) => {
 });
 
 exportRoutes.get("/backup.json", (_req, res) => {
-  res.attachment("certwatch-backup.json").json({
+  res.attachment("crtwatch-backup.json").json({
     version: 1,
     exportedAt: new Date().toISOString(),
     monitors: monitors.list(_req.currentTenant!.id).map(publicMonitor),
@@ -79,7 +79,7 @@ exportRoutes.get("/certificates.csv", (_req, res) => {
     const result = latest[monitor.id];
     rows.push([monitor.name, monitor.host, String(monitor.port), monitor.lastStatus, String(result?.daysRemaining ?? ""), result?.validUntil ?? "", result?.issuer ?? "", result?.fingerprintSha256 ?? "", result?.tlsGrade ?? "", result?.sslLabsGrade ?? "", result?.dns?.addresses.join(" ") ?? ""]);
   }
-  res.type("text/csv").attachment("certwatch-certificates.csv").send(toCsv(rows));
+  res.type("text/csv").attachment("crtwatch-certificates.csv").send(toCsv(rows));
 });
 
 exportRoutes.get("/history.csv", (_req, res) => {
@@ -89,7 +89,7 @@ exportRoutes.get("/history.csv", (_req, res) => {
       rows.push([monitor.id, result.checkedAt, result.status, result.message, String(result.daysRemaining ?? ""), result.validUntil ?? "", result.issuer ?? "", result.tlsGrade ?? "", result.sslLabsGrade ?? ""]);
     }
   }
-  res.type("text/csv").attachment("certwatch-history.csv").send(toCsv(rows));
+  res.type("text/csv").attachment("crtwatch-history.csv").send(toCsv(rows));
 });
 
 const toCsv = (rows: string[][]) => rows.map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");

@@ -8,7 +8,7 @@ const backupDir = path.join(path.dirname(env.databasePath), "backups");
 export const listBackups = () => {
   fs.mkdirSync(backupDir, { recursive: true });
   return fs.readdirSync(backupDir)
-    .filter((name) => /^certwatch-\d{8}-\d{6}\.sqlite$/.test(name))
+    .filter((name) => /^crtwatch-\d{8}-\d{6}\.sqlite$/.test(name))
     .map((name) => {
       const fullPath = path.join(backupDir, name);
       const stat = fs.statSync(fullPath);
@@ -19,7 +19,7 @@ export const listBackups = () => {
 
 export const createBackup = (settings: BackupSettings) => {
   fs.mkdirSync(backupDir, { recursive: true });
-  const name = `certwatch-${stamp(new Date())}.sqlite`;
+  const name = `crtwatch-${stamp(new Date())}.sqlite`;
   const target = path.join(backupDir, name);
   fs.copyFileSync(env.databasePath, target);
   pruneBackups(settings.keep);
@@ -27,7 +27,7 @@ export const createBackup = (settings: BackupSettings) => {
 };
 
 export const backupPath = (name: string) => {
-  if (!/^certwatch-\d{8}-\d{6}\.sqlite$/.test(name)) throw new Error("Invalid backup name.");
+  if (!/^crtwatch-\d{8}-\d{6}\.sqlite$/.test(name)) throw new Error("Invalid backup name.");
   return path.join(backupDir, name);
 };
 

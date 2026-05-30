@@ -1,8 +1,14 @@
 # Changelog
 
+## 0.9.8 - 2026-05-30
+
+- Rebranded the product UI, public status pages, notifications, documentation, logo, package metadata, and server logs to `crt.watch`.
+- Normalized Docker service, container, backup, export, database, cookie, and Prometheus metric names to the `crtwatch` / `crt-watch` naming scheme.
+- Updated quickstart configuration variables to the `CRTWATCH_` prefix while keeping the current GitHub repository URL as the source checkout.
+
 ## 0.9.7 - 2026-05-30
 
-- Removed the duplicate header brand so CertWatch is only shown in the sidebar brand area.
+- Removed the duplicate header brand so crt.watch is only shown in the sidebar brand area.
 - Added a functional desktop sidebar collapse that keeps icon-only navigation visible and shows labels on hover.
 - Removed the dashboard score ring while keeping the contextual health header and colored status summary chips.
 - Tuned dashboard row typography, certificate validity display, TLS/SSL grade alignment, and hover surfaces for a denser operator view.
@@ -95,9 +101,9 @@
 ## 0.7.0 - 2026-05-28
 
 - Added AdminLTE `4.0.0` as an optional frontend skin.
-- Added an Appearance panel in Settings to switch between the native CertWatch design and AdminLTE 4.
+- Added an Appearance panel in Settings to switch between the native crt.watch design and AdminLTE 4.
 - Reworked the main layout to use AdminLTE app wrapper, navbar, sidebar, content header, and content area classes when the AdminLTE skin is selected.
-- Mapped existing CertWatch dashboard cards, panels, tables, forms, and modals into the AdminLTE/Bootstrap visual system while preserving the existing React workflows.
+- Mapped existing crt.watch dashboard cards, panels, tables, forms, and modals into the AdminLTE/Bootstrap visual system while preserving the existing React workflows.
 
 ## 0.6.0 - 2026-05-19
 
@@ -218,9 +224,9 @@
 
 ## 0.1.0 - 2026-05-12
 
-- Initial CertWatch implementation.
-- Added a Linux quickstart script that clones the repository into `/opt/certwatch`, creates `.env`, and starts Docker Compose.
-- Added configurable Docker host port publishing through `HOST_PORT` and the quickstart `CERTWATCH_PORT` override.
+- Initial crt.watch implementation.
+- Added a Linux quickstart script that clones the repository into `/opt/crt.watch`, creates `.env`, and starts Docker Compose.
+- Added configurable Docker host port publishing through `HOST_PORT` and the quickstart `CRTWATCH_PORT` override.
 - Replaced environment-seeded admin credentials with a first-run web setup screen for creating the initial administrator.
 - Fixed STARTTLS negotiation by using protocol-aware multiline response parsing for SMTP, IMAP, and POP3.
 - Added direct SSL/TLS protocol presets with default ports for SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, and XMPP TLS.

@@ -1,14 +1,14 @@
 services:
-  certwatch:
-    image: ghcr.io/brightcolor/certwatch:latest
-    container_name: certwatch
+  crt-watch:
+    image: ghcr.io/brightcolor/crt-watch:latest
+    container_name: crt-watch
     restart: unless-stopped
     environment:
       - "NODE_ENV=${NODE_ENV:-production}"
       - "TZ=${TZ:-Europe/Berlin}"
       - "PORT=${PORT:-8080}"
       - "BASE_URL=${BASE_URL:-http://localhost:${HOST_PORT:-8080}}"
-      - "DATABASE_PATH=${DATABASE_PATH:-/data/certwatch.sqlite}"
+      - "DATABASE_PATH=${DATABASE_PATH:-/data/crtwatch.sqlite}"
       - "SESSION_SECRET=${SESSION_SECRET:-change-this-long-random-secret}"
       - "TRUST_PROXY=${TRUST_PROXY:-true}"
       - "COOKIE_SECURE=${COOKIE_SECURE:-false}"

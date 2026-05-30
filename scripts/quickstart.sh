@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_URL="${CERTWATCH_REPO_URL:-https://github.com/brightcolor/certwatch.git}"
-INSTALL_DIR="${CERTWATCH_INSTALL_DIR:-/opt/certwatch}"
-APP_PORT="${CERTWATCH_PORT:-8080}"
-CONTAINER_PORT="${CERTWATCH_CONTAINER_PORT:-8080}"
+REPO_URL="${CRTWATCH_REPO_URL:-https://github.com/brightcolor/certwatch.git}"
+INSTALL_DIR="${CRTWATCH_INSTALL_DIR:-/opt/crt.watch}"
+APP_PORT="${CRTWATCH_PORT:-8080}"
+CONTAINER_PORT="${CRTWATCH_CONTAINER_PORT:-8080}"
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "Please run this script as root, for example: sudo bash scripts/quickstart.sh"
@@ -39,7 +39,7 @@ if [[ -d "${INSTALL_DIR}/.git" ]]; then
   echo "Updating existing checkout in ${INSTALL_DIR}"
   git -C "${INSTALL_DIR}" pull --ff-only
 else
-  echo "Cloning CertWatch into ${INSTALL_DIR}"
+  echo "Cloning crt.watch into ${INSTALL_DIR}"
   mkdir -p "$(dirname "${INSTALL_DIR}")"
   git clone "${REPO_URL}" "${INSTALL_DIR}"
 fi
@@ -48,15 +48,15 @@ cd "${INSTALL_DIR}"
 mkdir -p data
 
 if [[ ! -f .env ]]; then
-  SESSION_SECRET="${CERTWATCH_SESSION_SECRET:-$(random_secret)}"
+  SESSION_SECRET="${CRTWATCH_SESSION_SECRET:-$(random_secret)}"
   cat > .env <<ENV
 NODE_ENV=production
-TZ=${CERTWATCH_TZ:-Europe/Berlin}
+TZ=${CRTWATCH_TZ:-Europe/Berlin}
 PORT=${CONTAINER_PORT}
 HOST_PORT=${APP_PORT}
 BASE_URL=http://localhost:${APP_PORT}
 DATA_DIR=./data
-DATABASE_PATH=/data/certwatch.sqlite
+DATABASE_PATH=/data/crtwatch.sqlite
 SESSION_SECRET=${SESSION_SECRET}
 TRUST_PROXY=true
 COOKIE_SECURE=false
@@ -73,11 +73,11 @@ else
   echo "Using existing ${INSTALL_DIR}/.env"
 fi
 
-docker compose pull certwatch
+docker compose pull crt-watch
 docker compose up -d
 
 echo
-echo "CertWatch is starting."
+echo "crt.watch is starting."
 echo "Open: http://localhost:${APP_PORT}"
 echo "First run: create the admin account in the browser."
 echo "Data bind mount: ${INSTALL_DIR}/data -> /data"

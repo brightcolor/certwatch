@@ -1,4 +1,4 @@
 services:
-  certwatch:
-    image: certwatch-local:dev
+  crt-watch:
+    image: crtwatch-local:dev
     build: .

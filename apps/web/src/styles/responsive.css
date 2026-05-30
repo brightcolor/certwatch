@@ -12,7 +12,7 @@
 }
 
 @media (max-width: 991.98px) {
-  .certwatch-adminlte .app-sidebar {
+  .crtwatch-adminlte .app-sidebar {
     position: fixed;
     top: 0;
     bottom: 0;
@@ -22,18 +22,18 @@
     transition: transform .2s ease;
   }
 
-  .certwatch-adminlte.sidebar-collapse .app-sidebar {
+  .crtwatch-adminlte.sidebar-collapse .app-sidebar {
     min-width: var(--lte-sidebar-width);
     max-width: var(--lte-sidebar-width);
   }
 
-  .certwatch-adminlte.sidebar-collapse .brand-text,
-  .certwatch-adminlte.sidebar-collapse .sidebar-menu .nav-link p {
+  .crtwatch-adminlte.sidebar-collapse .brand-text,
+  .crtwatch-adminlte.sidebar-collapse .sidebar-menu .nav-link p {
     max-width: none;
     visibility: visible;
   }
 
-  .certwatch-adminlte.sidebar-open .app-sidebar {
+  .crtwatch-adminlte.sidebar-open .app-sidebar {
     transform: translateX(0);
   }
 
@@ -52,7 +52,7 @@
     min-width: 100%;
   }
 
-  .certwatch-adminlte .app-header .container-fluid {
+  .crtwatch-adminlte .app-header .container-fluid {
     flex-wrap: wrap;
   }
 
