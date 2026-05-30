@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.0 - 2026-05-30
+
+- Added workspace permission groups with group roles and effective per-organization member roles.
+- Added member role editing, group assignment, group creation, group editing, and group deletion to the Workspaces UI.
+- Extended user management so platform admins can update platform roles and rotate user passwords.
+- Kept users multi-organization capable with independent rights per organization, including invite-time role selection that defaults to viewer.
+- Added personal alert preferences for non-critical events while critical delivery remains controlled by workspace admin routes.
+
 ## 0.10.0 - 2026-05-30
 
 - Added public registration that creates an isolated organization workspace for new users.

@@ -21,9 +21,10 @@ const providerFields: Record<string, Array<{ key: string; label: string; type?: 
 };
 
 export function Settings(props: any) {
-  const { channels, alerting, smtp, retention, routes, ctWatch, subscriptions } = props;
+  const { channels, alerting, smtp, retention, routes, personalAlerts, ctWatch, subscriptions } = props;
   const [channel, setChannel] = useState<any>({ name: "", type: "email", enabled: true, config: {} });
   const [alertForm, setAlertForm] = useState(alerting);
+  const [personalForm, setPersonalForm] = useState(personalAlerts);
   const [smtpForm, setSmtpForm] = useState(smtp);
   const [retentionForm, setRetentionForm] = useState(retention);
   const [ctForm, setCtForm] = useState(ctWatch);
@@ -32,6 +33,7 @@ export function Settings(props: any) {
   const fields = useMemo(() => providerFields[channel.type] ?? providerFields.webhook, [channel.type]);
 
   useEffect(() => setAlertForm(alerting), [alerting]);
+  useEffect(() => setPersonalForm(personalAlerts), [personalAlerts]);
   useEffect(() => setSmtpForm(smtp), [smtp]);
   useEffect(() => setRetentionForm(retention), [retention]);
   useEffect(() => setCtForm(ctWatch), [ctWatch]);
@@ -70,6 +72,21 @@ export function Settings(props: any) {
             <p className="mb-0">The previous native shell was removed so navigation, cards, alerts, and forms follow one consistent admin UI.</p>
           </div>
         </div>
+        <div className="panel">
+          <h3><Bell size={18} /> My alert preferences</h3>
+          <p className="muted">Personal alerts can subscribe to info, warning, and recovery events. Critical delivery always follows the workspace admin routes.</p>
+          {personalForm && <>
+            <label><input type="checkbox" checked={personalForm.enabled} onChange={(e) => setPersonalForm({ ...personalForm, enabled: e.target.checked })} /> Enable personal alerts</label>
+            <label>Tags<input value={(personalForm.tags ?? []).join(",")} placeholder="prod,mail or empty for all" onChange={(e) => setPersonalForm({ ...personalForm, tags: e.target.value.split(",").map((tag) => tag.trim()).filter(Boolean) })} /></label>
+            <div className="checks">
+              {["warning", "recovery", "info"].map((severity) => <label key={severity}><input type="checkbox" checked={(personalForm.severities ?? []).includes(severity)} onChange={() => setPersonalForm((current: any) => ({ ...current, severities: toggle(current.severities ?? [], severity) }))} /> {severity}</label>)}
+            </div>
+            <div className="grid two">{channels.map((item: any) => <div className="panel compact" key={item.id}><label><input type="checkbox" checked={(personalForm.channelIds ?? []).includes(item.id)} onChange={() => setPersonalForm((current: any) => ({ ...current, channelIds: toggle(current.channelIds ?? [], item.id) }))} /> {item.name}</label>{(personalForm.channelIds ?? []).includes(item.id) && <label>{recipientLabel(item.type)}<input value={personalForm.recipients?.[item.id] ?? ""} onChange={(e) => setPersonalForm((current: any) => ({ ...current, recipients: { ...(current.recipients ?? {}), [item.id]: e.target.value } }))} /></label>}</div>)}</div>
+            <button onClick={() => props.onSavePersonalAlerts(personalForm)}>Save my alerts</button>
+          </>}
+        </div>
+      </div>
+      <div className="grid two">
         <div className="panel">
           <h3><Bell size={18} /> Alert policy</h3>
           {alertForm && <>
@@ -190,3 +207,6 @@ const labelFor = (type: string) => ({
 }[type] ?? type);
 
 const recipientLabel = (type: string) => type === "email" ? "Recipients" : type === "telegram" ? "Chat ID" : type === "pushover" ? "User key" : type === "matrix" ? "Room ID" : "Target URL";
+
+const toggle = (values: string[], value: string) =>
+  values.includes(value) ? values.filter((item) => item !== value) : [...values, value];

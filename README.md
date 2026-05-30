@@ -26,7 +26,7 @@ This stack keeps the application easy to self-host while still supporting real T
 - Collapsible AdminLTE sidebar that can shrink to icon-only navigation while keeping labels available on hover
 - Live-refreshing UI views that update visible status, monitor details, operations, reports, users, workspaces, and settings without a manual reload
 - Dashboard problem chips that show certificate, TLS, DNS, SSL Labs, and service issues directly in the monitor overview
-- SaaS-ready workspace model with tenant-scoped monitors, notification providers, settings, public registration, invite links, and role-based memberships
+- SaaS-ready workspace model with tenant-scoped monitors, notification providers, settings, public registration, invite links, permission groups, and role-based memberships
 - Dynamic browser favicon that glows green when healthy and blinks red when attention is required
 - Monitor types for HTTPS, custom TCP TLS, SMTPS, IMAPS, POP3S, LDAPS, implicit FTPS, XMPP TLS, SMTP STARTTLS, IMAP STARTTLS, POP3 STARTTLS, and explicit FTP AUTH TLS
 - Service health checks for HTTP, HTTP login flows, raw TCP ports, DNS records, SSH, FTP, SMTP, IMAP, and POP3 banners
@@ -58,6 +58,7 @@ This stack keeps the application easy to self-host while still supporting real T
 - Global and per-monitor warning and critical expiry thresholds
 - Notification channels for SMTP email, Pushover, generic webhooks, Discord, Slack, Telegram, Gotify, ntfy-compatible endpoints, Microsoft Teams, Mattermost, Matrix, PagerDuty, and Opsgenie
 - Alert deduplication with resend interval, route-specific escalation delay, recovery messages, quiet hours, and per-monitor grace periods
+- Personal user alert preferences for warning, recovery, and info events while critical alerts stay controlled by workspace admin routes
 - Certificate change alerting can be controlled globally and per monitor
 - Enforced monitor and label-based maintenance windows that keep checks running while suppressing notifications
 - Incident acknowledgement, assignment, notes, and delivery visibility for alert troubleshooting
@@ -69,7 +70,7 @@ This stack keeps the application easy to self-host while still supporting real T
 - Scheduled SQLite database backups with UI download and retention controls
 - Local user login with bcrypt password hashes, secure sessions, CSRF token header, first-run admin setup, and organization self-registration
 - Admin-only user management with visible validation for password length and duplicate email addresses
-- Workspace roles for `owner`, `admin`, `member`, and `viewer`; existing self-hosted installs are migrated into a default workspace
+- Workspace roles for `owner`, `admin`, `member`, and `viewer`, plus workspace permission groups that grant an effective per-organization role; existing self-hosted installs are migrated into a default workspace
 - Encrypted storage for monitor login secrets, SMTP settings, and notification provider secrets using `SESSION_SECRET`
 - JSON monitor import/export and CSV exports for certificate summary and check history
 - REST API under `/api`
@@ -200,6 +201,8 @@ Notification providers are configured in the Settings page. Global SMTP settings
 
 Routes can match labels, severity, and provider targets. Each route can also define an escalation delay, so a route can notify a primary recipient immediately and a second recipient only after the problem remains unresolved for a configured time.
 
+Users can configure personal alert preferences for non-critical events in Settings. Personal preferences use the workspace's verified notification providers but can set the user's own recipient target, such as an email address, chat ID, or room ID. Critical alerts intentionally ignore personal preferences and always follow the workspace admin-defined monitor recipients and notification routes.
+
 Webhook payloads include monitor ID, monitor name, host, port, status, severity, message, days remaining, validity dates, issuer, SHA256 fingerprint, local TLS grade, optional SSL Labs grade, resolved addresses, DNS resolver mismatches, check time, and the monitor URL.
 
 ## REST API
@@ -298,8 +301,10 @@ crt.watch now has a workspace layer that prepares the app for SaaS operation:
 - Monitors, notification providers, alert policy, SMTP settings, TLS policy, discovery, status page settings, and backups are tenant-scoped.
 - Workspace memberships support `owner`, `admin`, `member`, and `viewer` roles.
 - Public registration creates an isolated organization workspace for the new user when `PUBLIC_REGISTRATION_ENABLED=true`.
-- Owners and workspace admins can invite users by email; existing users are added directly and new users get a time-limited invite link.
-- Viewers can read workspace data, members can operate monitors, and owners/admins can manage settings, providers, and members.
+- Owners and workspace admins can invite users by email with an explicit workspace role. If no role is selected, invites default to `viewer`.
+- The same user can belong to several organizations with different direct roles, for example admin in one workspace and viewer in another.
+- Workspace permission groups can grant additional roles to multiple members. The effective role is the highest direct or group role inside that organization.
+- Viewers can read workspace data, members can operate monitors, and owners/admins can manage settings, providers, groups, invites, and members.
 - Tenants include plan, status, monitor limit, and user limit fields so billing or subscription logic can be added later.
 
 Billing, automated invite emails, and per-tenant custom domains are intentionally not included yet.

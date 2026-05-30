@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { api, Monitor, CheckResult, Incident, StatusSubscription, TenantInvite, TenantMembership } from "./api/client";
+import { api, Monitor, CheckResult, Incident, StatusSubscription, TenantGroup, TenantInvite, TenantMembership, UserAlertSettings } from "./api/client";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./pages/Dashboard";
 import { FrontPage } from "./pages/FrontPage";
@@ -42,11 +42,13 @@ function App() {
   const [smtp, setSmtp] = useState<any>(null);
   const [retention, setRetention] = useState<any>(null);
   const [routes, setRoutes] = useState<any[]>([]);
+  const [personalAlerts, setPersonalAlerts] = useState<UserAlertSettings | null>(null);
   const [ctWatch, setCtWatch] = useState<any>(null);
   const [subscriptions, setSubscriptions] = useState<StatusSubscription[]>([]);
   const [tenants, setTenants] = useState<TenantMembership[]>([]);
   const [tenantMembers, setTenantMembers] = useState<any[]>([]);
   const [tenantInvites, setTenantInvites] = useState<TenantInvite[]>([]);
+  const [tenantGroups, setTenantGroups] = useState<TenantGroup[]>([]);
   const [tenantId, setTenantId] = useState(localStorage.getItem("tenantId") ?? "");
   const [users, setUsers] = useState<any[]>([]);
   const [version, setVersion] = useState("");
@@ -137,6 +139,7 @@ function App() {
     setRoutes(routesData);
     setCtWatch(ctWatchData);
     setSubscriptions(subscriptionData);
+    setPersonalAlerts(await api.request<UserAlertSettings>("/me/alert-settings"));
     setVersion((await api.request<any>("/version")).version);
     setTenants(await api.request<TenantMembership[]>("/tenants"));
     await loadTenantMembers();
@@ -172,18 +175,22 @@ function App() {
     const id = localStorage.getItem("tenantId");
     if (!id) {
       setTenantMembers([]);
+      setTenantGroups([]);
       return setTenantInvites([]);
     }
     try {
-      const [members, invites] = await Promise.all([
+      const [members, invites, groups] = await Promise.all([
         api.request<any[]>(`/tenants/${id}/members`),
-        api.request<TenantInvite[]>(`/tenants/${id}/invites`)
+        api.request<TenantInvite[]>(`/tenants/${id}/invites`),
+        api.request<TenantGroup[]>(`/tenants/${id}/groups`)
       ]);
       setTenantMembers(members);
       setTenantInvites(invites);
+      setTenantGroups(groups);
     } catch {
       setTenantMembers([]);
       setTenantInvites([]);
+      setTenantGroups([]);
     }
   };
 
@@ -299,6 +306,7 @@ function App() {
           smtp={smtp}
           retention={retention}
           routes={routes}
+          personalAlerts={personalAlerts}
           ctWatch={ctWatch}
           subscriptions={subscriptions}
           theme={themeMode}
@@ -310,6 +318,7 @@ function App() {
           onSaveSmtp={async (data: any) => { await api.request("/settings/smtp", { method: "PUT", body: JSON.stringify(data) }); await refresh(); }}
           onSaveRetention={async (data: any) => { await api.request("/settings/retention", { method: "PUT", body: JSON.stringify(data) }); await refresh(); }}
           onSaveRoutes={async (data: any) => { await api.request("/notification-routes", { method: "PUT", body: JSON.stringify(data) }); await refresh(); }}
+          onSavePersonalAlerts={async (data: any) => { const saved = await api.request<UserAlertSettings>("/me/alert-settings", { method: "PUT", body: JSON.stringify(data) }); setPersonalAlerts(saved); }}
           onSaveCtWatch={async (data: any) => { await api.request("/settings/ct-watch", { method: "PUT", body: JSON.stringify(data) }); await refresh(); }}
           onCheckCtWatch={async () => api.request("/ct-watch/check", { method: "POST", body: "{}" })}
           onDeleteSubscription={async (id: string) => { await api.request(`/subscriptions/${id}`, { method: "DELETE" }); await refresh(); }}
@@ -322,16 +331,20 @@ function App() {
           onRestore={async (backup: any) => { const result = await api.request("/export/restore", { method: "POST", body: JSON.stringify(backup) }); await refresh(); return result; }}
         />
       ) : page === "users" ? (
-        <UsersPage users={users} onCreate={async (data: any) => { await api.request("/users", { method: "POST", body: JSON.stringify(data) }); await refresh(); }} onDelete={async (id: string) => { await api.request(`/users/${id}`, { method: "DELETE" }); await refresh(); }} />
+        <UsersPage users={users} onCreate={async (data: any) => { await api.request("/users", { method: "POST", body: JSON.stringify(data) }); await refresh(); }} onUpdate={async (id: string, data: any) => { await api.request(`/users/${id}`, { method: "PUT", body: JSON.stringify(data) }); await refresh(); }} onDelete={async (id: string) => { await api.request(`/users/${id}`, { method: "DELETE" }); await refresh(); }} />
       ) : page === "tenants" ? (
         <TenantsPage
           tenants={tenants}
           members={tenantMembers}
           invites={tenantInvites}
+          groups={tenantGroups}
           onCreateTenant={async (name) => { const created = await api.request<any>("/tenants", { method: "POST", body: JSON.stringify({ name }) }); api.setTenant(created.tenantId); setTenantId(created.tenantId); await refresh(); }}
           onInviteMember={async (email, role) => { const result = await api.request<any>(`/tenants/${tenantId}/invites`, { method: "POST", body: JSON.stringify({ email, role }) }); await loadTenantMembers(); return result.invite ?? null; }}
+          onUpdateMember={async (userId, data) => { await api.request(`/tenants/${tenantId}/members/${userId}`, { method: "PUT", body: JSON.stringify(data) }); await loadTenantMembers(); }}
           onRemoveMember={async (userId) => { await api.request(`/tenants/${tenantId}/members/${userId}`, { method: "DELETE" }); await loadTenantMembers(); }}
           onDeleteInvite={async (inviteId) => { await api.request(`/tenants/${tenantId}/invites/${inviteId}`, { method: "DELETE" }); await loadTenantMembers(); }}
+          onSaveGroup={async (group) => { await api.request(group.id ? `/tenants/${tenantId}/groups/${group.id}` : `/tenants/${tenantId}/groups`, { method: group.id ? "PUT" : "POST", body: JSON.stringify(group) }); await loadTenantMembers(); }}
+          onDeleteGroup={async (groupId) => { await api.request(`/tenants/${tenantId}/groups/${groupId}`, { method: "DELETE" }); await loadTenantMembers(); }}
         />
       ) : page === "applications" ? (
         <Applications monitors={monitors} onSelect={(id) => navigate("dashboard", id)} />

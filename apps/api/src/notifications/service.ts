@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
-import type { CheckResult, Monitor, NotificationChannel, NotificationRoute, Severity, SmtpSettings, StatusSubscription } from "../types.js";
-import { alerts, appSettings, deliveries, results as checkResults } from "../storage/repositories.js";
+import type { CheckResult, Monitor, NotificationChannel, NotificationRoute, Severity, SmtpSettings, StatusSubscription, UserAlertSettings } from "../types.js";
+import { alerts, appSettings, deliveries, results as checkResults, userAlerts } from "../storage/repositories.js";
 import { alertFingerprint } from "../checks/status.js";
 import { isInMaintenance } from "../checks/maintenance.js";
 
@@ -117,16 +117,18 @@ const sendStatusSubscription = async (subscription: StatusSubscription, monitor:
 };
 
 const sendToChannels = async (monitor: Monitor, result: CheckResult, configured: NotificationChannel[]) => {
-  const selected = selectedChannelIds(monitor, result, appSettings.notificationRoutes(monitor.tenantId), configured.map((channel) => channel.id));
-  const targets = configured.filter((channel) => channel.enabled && selected.has(channel.id));
-  await Promise.allSettled(targets.map(async (channel) => {
-    const target = selected.get(channel.id) ?? "";
+  const selected = selectedAlertTargets(monitor, result, appSettings.notificationRoutes(monitor.tenantId), userAlerts.list(monitor.tenantId), configured.map((channel) => channel.id));
+  const targets = selected.flatMap((target) => {
+    const channel = configured.find((item) => item.id === target.channelId);
+    return channel?.enabled ? [{ channel, recipient: target.recipient }] : [];
+  });
+  await Promise.allSettled(targets.map(async ({ channel, recipient }) => {
     try {
-      await sendChannel(channel, monitor, result, target);
-      deliveries.record(deliveryBase(channel, monitor, result, target, "sent"));
+      await sendChannel(channel, monitor, result, recipient);
+      deliveries.record(deliveryBase(channel, monitor, result, recipient, "sent"));
       alerts.record(monitor.id, channel.id, result.severity, result.status, alertFingerprint(result), result.message);
     } catch (error) {
-      deliveries.record(deliveryBase(channel, monitor, result, target, "failed", error instanceof Error ? error.message : String(error)));
+      deliveries.record(deliveryBase(channel, monitor, result, recipient, "failed", error instanceof Error ? error.message : String(error)));
       throw error;
     }
   }));
@@ -152,7 +154,7 @@ const isWithinGracePeriod = (monitor: Monitor, result: CheckResult) => {
   return Date.now() - new Date(failureStartedAt).getTime() < monitor.gracePeriodSeconds * 1000;
 };
 
-const selectedChannelIds = (monitor: Monitor, result: CheckResult, routes: NotificationRoute[], fallback: string[]) => {
+const selectedAlertTargets = (monitor: Monitor, result: CheckResult, routes: NotificationRoute[], personal: UserAlertSettings[], fallback: string[]) => {
   const explicit = new Map<string, string>();
   for (const channelId of monitor.notificationChannelIds) explicit.set(channelId, monitor.notificationRecipients[channelId] ?? "");
   for (const route of routes) {
@@ -163,8 +165,27 @@ const selectedChannelIds = (monitor: Monitor, result: CheckResult, routes: Notif
     if (delayed) continue;
     if (tagMatch && severityMatch) route.channelIds.forEach((channelId) => explicit.set(channelId, route.recipients[channelId] ?? explicit.get(channelId) ?? ""));
   }
-  if (!explicit.size) return new Map(fallback.map((channelId) => [channelId, ""]));
-  return explicit;
+  if (!explicit.size) fallback.forEach((channelId) => explicit.set(channelId, ""));
+  const targets = [...explicit.entries()].map(([channelId, recipient]) => ({ channelId, recipient }));
+  if (result.severity !== "critical") {
+    for (const setting of personal) {
+      if (!setting.enabled || !setting.severities.includes(result.severity as any)) continue;
+      const tagMatch = !setting.tags.length || setting.tags.some((tag) => monitor.tags.includes(tag));
+      if (!tagMatch) continue;
+      setting.channelIds.forEach((channelId) => targets.push({ channelId, recipient: setting.recipients[channelId] ?? "" }));
+    }
+  }
+  return dedupeTargets(targets);
+};
+
+const dedupeTargets = (targets: Array<{ channelId: string; recipient: string }>) => {
+  const seen = new Set<string>();
+  return targets.filter((target) => {
+    const key = `${target.channelId}:${target.recipient}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 };
 
 const delayElapsed = (monitorId: string, delayMinutes: number) => {

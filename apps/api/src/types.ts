@@ -164,9 +164,12 @@ export interface TenantMembership {
   tenantId: string;
   userId: string;
   role: TenantRole;
+  effectiveRole?: TenantRole;
   createdAt: string;
   tenant: Tenant;
   userEmail?: string;
+  groupIds?: string[];
+  groupNames?: string[];
 }
 
 export interface TenantInvite {
@@ -179,6 +182,27 @@ export interface TenantInvite {
   acceptedAt?: string | null;
   expiresAt: string;
   createdAt: string;
+}
+
+export interface TenantGroup {
+  id: string;
+  tenantId: string;
+  name: string;
+  role: TenantRole;
+  memberIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserAlertSettings {
+  tenantId: string;
+  userId: string;
+  enabled: boolean;
+  tags: string[];
+  severities: Exclude<Severity, "critical">[];
+  channelIds: string[];
+  recipients: Record<string, string>;
+  updatedAt: string;
 }
 
 export interface AlertingSettings {

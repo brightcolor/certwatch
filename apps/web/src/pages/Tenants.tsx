@@ -1,18 +1,23 @@
 import { useState } from "react";
-import type { TenantInvite, TenantMembership } from "../api/client";
+import type { TenantGroup, TenantInvite, TenantMembership } from "../api/client";
 
-export function TenantsPage({ tenants, members, invites, onCreateTenant, onInviteMember, onRemoveMember, onDeleteInvite }: {
+export function TenantsPage({ tenants, members, invites, groups, onCreateTenant, onInviteMember, onUpdateMember, onRemoveMember, onDeleteInvite, onSaveGroup, onDeleteGroup }: {
   tenants: TenantMembership[];
   members: any[];
   invites: TenantInvite[];
+  groups: TenantGroup[];
   onCreateTenant: (name: string) => Promise<void>;
   onInviteMember: (email: string, role: string) => Promise<TenantInvite | null>;
+  onUpdateMember: (userId: string, data: { role?: string; groupIds?: string[] }) => Promise<void>;
   onRemoveMember: (userId: string) => Promise<void>;
   onDeleteInvite: (inviteId: string) => Promise<void>;
+  onSaveGroup: (group: { id?: string; name: string; role: string; memberIds: string[] }) => Promise<void>;
+  onDeleteGroup: (groupId: string) => Promise<void>;
 }) {
   const current = tenants.find((item) => item.tenantId === localStorage.getItem("tenantId")) ?? tenants[0];
   const [tenantName, setTenantName] = useState("");
   const [member, setMember] = useState({ email: "", role: "viewer" });
+  const [group, setGroup] = useState<{ id?: string; name: string; role: string; memberIds: string[] }>({ name: "", role: "viewer", memberIds: [] });
   const [latestInvite, setLatestInvite] = useState("");
 
   const inviteMember = async (event: React.FormEvent) => {
@@ -20,6 +25,12 @@ export function TenantsPage({ tenants, members, invites, onCreateTenant, onInvit
     const invite = await onInviteMember(member.email, member.role);
     setLatestInvite(invite?.inviteUrl ?? "");
     setMember({ email: "", role: "viewer" });
+  };
+  const saveGroup = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!group.name.trim()) return;
+    await onSaveGroup({ ...group, name: group.name.trim() });
+    setGroup({ name: "", role: "viewer", memberIds: [] });
   };
 
   return (
@@ -59,8 +70,30 @@ export function TenantsPage({ tenants, members, invites, onCreateTenant, onInvit
         </form>
         <div className="panel">
           <h3>Members</h3>
-          {members.map((item) => <div className="channel" key={item.userId}><strong>{item.email}</strong><span>{item.role}</span><button onClick={() => onRemoveMember(item.userId)}>Remove</button></div>)}
+          {members.map((item) => <MemberRow member={item} groups={groups} onSave={onUpdateMember} onRemove={onRemoveMember} key={item.userId} />)}
           {!members.length && <span className="muted">No members loaded.</span>}
+        </div>
+      </div>
+      <div className="grid two">
+        <form className="panel" onSubmit={saveGroup}>
+          <h3>{group.id ? "Edit group" : "Create group"}</h3>
+          <p className="muted">Groups grant an additional workspace role. A member's effective role is the highest direct or group role.</p>
+          <label>Name<input value={group.name} onChange={(event) => setGroup({ ...group, name: event.target.value })} /></label>
+          <label>Group role<select value={group.role} onChange={(event) => setGroup({ ...group, role: event.target.value })}>
+            <option value="viewer">Viewer</option>
+            <option value="member">Member</option>
+            <option value="admin">Admin</option>
+            <option value="owner">Owner</option>
+          </select></label>
+          <div className="checks">
+            {members.map((item) => <label key={item.userId}><input type="checkbox" checked={group.memberIds.includes(item.userId)} onChange={() => setGroup((current) => ({ ...current, memberIds: toggle(current.memberIds, item.userId) }))} /> {item.email}</label>)}
+          </div>
+          <div className="actions"><button>{group.id ? "Save group" : "Create group"}</button>{group.id && <button className="ghost" type="button" onClick={() => setGroup({ name: "", role: "viewer", memberIds: [] })}>Cancel edit</button>}</div>
+        </form>
+        <div className="panel">
+          <h3>Groups</h3>
+          {groups.map((item) => <div className="channel" key={item.id}><strong>{item.name}</strong><span>{item.role} - {item.memberIds.length} members</span><div className="actions end"><button onClick={() => setGroup({ id: item.id, name: item.name, role: item.role, memberIds: item.memberIds })}>Edit</button><button onClick={() => onDeleteGroup(item.id)}>Delete</button></div></div>)}
+          {!groups.length && <span className="muted">No groups created.</span>}
         </div>
       </div>
       <div className="panel">
@@ -83,3 +116,30 @@ export function TenantsPage({ tenants, members, invites, onCreateTenant, onInvit
 function Info({ label, value }: { label: string; value?: string }) {
   return <div className="info"><span>{label}</span><strong>{value || "-"}</strong></div>;
 }
+
+function MemberRow({ member, groups, onSave, onRemove }: { member: any; groups: TenantGroup[]; onSave: (userId: string, data: { role?: string; groupIds?: string[] }) => Promise<void>; onRemove: (userId: string) => Promise<void> }) {
+  const [role, setRole] = useState(member.role);
+  const [groupIds, setGroupIds] = useState<string[]>(member.groupIds ?? []);
+  return (
+    <div className="member-row">
+      <div>
+        <strong>{member.email}</strong>
+        <span>Effective: {member.effectiveRole ?? member.role}{member.groupNames?.length ? ` via ${member.groupNames.join(", ")}` : ""}</span>
+      </div>
+      <label>Direct role<select value={role} onChange={(event) => setRole(event.target.value)}>
+        <option value="viewer">Viewer</option>
+        <option value="member">Member</option>
+        <option value="admin">Admin</option>
+        <option value="owner">Owner</option>
+      </select></label>
+      <div className="checks compact-checks">
+        {groups.map((group) => <label key={group.id}><input type="checkbox" checked={groupIds.includes(group.id)} onChange={() => setGroupIds((current) => toggle(current, group.id))} /> {group.name}</label>)}
+        {!groups.length && <span className="muted">No groups</span>}
+      </div>
+      <div className="actions end"><button onClick={() => onSave(member.userId, { role, groupIds })}>Save</button><button onClick={() => onRemove(member.userId)}>Remove</button></div>
+    </div>
+  );
+}
+
+const toggle = (values: string[], value: string) =>
+  values.includes(value) ? values.filter((item) => item !== value) : [...values, value];

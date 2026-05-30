@@ -71,7 +71,7 @@ export const resolveTenant = (req: Request, res: Response, next: NextFunction) =
   const requested = req.get("x-tenant-id");
   const membership = memberships.find((item) => item.tenantId === requested) ?? memberships[0];
   req.currentTenant = membership.tenant;
-  req.tenantRole = membership.role;
+  req.tenantRole = membership.effectiveRole ?? membership.role;
   req.tenantMemberships = memberships;
   next();
 };

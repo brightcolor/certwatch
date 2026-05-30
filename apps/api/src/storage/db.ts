@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import initSqlJs, { Database as SqlJsDatabase, SqlValue } from "sql.js";
 import { env } from "../config/env.js";
-import type { ApiToken, CheckResult, Incident, Monitor, NotificationChannel, NotificationDelivery, StatusSubscription, Tenant, TenantInvite, TenantMembership, User } from "../types.js";
+import type { ApiToken, CheckResult, Incident, Monitor, NotificationChannel, NotificationDelivery, StatusSubscription, Tenant, TenantGroup, TenantInvite, TenantMembership, User, UserAlertSettings } from "../types.js";
 import { DEFAULT_TENANT_ID } from "../types.js";
 import { decryptConfigSecrets } from "../utils/secrets.js";
 
@@ -133,6 +133,31 @@ export const migrate = () => {
       accepted_at TEXT,
       expires_at TEXT NOT NULL,
       created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS tenant_groups (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      role TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS tenant_group_members (
+      group_id TEXT NOT NULL REFERENCES tenant_groups(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL,
+      PRIMARY KEY (group_id, user_id)
+    );
+    CREATE TABLE IF NOT EXISTS user_alert_settings (
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      enabled INTEGER NOT NULL DEFAULT 0,
+      tags_json TEXT NOT NULL DEFAULT '[]',
+      severities_json TEXT NOT NULL DEFAULT '[]',
+      channel_ids_json TEXT NOT NULL DEFAULT '[]',
+      recipients_json TEXT NOT NULL DEFAULT '{}',
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (tenant_id, user_id)
     );
     CREATE TABLE IF NOT EXISTS monitors (
       id TEXT PRIMARY KEY,
@@ -489,9 +514,12 @@ export const rowToMembership = (row: any): TenantMembership => ({
   tenantId: row.tenant_id,
   userId: row.user_id,
   role: row.role,
+  effectiveRole: row.effective_role ?? row.role,
   createdAt: row.created_at,
   tenant: rowToTenant(row),
-  userEmail: row.email
+  userEmail: row.email,
+  groupIds: parse<string[]>(row.group_ids_json, []),
+  groupNames: parse<string[]>(row.group_names_json, [])
 });
 
 export const rowToInvite = (row: any): TenantInvite => ({
@@ -504,4 +532,25 @@ export const rowToInvite = (row: any): TenantInvite => ({
   acceptedAt: row.accepted_at,
   expiresAt: row.expires_at,
   createdAt: row.created_at
+});
+
+export const rowToTenantGroup = (row: any): TenantGroup => ({
+  id: row.id,
+  tenantId: row.tenant_id,
+  name: row.name,
+  role: row.role,
+  memberIds: parse<string[]>(row.member_ids_json, []),
+  createdAt: row.created_at,
+  updatedAt: row.updated_at
+});
+
+export const rowToUserAlertSettings = (row: any): UserAlertSettings => ({
+  tenantId: row.tenant_id,
+  userId: row.user_id,
+  enabled: Boolean(row.enabled),
+  tags: parse<string[]>(row.tags_json, []),
+  severities: parse(row.severities_json, []),
+  channelIds: parse<string[]>(row.channel_ids_json, []),
+  recipients: parse<Record<string, string>>(row.recipients_json, {}),
+  updatedAt: row.updated_at
 });

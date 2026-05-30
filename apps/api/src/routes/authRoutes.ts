@@ -86,7 +86,10 @@ const withMemberships = (user: ReturnType<typeof publicUser>, csrfToken: string 
 
 const publicMembership = (membership: any) => ({
   tenantId: membership.tenantId,
-  role: membership.role,
+  role: membership.effectiveRole ?? membership.role,
+  directRole: membership.role,
+  groupIds: membership.groupIds ?? [],
+  groupNames: membership.groupNames ?? [],
   tenant: membership.tenant
 });
 

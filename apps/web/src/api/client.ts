@@ -98,6 +98,9 @@ export interface StatusSubscription {
 export interface TenantMembership {
   tenantId: string;
   role: "owner" | "admin" | "member" | "viewer";
+  directRole?: "owner" | "admin" | "member" | "viewer";
+  groupIds?: string[];
+  groupNames?: string[];
   tenant: {
     id: string;
     name: string;
@@ -118,6 +121,27 @@ export interface TenantInvite {
   expiresAt: string;
   createdAt: string;
   inviteUrl: string;
+}
+
+export interface TenantGroup {
+  id: string;
+  tenantId: string;
+  name: string;
+  role: "owner" | "admin" | "member" | "viewer";
+  memberIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserAlertSettings {
+  tenantId: string;
+  userId: string;
+  enabled: boolean;
+  tags: string[];
+  severities: Array<"info" | "warning" | "recovery">;
+  channelIds: string[];
+  recipients: Record<string, string>;
+  updatedAt: string;
 }
 
 let csrfToken = localStorage.getItem("csrfToken") ?? "";

@@ -99,6 +99,33 @@
   padding: .8rem 0 0;
 }
 
+.member-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(140px, .55fr) minmax(180px, 1fr) auto;
+  gap: .8rem;
+  align-items: center;
+  border-top: 1px solid var(--bs-border-color);
+  padding: .85rem 0 0;
+}
+
+.member-row > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: .15rem;
+}
+
+.member-row strong,
+.member-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compact-checks {
+  min-height: 0;
+  padding: .45rem;
+}
+
 .group-row {
   border-top: 0;
   border-bottom: 1px solid var(--bs-border-color);

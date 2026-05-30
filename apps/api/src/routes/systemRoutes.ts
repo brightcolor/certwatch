@@ -4,7 +4,7 @@ import { z } from "zod";
 import { id } from "../utils/id.js";
 import { nowIso } from "../utils/time.js";
 import { env } from "../config/env.js";
-import { alerts, appSettings, channels, incidents, monitors, results, subscriptions, tenantInvites, tenants, users } from "../storage/repositories.js";
+import { alerts, appSettings, channels, incidents, monitors, results, subscriptions, tenantGroups, tenantInvites, tenants, userAlerts, users } from "../storage/repositories.js";
 import { testChannel } from "../notifications/service.js";
 import { requireAdmin, requireTenantRole } from "../auth/auth.js";
 import { discoverMonitors } from "../checks/discovery.js";
@@ -54,6 +54,7 @@ systemRoutes.post("/tenants/:id/members", requireTenantRole("owner", "admin"), (
   if (req.params.id !== req.currentTenant!.id) return res.status(403).json({ error: "Select the workspace first." });
   const parsed = memberSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid member." });
+  if (!canAssignRole(req, parsed.data.role)) return res.status(403).json({ error: "Only workspace owners can assign owner rights." });
   const user = users.findByEmail(parsed.data.email);
   if (!user) return res.status(404).json({ error: "User must exist before it can be added to a workspace." });
   const tenant = tenants.get(req.currentTenant!.id);
@@ -61,10 +62,49 @@ systemRoutes.post("/tenants/:id/members", requireTenantRole("owner", "admin"), (
   tenants.addMember(req.currentTenant!.id, user.id, parsed.data.role);
   res.status(201).json(publicMember(tenants.members(req.currentTenant!.id).find((item) => item.userId === user.id)!));
 });
+systemRoutes.put("/tenants/:id/members/:userId", requireTenantRole("owner", "admin"), (req, res) => {
+  if (req.params.id !== req.currentTenant!.id) return res.status(403).json({ error: "Select the workspace first." });
+  const parsed = updateMemberSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid member update." });
+  if (parsed.data.role && !canAssignRole(req, parsed.data.role)) return res.status(403).json({ error: "Only workspace owners can assign owner rights." });
+  if (req.params.userId === req.user!.id && parsed.data.role && parsed.data.role !== "owner" && req.tenantRole === "owner") return res.status(409).json({ error: "You cannot downgrade your own owner membership." });
+  if (parsed.data.role) tenants.updateMember(req.currentTenant!.id, req.params.userId, parsed.data.role);
+  if (parsed.data.groupIds) tenantGroups.setUserGroups(req.currentTenant!.id, req.params.userId, parsed.data.groupIds);
+  const member = tenants.members(req.currentTenant!.id).find((item) => item.userId === req.params.userId);
+  if (!member) return res.status(404).json({ error: "Member not found." });
+  res.json(publicMember(member));
+});
 systemRoutes.delete("/tenants/:id/members/:userId", requireTenantRole("owner", "admin"), (req, res) => {
   if (req.params.id !== req.currentTenant!.id) return res.status(403).json({ error: "Select the workspace first." });
   if (req.params.userId === req.user!.id) return res.status(409).json({ error: "You cannot remove your own workspace membership." });
+  tenantGroups.pruneUser(req.currentTenant!.id, req.params.userId);
+  userAlerts.deleteForUser(req.currentTenant!.id, req.params.userId);
   tenants.removeMember(req.currentTenant!.id, req.params.userId);
+  res.status(204).end();
+});
+systemRoutes.get("/tenants/:id/groups", requireTenantRole("owner", "admin"), (req, res) => {
+  if (req.params.id !== req.currentTenant!.id) return res.status(403).json({ error: "Select the workspace first." });
+  res.json(tenantGroups.list(req.currentTenant!.id));
+});
+systemRoutes.post("/tenants/:id/groups", requireTenantRole("owner", "admin"), (req, res) => {
+  if (req.params.id !== req.currentTenant!.id) return res.status(403).json({ error: "Select the workspace first." });
+  const parsed = groupSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid group." });
+  if (!canAssignRole(req, parsed.data.role)) return res.status(403).json({ error: "Only workspace owners can create owner groups." });
+  res.status(201).json(tenantGroups.create(req.currentTenant!.id, parsed.data.name, parsed.data.role, parsed.data.memberIds));
+});
+systemRoutes.put("/tenants/:id/groups/:groupId", requireTenantRole("owner", "admin"), (req, res) => {
+  if (req.params.id !== req.currentTenant!.id) return res.status(403).json({ error: "Select the workspace first." });
+  const parsed = groupSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid group." });
+  if (!canAssignRole(req, parsed.data.role)) return res.status(403).json({ error: "Only workspace owners can assign owner groups." });
+  const group = tenantGroups.update(req.params.groupId, req.currentTenant!.id, parsed.data.name, parsed.data.role, parsed.data.memberIds);
+  if (!group) return res.status(404).json({ error: "Group not found." });
+  res.json(group);
+});
+systemRoutes.delete("/tenants/:id/groups/:groupId", requireTenantRole("owner", "admin"), (req, res) => {
+  if (req.params.id !== req.currentTenant!.id) return res.status(403).json({ error: "Select the workspace first." });
+  tenantGroups.delete(req.params.groupId, req.currentTenant!.id);
   res.status(204).end();
 });
 systemRoutes.get("/tenants/:id/invites", requireTenantRole("owner", "admin"), (req, res) => {
@@ -75,6 +115,7 @@ systemRoutes.post("/tenants/:id/invites", requireTenantRole("owner", "admin"), (
   if (req.params.id !== req.currentTenant!.id) return res.status(403).json({ error: "Select the workspace first." });
   const parsed = memberSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid invitation." });
+  if (!canAssignRole(req, parsed.data.role)) return res.status(403).json({ error: "Only workspace owners can invite owners." });
   const tenant = tenants.get(req.currentTenant!.id);
   const memberCount = tenants.members(req.currentTenant!.id).length;
   const inviteCount = tenantInvites.list(req.currentTenant!.id).length;
@@ -95,6 +136,12 @@ systemRoutes.delete("/tenants/:id/invites/:inviteId", requireTenantRole("owner",
   if (req.params.id !== req.currentTenant!.id) return res.status(403).json({ error: "Select the workspace first." });
   tenantInvites.delete(req.params.inviteId, req.currentTenant!.id);
   res.status(204).end();
+});
+systemRoutes.get("/me/alert-settings", (req, res) => res.json(userAlerts.get(req.currentTenant!.id, req.user!.id)));
+systemRoutes.put("/me/alert-settings", (req, res) => {
+  const parsed = userAlertSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid personal alert settings." });
+  res.json(userAlerts.upsert({ ...parsed.data, tenantId: req.currentTenant!.id, userId: req.user!.id, updatedAt: nowIso() }));
 });
 systemRoutes.get("/settings/ct-watch", (req, res) => res.json(appSettings.ctWatch(req.currentTenant!.id)));
 systemRoutes.put("/settings/ct-watch", requireTenantRole("owner", "admin"), (req, res) => {
@@ -237,7 +284,26 @@ const routeSchema = z.object({
 
 const memberSchema = z.object({
   email: z.string().trim().email().transform((email) => email.toLowerCase()),
-  role: z.enum(["owner", "admin", "member", "viewer"])
+  role: z.enum(["owner", "admin", "member", "viewer"]).default("viewer")
+});
+
+const updateMemberSchema = z.object({
+  role: z.enum(["owner", "admin", "member", "viewer"]).optional(),
+  groupIds: z.array(z.string().uuid()).optional()
+});
+
+const groupSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  role: z.enum(["owner", "admin", "member", "viewer"]).default("viewer"),
+  memberIds: z.array(z.string().uuid()).default([])
+});
+
+const userAlertSchema = z.object({
+  enabled: z.boolean(),
+  tags: z.array(z.string().trim().min(1).max(40)).default([]),
+  severities: z.array(z.enum(["info", "warning", "recovery"])).default(["warning", "recovery"]),
+  channelIds: z.array(z.string().uuid()).default([]),
+  recipients: z.record(z.string().max(2000)).default({})
 });
 
 const ctWatchSchema = z.object({
@@ -288,8 +354,8 @@ const redactChannel = (channel: any) => ({
 });
 
 const publicUser = (user: any) => ({ id: user.id, email: user.email, role: user.role, createdAt: user.createdAt });
-const publicMembership = (membership: any) => ({ tenantId: membership.tenantId, role: membership.role, tenant: membership.tenant });
-const publicMember = (membership: any) => ({ userId: membership.userId, email: membership.userEmail, role: membership.role, createdAt: membership.createdAt });
+const publicMembership = (membership: any) => ({ tenantId: membership.tenantId, role: membership.effectiveRole ?? membership.role, directRole: membership.role, groupIds: membership.groupIds ?? [], groupNames: membership.groupNames ?? [], tenant: membership.tenant });
+const publicMember = (membership: any) => ({ userId: membership.userId, email: membership.userEmail, role: membership.role, effectiveRole: membership.effectiveRole ?? membership.role, groupIds: membership.groupIds ?? [], groupNames: membership.groupNames ?? [], createdAt: membership.createdAt });
 const publicInvite = (invite: any) => ({
   id: invite.id,
   tenantId: invite.tenantId,
@@ -299,6 +365,8 @@ const publicInvite = (invite: any) => ({
   createdAt: invite.createdAt,
   inviteUrl: `${env.baseUrl.replace(/\/$/, "")}/?invite=${encodeURIComponent(invite.token)}`
 });
+
+const canAssignRole = (req: any, role: string) => role !== "owner" || req.tenantRole === "owner";
 
 const checkCtWatch = async (tenantId: string) => {
   const settings = appSettings.ctWatch(tenantId);
