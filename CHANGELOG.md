@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.5 - 2026-05-30
+
+- Restored the larger dark dashboard health header and KPI card styling while removing the old circular score display.
+- Kept the dashboard summary chips, KPI cards, status chips, messages, and problem chips clickable as monitor filters.
+
 ## 0.11.4 - 2026-05-30
 
 - Rebranded the visible product name, public pages, authentication screens, notifications, README, license, and logo asset to `sender.report`.
