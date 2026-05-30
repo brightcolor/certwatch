@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.2 - 2026-05-30
+
+- Fixed dashboard status filter chips so inactive filters stay neutral gray and only selected filters use status colors.
+- Kept the `All` filter selected only when no individual status filters are active.
+
 ## 0.11.1 - 2026-05-30
 
 - Added a manual SSL Labs trigger API for public HTTPS targets and eligible monitor detail pages.
