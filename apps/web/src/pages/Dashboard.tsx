@@ -8,6 +8,7 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
   const [viewMode, setViewMode] = useState<"grouped" | "list">("grouped");
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [issueFilters, setIssueFilters] = useState<string[]>([]);
+  const [expandedIssueMonitor, setExpandedIssueMonitor] = useState<string | null>(null);
   const filtered = monitors.filter((monitor: Monitor) =>
     [monitor.name, monitor.host, monitor.tags.join(" ")].join(" ").toLowerCase().includes(query.toLowerCase())
     && (!statusFilters.length || statusFilters.includes(monitor.lastStatus))
@@ -24,6 +25,7 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
   const toggleIssue = (issue: string) => {
     setIssueFilters((current) => current.includes(issue) ? current.filter((item) => item !== issue) : [...current, issue]);
   };
+  const toggleExpandedIssues = (monitorId: string) => setExpandedIssueMonitor((current) => current === monitorId ? null : monitorId);
 
   return (
     <section className="content">
@@ -85,15 +87,15 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
                 {statusOptions.slice(0, 4).map((item) => <button type="button" className={`mini-count mini-${item.status.toLowerCase()}`} key={item.status} onClick={() => setOnlyStatuses([item.status])}><b>{item.short}</b>{group.counts[item.status] ?? 0}</button>)}
               </div>
             </div>
-            {group.monitors.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} onStatus={toggleStatus} onIssue={toggleIssue} issueFilters={issueFilters} key={monitor.id} />)}
+            {group.monitors.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} onStatus={toggleStatus} onIssue={toggleIssue} onMoreIssues={toggleExpandedIssues} issueFilters={issueFilters} expandedIssues={expandedIssueMonitor === monitor.id} key={monitor.id} />)}
           </section>
-        )) : filtered.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} onStatus={toggleStatus} onIssue={toggleIssue} issueFilters={issueFilters} key={monitor.id} />)}
+        )) : filtered.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} onStatus={toggleStatus} onIssue={toggleIssue} onMoreIssues={toggleExpandedIssues} issueFilters={issueFilters} expandedIssues={expandedIssueMonitor === monitor.id} key={monitor.id} />)}
       </div>
     </section>
   );
 }
 
-function MonitorRow({ monitor, onSelect, onCheck, onClone, onStatus, onIssue, issueFilters }: { monitor: Monitor; onSelect: (id: string) => void; onCheck: (id: string) => void; onClone: (id: string) => void; onStatus: (status: string) => void; onIssue: (issue: string) => void; issueFilters: string[] }) {
+function MonitorRow({ monitor, onSelect, onCheck, onClone, onStatus, onIssue, onMoreIssues, issueFilters, expandedIssues }: { monitor: Monitor; onSelect: (id: string) => void; onCheck: (id: string) => void; onClone: (id: string) => void; onStatus: (status: string) => void; onIssue: (issue: string) => void; onMoreIssues: (id: string) => void; issueFilters: string[]; expandedIssues: boolean }) {
   const reason = resultReason(monitor);
   return (
     <div className={`monitor-row tone-${monitor.lastStatus.toLowerCase()}`} onClick={() => onSelect(monitor.id)}>
@@ -101,7 +103,7 @@ function MonitorRow({ monitor, onSelect, onCheck, onClone, onStatus, onIssue, is
       <div className="monitor-main">
         <strong>{monitor.name}</strong>
         <button type="button" className="message-filter" title="Filter by this message" onClick={(event) => { event.stopPropagation(); onIssue(reason); }}>{reason}</button>
-        <ProblemBadges monitor={monitor} onIssue={onIssue} issueFilters={issueFilters} />
+        <ProblemBadges monitor={monitor} onIssue={onIssue} onMoreIssues={onMoreIssues} issueFilters={issueFilters} expanded={expandedIssues} />
       </div>
       <div className="monitor-target"><strong>{monitor.host}:{monitor.port}</strong><small>{monitor.type} - {monitor.tags.join(", ") || "unlabeled"}</small></div>
       <div className="monitor-cert"><span className="cert-line"><strong>{certificateSummary(monitor)}</strong><small>{certificateDetail(monitor)}</small>{gradePill(monitor)}{sslLabsPill(monitor)}</span></div>
@@ -140,12 +142,15 @@ const gradePill = (monitor: Monitor) =>
 const sslLabsPill = (monitor: Monitor) =>
   monitor.latestResult?.sslLabsGrade ? <span className={`grade-pill grade-${monitor.latestResult.sslLabsGrade.toLowerCase().slice(0, 1)}`}>SSL Labs {monitor.latestResult.sslLabsGrade}</span> : null;
 
-function ProblemBadges({ monitor, onIssue, issueFilters }: { monitor: Monitor; onIssue: (issue: string) => void; issueFilters: string[] }) {
+function ProblemBadges({ monitor, onIssue, onMoreIssues, issueFilters, expanded }: { monitor: Monitor; onIssue: (issue: string) => void; onMoreIssues: (id: string) => void; issueFilters: string[]; expanded: boolean }) {
   const problems = problemSummary(monitor);
   if (!problems.length) return null;
+  const visible = expanded ? problems : problems.slice(0, 1);
+  const remaining = problems.length - visible.length;
   return (
-    <span className="problem-list" title={problems.join("\n")}>
-      {problems.map((problem) => <button type="button" className={`problem-chip problem-${problemTone(monitor.lastStatus)} ${issueFilters.includes(problem) ? "active" : ""}`} key={problem} onClick={(event) => { event.stopPropagation(); onIssue(problem); }}>{problem}</button>)}
+    <span className={`problem-list ${expanded ? "expanded" : ""}`} title={problems.join("\n")}>
+      {visible.map((problem) => <button type="button" className={`problem-chip problem-${problemTone(monitor.lastStatus)} ${issueFilters.includes(problem) ? "active" : ""}`} key={problem} onClick={(event) => { event.stopPropagation(); onIssue(problem); }}>{problem}</button>)}
+      {remaining > 0 && <button type="button" className="problem-chip problem-more" onClick={(event) => { event.stopPropagation(); onMoreIssues(monitor.id); }}>+{remaining} more</button>}
     </span>
   );
 }

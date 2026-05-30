@@ -4,6 +4,7 @@
 
 - Added clickable dashboard status summaries, metric cards, row status marks, result messages, and problem chips as filters.
 - Added issue filters so operators can isolate monitors with the same warning, error, DNS mismatch, TLS deduction, or SSL Labs finding.
+- Kept the dashboard row design compact by showing the first problem inline and expanding additional clickable messages only on demand.
 - Changed DNS resolver comparison to run fresh on every monitor check instead of reusing cached DNS samples.
 - Removed the per-monitor DNS comparison interval field from the monitor form.
 
