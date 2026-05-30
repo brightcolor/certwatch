@@ -60,7 +60,7 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
             {canTriggerSslLabs && <button className="btn btn-outline-secondary" disabled={sslLabsState.busy} onClick={triggerSslLabs}>SSL Labs</button>}
             <button className="btn btn-outline-secondary" onClick={onClone}><Copy size={16} /> Clone</button>
             <button className="btn btn-outline-secondary" onClick={onEdit}>Edit</button>
-            <button className="btn btn-outline-danger" onClick={() => { if (confirm(`Delete monitor "${monitor.name}"?`)) onDelete(); }}>Delete</button>
+            <button className="btn btn-outline-danger danger" onClick={() => { if (confirm(`Delete monitor "${monitor.name}"?`)) onDelete(); }}>Delete</button>
           </div>
         </div>
         {sslLabsState.message && <p className="muted">{sslLabsState.message}</p>}

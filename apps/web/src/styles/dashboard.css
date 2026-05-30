@@ -25,7 +25,7 @@ button.filter-chip,
   color: var(--bs-secondary-color) !important;
   padding: .25rem .65rem !important;
   font-size: .78rem;
-  font-weight: 700;
+  font-weight: 600;
   box-shadow: none !important;
   cursor: pointer;
 }
@@ -168,7 +168,7 @@ button.filter-all.active {
   margin: .25rem 0 .35rem;
   color: var(--bs-emphasis-color);
   font-size: clamp(1.7rem, 2.7vw, 2.65rem);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .hero-copy p {
@@ -239,7 +239,7 @@ button.mini-count,
   border-radius: 999px;
   padding: .16rem .5rem !important;
   font-size: .78rem;
-  font-weight: 800;
+  font-weight: 600;
   box-shadow: none !important;
   cursor: pointer;
 }
@@ -337,7 +337,7 @@ button.status-mark,
   border-radius: .45rem;
   padding: 0 !important;
   font-size: .75rem;
-  font-weight: 900;
+  font-weight: 600;
   box-shadow: none !important;
   cursor: pointer;
 }
@@ -377,7 +377,7 @@ button.status-mark,
 .monitor-target strong {
   overflow: hidden;
   color: var(--bs-emphasis-color);
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.15;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -419,7 +419,7 @@ button.status-mark,
 
 .monitor-cert {
   color: var(--bs-emphasis-color);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .monitor-state {
@@ -472,7 +472,7 @@ button.status-mark,
   padding: .1rem .36rem !important;
   overflow: hidden;
   font-size: .68rem;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;

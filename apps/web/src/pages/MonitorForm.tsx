@@ -101,7 +101,7 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
             <h2>{monitor ? "Edit monitor" : "New monitor"}</h2>
             <p className="muted">Configure the target, schedule, validation, login checks, and alert routing.</p>
           </div>
-          <button type="button" className="ghost" onClick={onCancel}>Close</button>
+          <button type="button" className="danger" onClick={onCancel}>Close</button>
         </div>
         <FormSection title="Target">
           <label>Name<input value={form.name} onChange={(e) => set("name", e.target.value)} required /></label>
@@ -200,7 +200,7 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
           </div>
         </div>
         <label>Notes<textarea value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value)} /></label>
-        <div className="actions end"><button type="button" className="ghost" onClick={onCancel}>Cancel</button><button type="button" onClick={() => onSaveAndCheck(data())}>Save and check</button><button type="submit">Save</button></div>
+        <div className="actions end"><button type="button" className="danger" onClick={onCancel}>Cancel</button><button type="button" className="success" onClick={() => onSaveAndCheck(data())}>Save and check</button><button className="success" type="submit">Save</button></div>
       </form>
     </div>
   );

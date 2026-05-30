@@ -118,19 +118,35 @@ textarea {
 button:not(.btn):not(.nav-link):not(.brand-link):not(.dropdown-item):not(.list-group-item),
 .button-link {
   display: inline-flex;
-  min-height: 38px;
+  min-height: 34px;
   align-items: center;
   justify-content: center;
-  gap: .5rem;
+  gap: .42rem;
   border: 1px solid var(--bs-primary);
   border-radius: var(--bs-border-radius);
   background: var(--bs-primary);
   color: #fff;
-  padding: .5rem .85rem;
+  padding: .38rem .68rem;
   cursor: pointer;
+  font-size: .86rem;
+  font-weight: 600;
+  line-height: 1.2;
   text-decoration: none;
   white-space: nowrap;
   box-shadow: 0 .35rem .75rem rgba(var(--bs-primary-rgb), .16);
+}
+
+.btn {
+  --bs-btn-font-weight: 600;
+  --bs-btn-padding-y: .34rem;
+  --bs-btn-padding-x: .66rem;
+  --bs-btn-font-size: .86rem;
+}
+
+.btn-sm {
+  --bs-btn-padding-y: .22rem;
+  --bs-btn-padding-x: .5rem;
+  --bs-btn-font-size: .8rem;
 }
 
 .btn-primary,
@@ -188,8 +204,42 @@ button.icon:hover {
 }
 
 button.danger {
-  border-color: rgba(var(--bs-danger-rgb), .35);
-  color: var(--bs-danger);
+  border-color: rgba(var(--bs-danger-rgb), .72) !important;
+  background: rgba(var(--bs-danger-rgb), .14) !important;
+  color: var(--bs-danger) !important;
+  box-shadow: none !important;
+}
+
+button.danger:hover {
+  background: var(--bs-danger) !important;
+  color: #fff !important;
+  filter: none !important;
+}
+
+button.success {
+  border-color: rgba(var(--bs-success-rgb), .72) !important;
+  background: rgba(var(--bs-success-rgb), .16) !important;
+  color: var(--bs-success) !important;
+  box-shadow: none !important;
+}
+
+button.success:hover {
+  background: var(--bs-success) !important;
+  color: #07140b !important;
+  filter: none !important;
+}
+
+button.warning {
+  border-color: rgba(var(--bs-warning-rgb), .72) !important;
+  background: rgba(var(--bs-warning-rgb), .18) !important;
+  color: var(--bs-warning) !important;
+  box-shadow: none !important;
+}
+
+button.warning:hover {
+  background: var(--bs-warning) !important;
+  color: #171006 !important;
+  filter: none !important;
 }
 
 button:disabled {
@@ -287,7 +337,7 @@ h1,
 h2,
 h3 {
   color: var(--bs-emphasis-color);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 code {

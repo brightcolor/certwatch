@@ -82,7 +82,7 @@ export function Settings(props: any) {
               {["warning", "recovery", "info"].map((severity) => <label key={severity}><input type="checkbox" checked={(personalForm.severities ?? []).includes(severity)} onChange={() => setPersonalForm((current: any) => ({ ...current, severities: toggle(current.severities ?? [], severity) }))} /> {severity}</label>)}
             </div>
             <div className="grid two">{channels.map((item: any) => <div className="panel compact" key={item.id}><label><input type="checkbox" checked={(personalForm.channelIds ?? []).includes(item.id)} onChange={() => setPersonalForm((current: any) => ({ ...current, channelIds: toggle(current.channelIds ?? [], item.id) }))} /> {item.name}</label>{(personalForm.channelIds ?? []).includes(item.id) && <label>{recipientLabel(item.type)}<input value={personalForm.recipients?.[item.id] ?? ""} onChange={(e) => setPersonalForm((current: any) => ({ ...current, recipients: { ...(current.recipients ?? {}), [item.id]: e.target.value } }))} /></label>}</div>)}</div>
-            <button onClick={() => props.onSavePersonalAlerts(personalForm)}>Save my alerts</button>
+            <button className="success" onClick={() => props.onSavePersonalAlerts(personalForm)}>Save my alerts</button>
           </>}
         </div>
       </div>
@@ -105,7 +105,7 @@ export function Settings(props: any) {
               <label>Quiet start<input type="time" value={alertForm.quietStart} onChange={(e) => setAlertForm({ ...alertForm, quietStart: e.target.value })} /></label>
               <label>Quiet end<input type="time" value={alertForm.quietEnd} onChange={(e) => setAlertForm({ ...alertForm, quietEnd: e.target.value })} /></label>
             </div>
-            <button onClick={() => props.onSaveAlerting(alertForm)}>Save alert policy</button>
+            <button className="success" onClick={() => props.onSaveAlerting(alertForm)}>Save alert policy</button>
           </>}
         </div>
         <div className="panel">
@@ -122,7 +122,7 @@ export function Settings(props: any) {
               <label><input type="checkbox" checked={smtpForm.starttls} onChange={(e) => setSmtpForm({ ...smtpForm, starttls: e.target.checked })} /> Require STARTTLS</label>
               <label><input type="checkbox" checked={smtpForm.secure} onChange={(e) => setSmtpForm({ ...smtpForm, secure: e.target.checked })} /> Direct TLS</label>
             </div>
-            <button onClick={() => props.onSaveSmtp(smtpForm)}>Save SMTP settings</button>
+            <button className="success" onClick={() => props.onSaveSmtp(smtpForm)}>Save SMTP settings</button>
           </>}
         </div>
       </div>
@@ -132,7 +132,7 @@ export function Settings(props: any) {
           {retentionForm && <>
             <label>Check history days<input type="number" min="1" max="3650" value={retentionForm.checkResultsDays} onChange={(e) => setRetentionForm({ ...retentionForm, checkResultsDays: Number(e.target.value) })} /></label>
             <label>Alert history days<input type="number" min="1" max="3650" value={retentionForm.alertHistoryDays} onChange={(e) => setRetentionForm({ ...retentionForm, alertHistoryDays: Number(e.target.value) })} /></label>
-            <button onClick={() => props.onSaveRetention(retentionForm)}>Save retention</button>
+            <button className="success" onClick={() => props.onSaveRetention(retentionForm)}>Save retention</button>
           </>}
         </div>
         <div className="panel">
@@ -140,7 +140,7 @@ export function Settings(props: any) {
           {ctForm && <>
             <label className="inline"><input type="checkbox" checked={ctForm.enabled} onChange={(e) => setCtForm({ ...ctForm, enabled: e.target.checked })} /> Enabled</label>
             <label>Watched domains<textarea value={(ctForm.domains ?? []).join("\n")} placeholder="example.com" onChange={(e) => setCtForm({ ...ctForm, domains: e.target.value.split(/\s+/).map((value) => value.trim()).filter(Boolean) })} /></label>
-            <div className="actions"><button onClick={() => props.onSaveCtWatch(ctForm)}>Save CT watch</button><button className="ghost" onClick={async () => setCtResult(await props.onCheckCtWatch())}>Check now</button></div>
+            <div className="actions"><button className="success" onClick={() => props.onSaveCtWatch(ctForm)}>Save CT watch</button><button className="ghost" onClick={async () => setCtResult(await props.onCheckCtWatch())}>Check now</button></div>
             {ctResult && <p className="muted">{ctResult.changes?.length ? `${ctResult.changes.length} CT changes found.` : "No CT changes found."}</p>}
           </>}
         </div>
@@ -153,12 +153,12 @@ export function Settings(props: any) {
           <label>Severity<select value={routeForm.severities[0] ?? "critical"} onChange={(e) => setRouteForm({ ...routeForm, severities: [e.target.value] })}><option value="warning">Warning</option><option value="critical">Critical</option><option value="recovery">Recovery</option></select></label>
           <label>Escalation delay minutes<input type="number" min="0" max="10080" value={routeForm.delayMinutes} onChange={(e) => setRouteForm({ ...routeForm, delayMinutes: Number(e.target.value) })} /></label>
           <div className="grid two">{channels.map((item: any) => <div className="panel compact" key={item.id}><label><input type="checkbox" checked={routeForm.channelIds.includes(item.id)} onChange={() => setRouteForm((current) => ({ ...current, channelIds: current.channelIds.includes(item.id) ? current.channelIds.filter((id) => id !== item.id) : [...current.channelIds, item.id] }))} /> {item.name}</label>{routeForm.channelIds.includes(item.id) && <label>{recipientLabel(item.type)}<input value={routeForm.recipients[item.id] ?? ""} onChange={(e) => setRouteForm((current) => ({ ...current, recipients: { ...current.recipients, [item.id]: e.target.value } }))} /></label>}</div>)}</div>
-          <button onClick={addRoute}>Add route</button>
-          {(routes ?? []).map((route: any) => <div className="channel" key={route.id}><strong>{route.name}</strong><span>{route.tags.join(", ") || "all tags"} - {route.severities.join(", ")} - delay {route.delayMinutes ?? 0} min</span><button onClick={() => props.onSaveRoutes(routes.filter((item: any) => item.id !== route.id))}>Delete</button></div>)}
+          <button className="success" onClick={addRoute}>Add route</button>
+          {(routes ?? []).map((route: any) => <div className="channel" key={route.id}><strong>{route.name}</strong><span>{route.tags.join(", ") || "all tags"} - {route.severities.join(", ")} - delay {route.delayMinutes ?? 0} min</span><button className="danger" onClick={() => props.onSaveRoutes(routes.filter((item: any) => item.id !== route.id))}>Delete</button></div>)}
         </div>
         <div className="panel">
           <h3>Status page subscriptions</h3>
-          {(subscriptions ?? []).map((item: any) => <div className="channel" key={item.id}><strong>{item.tags.join(" + ") || "all"}</strong><span>{item.type} - {item.enabled ? "active" : "pending opt-in"} - {item.target}</span><button onClick={() => props.onDeleteSubscription(item.id)}>Delete</button></div>)}
+          {(subscriptions ?? []).map((item: any) => <div className="channel" key={item.id}><strong>{item.tags.join(" + ") || "all"}</strong><span>{item.type} - {item.enabled ? "active" : "pending opt-in"} - {item.target}</span><button className="danger" onClick={() => props.onDeleteSubscription(item.id)}>Delete</button></div>)}
           {!(subscriptions ?? []).length && <span className="muted">No public status page subscriptions yet.</span>}
         </div>
       </div>
@@ -172,7 +172,7 @@ export function Settings(props: any) {
           {!fields.length && <p className="muted">Recipients are configured on each monitor or notification route.</p>}
           {fields.map((field) => <label key={field.key}>{field.label}<input type={field.type ?? "text"} value={channel.config[field.key] ?? ""} placeholder={field.placeholder} onChange={(e) => setConfig(field.key, e.target.value)} /></label>)}
           <label className="inline"><input type="checkbox" checked={channel.enabled} onChange={(e) => setChannel({ ...channel, enabled: e.target.checked })} /> Enabled</label>
-          <button onClick={saveChannel}>Save provider</button>
+          <button className="success" onClick={saveChannel}>Save provider</button>
         </div>
         <div className="panel">
           <h3>Configured providers</h3>
@@ -180,7 +180,7 @@ export function Settings(props: any) {
             <div className="channel" key={item.id}>
               <strong>{item.name}</strong>
               <span>{labelFor(item.type)} - {item.enabled ? "enabled" : "disabled"}</span>
-              <div className="actions end"><button onClick={() => props.onTest(item.id)}>Test</button><button className="icon" title="Delete provider" onClick={() => props.onDeleteChannel(item.id)}><Trash2 size={16} /></button></div>
+              <div className="actions end"><button onClick={() => props.onTest(item.id)}>Test</button><button className="icon danger" title="Delete provider" onClick={() => props.onDeleteChannel(item.id)}><Trash2 size={16} /></button></div>
             </div>
           ))}
           {!channels.length && <span className="muted">No notification providers configured.</span>}

@@ -34,7 +34,7 @@ export function UsersPage({ users, currentUser, platformSettings, onSavePlatform
           <h3>Registration</h3>
           <p className="muted">This controls public self-signup. Invite links still work when public registration is disabled.</p>
           <label><input type="checkbox" checked={settings.publicRegistrationEnabled} onChange={(event) => setSettings({ ...settings, publicRegistrationEnabled: event.target.checked })} /> Allow public organization registration</label>
-          <button onClick={async () => { await onSavePlatformSettings(settings); setMessage("Registration settings saved."); }}>Save registration settings</button>
+          <button className="success" onClick={async () => { await onSavePlatformSettings(settings); setMessage("Registration settings saved."); }}>Save registration settings</button>
         </div>
         <form className="panel" onSubmit={submit}>
           <h3>Create user</h3>
@@ -45,7 +45,7 @@ export function UsersPage({ users, currentUser, platformSettings, onSavePlatform
           <label>Current workspace role<select value={form.workspaceRole} onChange={(e) => setForm({ ...form, workspaceRole: e.target.value })}>{workspaceRoleOptions()}</select></label>
           {error && <p className="error">{error}</p>}
           {message && <p className="success">{message}</p>}
-          <button type="submit" disabled={saving}>{saving ? "Creating..." : "Create user"}</button>
+          <button className="success" type="submit" disabled={saving}>{saving ? "Creating..." : "Create user"}</button>
         </form>
         <div className="panel">
           <h3>Platform users</h3>
@@ -71,9 +71,9 @@ function UserRow({ user, currentUser, onUpdate, onDelete, onImpersonate }: any) 
       <label>Platform role<select value={role} onChange={(event) => setRole(event.target.value)}>{platformRoleOptions()}</select></label>
       <label>New password<input type="password" minLength={12} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Leave empty to keep" /></label>
       <div className="actions end">
-        <button onClick={() => { onUpdate(user.id, { role, password }); setPassword(""); }}>Save</button>
-        <button disabled={self} onClick={() => onImpersonate(user.id)}>Impersonate</button>
-        <button disabled={self} onClick={() => onDelete(user.id)}>Delete</button>
+        <button className="success" onClick={() => { onUpdate(user.id, { role, password }); setPassword(""); }}>Save</button>
+        <button className="warning" disabled={self} onClick={() => onImpersonate(user.id)}>Impersonate</button>
+        <button className="danger" disabled={self} onClick={() => onDelete(user.id)}>Delete</button>
       </div>
     </div>
   );

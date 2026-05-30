@@ -51,7 +51,7 @@ export function TenantsPage({ tenants, members, invites, groups, onCreateTenant,
           <h3>Create workspace</h3>
           <p className="muted">New workspaces are isolated from monitors, notification providers, and tenant-scoped settings.</p>
           <label>Name<input value={tenantName} onChange={(event) => setTenantName(event.target.value)} /></label>
-          <button>Create workspace</button>
+          <button className="success">Create workspace</button>
         </form>
       </div>
       <div className="grid two">
@@ -65,7 +65,7 @@ export function TenantsPage({ tenants, members, invites, groups, onCreateTenant,
             <option value="admin">Admin</option>
             <option value="owner">Owner</option>
           </select></label>
-          <button>Invite member</button>
+          <button className="success">Invite member</button>
           {latestInvite && <div className="info invite-url"><span>Invite link</span><code>{latestInvite}</code><button type="button" onClick={() => navigator.clipboard.writeText(latestInvite)}>Copy</button></div>}
         </form>
         <div className="panel">
@@ -88,11 +88,11 @@ export function TenantsPage({ tenants, members, invites, groups, onCreateTenant,
           <div className="checks">
             {members.map((item) => <label key={item.userId}><input type="checkbox" checked={group.memberIds.includes(item.userId)} onChange={() => setGroup((current) => ({ ...current, memberIds: toggle(current.memberIds, item.userId) }))} /> {item.email}</label>)}
           </div>
-          <div className="actions"><button>{group.id ? "Save group" : "Create group"}</button>{group.id && <button className="ghost" type="button" onClick={() => setGroup({ name: "", role: "viewer", memberIds: [] })}>Cancel edit</button>}</div>
+          <div className="actions"><button className="success">{group.id ? "Save group" : "Create group"}</button>{group.id && <button className="danger" type="button" onClick={() => setGroup({ name: "", role: "viewer", memberIds: [] })}>Cancel edit</button>}</div>
         </form>
         <div className="panel">
           <h3>Groups</h3>
-          {groups.map((item) => <div className="channel" key={item.id}><strong>{item.name}</strong><span>{item.role} - {item.memberIds.length} members</span><div className="actions end"><button onClick={() => setGroup({ id: item.id, name: item.name, role: item.role, memberIds: item.memberIds })}>Edit</button><button onClick={() => onDeleteGroup(item.id)}>Delete</button></div></div>)}
+          {groups.map((item) => <div className="channel" key={item.id}><strong>{item.name}</strong><span>{item.role} - {item.memberIds.length} members</span><div className="actions end"><button onClick={() => setGroup({ id: item.id, name: item.name, role: item.role, memberIds: item.memberIds })}>Edit</button><button className="danger" onClick={() => onDeleteGroup(item.id)}>Delete</button></div></div>)}
           {!groups.length && <span className="muted">No groups created.</span>}
         </div>
       </div>
@@ -104,7 +104,7 @@ export function TenantsPage({ tenants, members, invites, groups, onCreateTenant,
             <span>{invite.role}</span>
             <code>{invite.inviteUrl}</code>
             <button onClick={() => navigator.clipboard.writeText(invite.inviteUrl)}>Copy</button>
-            <button onClick={() => onDeleteInvite(invite.id)}>Revoke</button>
+            <button className="danger" onClick={() => onDeleteInvite(invite.id)}>Revoke</button>
           </div>
         ))}
         {!invites.length && <span className="muted">No pending invites.</span>}
@@ -136,7 +136,7 @@ function MemberRow({ member, groups, onSave, onRemove }: { member: any; groups: 
         {groups.map((group) => <label key={group.id}><input type="checkbox" checked={groupIds.includes(group.id)} onChange={() => setGroupIds((current) => toggle(current, group.id))} /> {group.name}</label>)}
         {!groups.length && <span className="muted">No groups</span>}
       </div>
-      <div className="actions end"><button onClick={() => onSave(member.userId, { role, groupIds })}>Save</button><button onClick={() => onRemove(member.userId)}>Remove</button></div>
+      <div className="actions end"><button className="success" onClick={() => onSave(member.userId, { role, groupIds })}>Save</button><button className="danger" onClick={() => onRemove(member.userId)}>Remove</button></div>
     </div>
   );
 }

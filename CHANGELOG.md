@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.1 - 2026-05-31
+
+- Reduced UI font weights so interface text does not exceed `600`, including dashboard monitor names and targets.
+- Made default and Bootstrap buttons more compact.
+- Added consistent semantic button styling for success, warning, and destructive actions across monitor, user, workspace, settings, import, and operations screens.
+
 ## 0.12.0 - 2026-05-30
 
 - Added a `super_admin` platform role and migrated existing platform admins to super admins.
