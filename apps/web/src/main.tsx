@@ -281,7 +281,7 @@ function App() {
     if (inviteToken) window.history.replaceState(window.history.state, "", window.location.pathname);
   };
 
-  if (!booted) return <main className="login"><div className="login-panel"><span className="eyebrow">sender.report</span><h1>Loading</h1></div></main>;
+  if (!booted) return <main className="login"><div className="login-panel"><span className="eyebrow">crt.watch</span><h1>Loading</h1></div></main>;
   if (!user && setupRequired) return <Login setupRequired registrationEnabled={false} onLogin={finishLogin} />;
   if (!user && authMode === "register") return <Register inviteToken={inviteToken} onBack={() => setAuthMode("login")} onLogin={finishLogin} />;
   if (!user && publicConfig.frontPageEnabled && authMode === "front") {

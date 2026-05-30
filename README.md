@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="assets/sender.report-logo.svg" alt="sender.report logo" width="720">
+  <img src="assets/crt.watch-logo.svg" alt="crt.watch logo" width="720">
 </p>
 
-# sender.report
+# crt.watch
 
-sender.report is a self-hosted monitoring service for SSL/TLS certificates, TLS service configuration, and lightweight service health checks. It is intentionally similar in operating style to Uptime Kuma, but focused on certificate expiry, hostname mismatches, certificate chain issues, STARTTLS services, protocol availability, and alert deduplication.
+crt.watch is a self-hosted monitoring service for SSL/TLS certificates, TLS service configuration, and lightweight service health checks. It is intentionally similar in operating style to Uptime Kuma, but focused on certificate expiry, hostname mismatches, certificate chain issues, STARTTLS services, protocol availability, and alert deduplication.
 
 The codebase is deliberately simple and compact. It also shows the signs of a fast AI-assisted build, so review the security and operational defaults before exposing it beyond a trusted network.
 
@@ -21,7 +21,7 @@ This stack keeps the application easy to self-host while still supporting real T
 ## Features
 
 - Dashboard with OK, warning, critical, down, paused, and unknown status counts
-- Public frontpage that explains sender.report before operators sign in, controlled by `FRONT_PAGE_ENABLED`
+- Public frontpage that explains crt.watch before operators sign in, controlled by `FRONT_PAGE_ENABLED`
 - Dark, colorful dashboard with a contextual health header, grouped checklist rows, color-coded multi-select status filters, and monitor cloning
 - Collapsible AdminLTE sidebar that can shrink to icon-only navigation while keeping labels available on hover
 - Live-refreshing UI views that update visible status, monitor details, operations, reports, users, workspaces, and settings without a manual reload
@@ -101,7 +101,7 @@ For a fresh Linux server with Docker already installed, run:
 curl -fsSL https://raw.githubusercontent.com/brightcolor/crt.watch/main/scripts/quickstart.sh | sudo bash
 ```
 
-The script clones the current GitHub repository into `/opt/sender.report`, creates `/opt/sender.report/.env` with generated secrets, creates a local `data` bind-mount directory, pulls the published GHCR image, and starts the stack with Docker Compose.
+The script clones the current GitHub repository into `/opt/crt.watch`, creates `/opt/crt.watch/.env` with generated secrets, creates a local `data` bind-mount directory, pulls the published GHCR image, and starts the stack with Docker Compose.
 
 If the repository is private, use a GitHub token that can read the repository:
 
@@ -115,7 +115,7 @@ Optional overrides:
 curl -fsSL https://raw.githubusercontent.com/brightcolor/crt.watch/main/scripts/quickstart.sh | sudo CRTWATCH_PORT=8080 bash
 ```
 
-To publish sender.report on a different host port, set `CRTWATCH_PORT`:
+To publish crt.watch on a different host port, set `CRTWATCH_PORT`:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/brightcolor/crt.watch/main/scripts/quickstart.sh | sudo CRTWATCH_PORT=8888 bash
@@ -139,7 +139,7 @@ SESSION_SECRET=use-a-long-random-secret
 BASE_URL=http://localhost:8080
 ```
 
-3. Start sender.report:
+3. Start crt.watch:
 
 ```bash
 docker compose up -d
@@ -151,9 +151,9 @@ docker compose up -d
 http://localhost:8080
 ```
 
-On first launch, sender.report shows a setup screen where the first user creates the administrator account.
+On first launch, crt.watch shows a setup screen where the first user creates the administrator account.
 
-The public marketing frontpage is enabled by default. Disable it with `FRONT_PAGE_ENABLED=false` when sender.report should open directly on the sign-in screen. Public organization signup is controlled separately with `PUBLIC_REGISTRATION_ENABLED`; invitation links keep working even when public signup is disabled.
+The public marketing frontpage is enabled by default. Disable it with `FRONT_PAGE_ENABLED=false` when crt.watch should open directly on the sign-in screen. Public organization signup is controlled separately with `PUBLIC_REGISTRATION_ENABLED`; invitation links keep working even when public signup is disabled.
 
 For local development, the Vite frontend runs on `http://localhost:5173` and proxies `/api`, `/metrics`, and `/public` to the API server on `http://localhost:8080`.
 
@@ -175,7 +175,7 @@ Use the same label on related monitors to model one application with multiple ch
 
 ## Service Checks
 
-sender.report can monitor certificate-focused targets and general service availability from the same monitor list.
+crt.watch can monitor certificate-focused targets and general service availability from the same monitor list.
 
 - HTTP checks validate the status code and can optionally require a response substring.
 - HTTP login checks support Basic Auth or form POST checks. Login credentials are encrypted at rest and masked in API/UI responses.
@@ -284,7 +284,7 @@ The Operations page contains production controls that are intentionally kept out
 - Maintenance windows for labels or individual monitors. Supported formats include `daily 22:00-23:00`, `mon-fri 01:00-02:00`, and ISO intervals such as `2026-06-01T20:00:00/2026-06-01T22:00:00`.
 - TLS policy profiles for grading, including minimum TLS version, weak cipher penalty, and SAN requirements.
 - Intensive TLS probing can be enabled in Operations. It performs additional handshakes to detect supported TLS versions and feeds those findings into the grade.
-- SSL Labs external assessment can be enabled in Operations with a registered SSL Labs API email. There is no API key field; SSL Labs v4 expects the registered organization email in the `email` header. The Operations UI can submit the one-time SSL Labs API registration for first name, last name, email, and organization, then save the email for future assessments. Operators can also trigger a manual assessment from Operations or an eligible HTTPS monitor detail page. sender.report respects the scheduled minimum 24-hour per-host interval and lets manual triggers choose cached or fresh SSL Labs scans.
+- SSL Labs external assessment can be enabled in Operations with a registered SSL Labs API email. There is no API key field; SSL Labs v4 expects the registered organization email in the `email` header. The Operations UI can submit the one-time SSL Labs API registration for first name, last name, email, and organization, then save the email for future assessments. Operators can also trigger a manual assessment from Operations or an eligible HTTPS monitor detail page. crt.watch respects the scheduled minimum 24-hour per-host interval and lets manual triggers choose cached or fresh SSL Labs scans.
 - Alert policy can notify on TLS grade or score deterioration. The score-drop threshold controls how sensitive these alerts are.
 - Alert policy can notify on certificate changes and DNS resolution changes. Individual monitors can override both policies. DNS resolver comparisons are intentionally uncached and run fresh on each monitor check.
 - Scheduled discovery for web and mail endpoints, with direct accept buttons for individual suggestions or all suggestions.
@@ -298,7 +298,7 @@ The Settings page includes the remaining interface preference for dark or light 
 
 ## SaaS Readiness
 
-sender.report now has a workspace layer that prepares the app for SaaS operation:
+crt.watch now has a workspace layer that prepares the app for SaaS operation:
 
 - Each authenticated request is scoped to the selected workspace through the `X-Tenant-Id` header.
 - Monitors, notification providers, alert policy, SMTP settings, TLS policy, discovery, status page settings, and backups are tenant-scoped.
@@ -326,7 +326,7 @@ Exported metrics include `crtwatch_monitor_status`, `crtwatch_cert_days_remainin
 
 The Compose file uses the published image `ghcr.io/brightcolor/crt-watch:latest` and does not start its own Watchtower container. This keeps updates under your existing external Watchtower instance.
 
-The sender.report service keeps `com.centurylinklabs.watchtower.enable=true`, so an external Watchtower running with `--label-enable` can update it automatically.
+The crt.watch service keeps `com.centurylinklabs.watchtower.enable=true`, so an external Watchtower running with `--label-enable` can update it automatically.
 
 ## Local Image Builds
 
@@ -341,7 +341,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 Set:
 
 ```env
-BASE_URL=https://sender.report.example.com
+BASE_URL=https://crt.watch.example.com
 TRUST_PROXY=true
 COOKIE_SECURE=true
 ```
@@ -351,7 +351,7 @@ Example nginx config:
 ```nginx
 server {
   listen 443 ssl http2;
-  server_name sender.report.example.com;
+  server_name crt.watch.example.com;
 
   location / {
     proxy_pass http://127.0.0.1:8080;

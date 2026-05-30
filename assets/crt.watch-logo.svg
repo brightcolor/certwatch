@@ -7,7 +7,7 @@
     <path d="M53 86L75 108L117 58" stroke="#3FB950" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="M48 128H120" stroke="#30363D" stroke-width="8" stroke-linecap="round"/>
   </g>
-  <text x="260" y="108" fill="#E6EDF3" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="58" font-weight="750">crt.watch</text>
+  <text x="260" y="108" fill="#E6EDF3" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="58" font-weight="600">crt.watch</text>
   <text x="263" y="154" fill="#8B949E" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="24" font-weight="500">TLS certificate monitoring for self-hosted operations</text>
   <g transform="translate(770 74)">
     <circle cx="18" cy="18" r="10" fill="#3FB950"/>

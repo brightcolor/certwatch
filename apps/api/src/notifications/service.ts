@@ -39,7 +39,7 @@ export const sendStatusSubscriptionOptIn = async (subscription: StatusSubscripti
   if (subscription.type === "webhook") {
     return postJson(subscription.target, {
       event: "subscription_opt_in",
-      message: "Confirm this sender.report status page subscription before incident updates are sent.",
+      message: "Confirm this crt.watch status page subscription before incident updates are sent.",
       confirm_url: confirmUrl,
       status_page: statusPage,
       tags: subscription.tags
@@ -54,10 +54,10 @@ export const sendStatusSubscriptionOptIn = async (subscription: StatusSubscripti
     requireTLS: smtp.starttls
   });
   await transport.sendMail({
-    from: smtp.from || "sender.report@localhost",
+    from: smtp.from || "crt.watch@localhost",
     to: subscription.target,
-    subject: "[sender.report Status] Confirm your subscription",
-    text: `Confirm your sender.report status page subscription before incident updates are sent.
+    subject: "[crt.watch Status] Confirm your subscription",
+    text: `Confirm your crt.watch status page subscription before incident updates are sent.
 
 Status page: ${statusPage}
 Confirm subscription: ${confirmUrl}
@@ -109,9 +109,9 @@ const sendStatusSubscription = async (subscription: StatusSubscription, monitor:
     requireTLS: smtp.starttls
   });
   await transport.sendMail({
-    from: smtp.from || "sender.report@localhost",
+    from: smtp.from || "crt.watch@localhost",
     to: subscription.target,
-    subject: `[sender.report Status] ${event === "resolved" ? "Resolved" : "Incident"}: ${monitor.name}`,
+    subject: `[crt.watch Status] ${event === "resolved" ? "Resolved" : "Incident"}: ${monitor.name}`,
     text: `${monitor.name}: ${result.message}\n\nStatus: ${result.status}\nChecked at: ${result.checkedAt}\nStatus page: ${payload.status_page}\n`
   });
 };
@@ -200,7 +200,7 @@ const sendChannel = async (channel: NotificationChannel, monitor: Monitor, resul
     token: String(channel.config.apiToken ?? ""),
     user: recipient || String(channel.config.userKey ?? ""),
     message: result.message,
-    title: `[sender.report] ${monitor.name}`,
+    title: `[crt.watch] ${monitor.name}`,
     priority: String(priorityFor(result.severity))
   });
   if (channel.type === "telegram") {
@@ -231,9 +231,9 @@ const sendEmail = async (channel: NotificationChannel, monitor: Monitor, result:
     requireTLS: smtp.starttls
   });
   await transport.sendMail({
-    from: String(channel.config.from ?? smtp.from ?? "sender.report@localhost"),
+    from: String(channel.config.from ?? smtp.from ?? "crt.watch@localhost"),
     to: recipient || String(channel.config.to ?? channel.config.username ?? ""),
-    subject: `[sender.report] ${subjectFor(result.severity)}: ${monitor.name}`,
+    subject: `[crt.watch] ${subjectFor(result.severity)}: ${monitor.name}`,
     text: emailBody(monitor, result)
   });
 };
@@ -253,7 +253,7 @@ ${result.problems.join("\n") || result.message}
 Recommendation:
 Renew the certificate if it is close to expiry and verify the complete certificate chain afterwards.
 
-sender.report URL: ${env.baseUrl}/monitors/${monitor.id}
+crt.watch URL: ${env.baseUrl}/monitors/${monitor.id}
 `;
 
 const sampleResult = (): CheckResult => ({
@@ -261,7 +261,7 @@ const sampleResult = (): CheckResult => ({
   monitorId: "test",
   status: "WARNING",
   severity: "warning",
-  message: "sender.report test notification.",
+  message: "crt.watch test notification.",
   checkedAt: new Date().toISOString(),
   durationMs: 0,
   daysRemaining: 30,
@@ -269,7 +269,7 @@ const sampleResult = (): CheckResult => ({
   validUntil: new Date(Date.now() + 30 * 86_400_000).toISOString(),
   commonName: "example.com",
   subjectAltNames: ["example.com"],
-  issuer: "sender.report",
+  issuer: "crt.watch",
   serialNumber: null,
   fingerprintSha256: "test",
   tlsVersion: "TLSv1.3",
@@ -304,9 +304,9 @@ const providerPayload = (channel: NotificationChannel, monitor: Monitor, result:
   const payload = buildPayload(monitor, result);
   if (channel.type === "discord") return { content: `**${monitor.name}**: ${result.message}`, embeds: [{ title: monitor.name, description: result.problems.join("\n") || result.message, color: result.severity === "critical" ? 15_585_873 : 13_801_762 }] };
   if (channel.type === "slack" || channel.type === "mattermost") return { text: `*${monitor.name}* ${result.status}: ${result.message}`, attachments: [{ color: result.severity === "critical" ? "danger" : "warning", text: result.problems.join("\n") }] };
-  if (channel.type === "teams") return { title: `sender.report ${result.status}`, text: `${monitor.name}: ${result.message}` };
-  if (channel.type === "ntfy") return { topic: channel.config.topic, title: `sender.report ${result.status}`, message: `${monitor.name}: ${result.message}`, priority: result.severity === "critical" ? 5 : 3, tags: ["warning"] };
-  if (channel.type === "gotify") return { title: `sender.report ${result.status}`, message: `${monitor.name}: ${result.message}`, priority: result.severity === "critical" ? 8 : 4 };
+  if (channel.type === "teams") return { title: `crt.watch ${result.status}`, text: `${monitor.name}: ${result.message}` };
+  if (channel.type === "ntfy") return { topic: channel.config.topic, title: `crt.watch ${result.status}`, message: `${monitor.name}: ${result.message}`, priority: result.severity === "critical" ? 5 : 3, tags: ["warning"] };
+  if (channel.type === "gotify") return { title: `crt.watch ${result.status}`, message: `${monitor.name}: ${result.message}`, priority: result.severity === "critical" ? 8 : 4 };
   return payload;
 };
 

@@ -14,9 +14,9 @@ export function FrontPage({ setupRequired, registrationEnabled, onAuth, onRegist
   return (
     <main className="frontpage">
       <header className="frontpage-nav">
-        <a className="frontpage-brand" href="#top" aria-label="sender.report home">
+        <a className="frontpage-brand" href="#top" aria-label="crt.watch home">
           <span><Activity size={18} /></span>
-          <strong>sender.report</strong>
+          <strong>crt.watch</strong>
         </a>
         <nav aria-label="Public navigation">
           <a href="#features">Features</a>
@@ -32,7 +32,7 @@ export function FrontPage({ setupRequired, registrationEnabled, onAuth, onRegist
           <span className="eyebrow">TLS and service monitoring</span>
           <h1>Watch certificates before customers notice problems.</h1>
           <p>
-            sender.report monitors certificates, TLS posture, DNS drift, STARTTLS services, logins,
+            crt.watch monitors certificates, TLS posture, DNS drift, STARTTLS services, logins,
             public status pages, and notifications from one self-hosted operator interface.
           </p>
           <div className="frontpage-actions">
@@ -40,7 +40,7 @@ export function FrontPage({ setupRequired, registrationEnabled, onAuth, onRegist
             <a className="button-link ghost-link" href={githubUrl} target="_blank" rel="noreferrer"><Github size={16} /> View on GitHub</a>
           </div>
         </div>
-        <div className="frontpage-visual" aria-label="sender.report monitoring overview">
+        <div className="frontpage-visual" aria-label="crt.watch monitoring overview">
           <div className="visual-header"><span></span><span></span><span></span></div>
           <div className="visual-score">
             <strong>All critical certificates covered</strong>

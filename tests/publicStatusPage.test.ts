@@ -5,7 +5,7 @@ describe("public status page rendering", () => {
   it("renders a customer-facing status page with opt-in copy", () => {
     const html = renderPublicStatusPage({
       label: "mail",
-      title: "sender.report status: mail",
+      title: "crt.watch status: mail",
       description: "",
       logoUrl: "",
       hideHostnames: false,

@@ -74,7 +74,7 @@ const publicStatus = (rawTags: string) => {
     tag: tags[0] ?? "all",
     tags,
     label: page?.title ?? (tags.length ? tags.join(" + ") : "all"),
-    title: page?.title ?? `sender.report status: ${tags.length ? tags.join(" + ") : "all"}`,
+    title: page?.title ?? `crt.watch status: ${tags.length ? tags.join(" + ") : "all"}`,
     description: page?.description ?? "",
     logoUrl: page?.logoUrl ?? "",
     hideHostnames: page?.hideHostnames ?? false,

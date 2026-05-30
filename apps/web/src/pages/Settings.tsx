@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Bell, Mail, PlugZap, Trash2 } from "lucide-react";
 
 const providerFields: Record<string, Array<{ key: string; label: string; type?: string; placeholder?: string }>> = {
-  email: [{ key: "from", label: "Sender override", placeholder: "sender.report@example.com" }],
+  email: [{ key: "from", label: "Sender override", placeholder: "crt.watch@example.com" }],
   webhook: [],
   discord: [],
   slack: [],

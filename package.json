@@ -1,6 +1,6 @@
 {
-  "name": "sender.report",
-  "version": "0.12.1",
+  "name": "crt.watch",
+  "version": "0.12.2",
   "private": true,
   "type": "module",
   "workspaces": [

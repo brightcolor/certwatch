@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.2 - 2026-05-31
+
+- Rebranded the visible product name to `crt.watch` across the web UI, public pages, notifications, documentation, tests, quickstart output, and logo asset.
+- Updated package metadata and README logo references to use the `crt.watch` name.
+
 ## 0.12.1 - 2026-05-31
 
 - Reduced UI font weights so interface text does not exceed `600`, including dashboard monitor names and targets.
@@ -40,8 +45,8 @@
 
 ## 0.11.4 - 2026-05-30
 
-- Rebranded the visible product name, public pages, authentication screens, notifications, README, license, and logo asset to `sender.report`.
-- Updated the quickstart script to install into `/opt/sender.report` while keeping the current GitHub repository URL stable until the repository is renamed.
+- Rebranded the visible product name, public pages, authentication screens, notifications, README, license, and logo asset to `crt.watch`.
+- Updated the quickstart script to install into `/opt/crt.watch` while keeping the current GitHub repository URL stable until the repository is renamed.
 - Kept existing internal compatibility identifiers such as `crtwatch` metric names, database defaults, cookie names, and workspace package scopes unchanged.
 
 ## 0.11.3 - 2026-05-30

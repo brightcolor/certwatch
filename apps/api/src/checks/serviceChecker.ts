@@ -117,7 +117,7 @@ const readBanner = (monitor: Monitor) =>
     };
     socket.setTimeout(monitor.timeoutSeconds * 1000);
     socket.once("connect", () => {
-      if (monitor.type === "smtp") socket.write("EHLO sender.report.local\r\n");
+      if (monitor.type === "smtp") socket.write("EHLO crt.watch.local\r\n");
       if (monitor.type === "imap") socket.write("a001 CAPABILITY\r\n");
       if (monitor.type === "pop3") socket.write("CAPA\r\n");
     });
@@ -202,7 +202,7 @@ const ftpLogin = async (reader: TextProtocolReader, monitor: Monitor) => {
 
 const smtpLogin = async (reader: TextProtocolReader, monitor: Monitor) => {
   await reader.readUntil((line) => /^220\b/.test(line));
-  reader.write("EHLO sender.report.local");
+  reader.write("EHLO crt.watch.local");
   await reader.readUntil((line) => /^250 /.test(line));
   reader.write("AUTH LOGIN");
   const authResponse = await reader.readUntil((line) => /^(\d{3})\b/.test(line));

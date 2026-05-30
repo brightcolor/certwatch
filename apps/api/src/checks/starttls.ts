@@ -91,7 +91,7 @@ class LineReader {
 
 const prepareSmtp = async (socket: net.Socket, reader: LineReader) => {
   await reader.readUntil((lines) => smtpFinal(lines, 220));
-  write(socket, "EHLO sender.report.local");
+  write(socket, "EHLO crt.watch.local");
   const ehloLines = await reader.readUntil((lines) => smtpFinal(lines, 250));
   if (!ehloLines.some((line) => /\bSTARTTLS\b/i.test(line))) throw new Error("SMTP server does not advertise STARTTLS.");
   write(socket, "STARTTLS");

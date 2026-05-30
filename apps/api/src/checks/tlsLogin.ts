@@ -106,7 +106,7 @@ class SecureLineReader {
 
 const smtpLogin = async (reader: SecureLineReader, monitor: Monitor, waitGreeting: boolean) => {
   if (waitGreeting) await reader.readUntil((lines) => smtpFinal(lines, 220));
-  reader.write("EHLO sender.report.local");
+  reader.write("EHLO crt.watch.local");
   await reader.readUntil((lines) => smtpFinal(lines, 250));
   reader.write("AUTH LOGIN");
   const auth = await reader.readUntil((lines) => smtpFinal(lines, 334) || smtpFinal(lines, 503));
