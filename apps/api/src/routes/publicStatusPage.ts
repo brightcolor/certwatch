@@ -45,8 +45,8 @@ export const renderPublicStatusPage = (status: PublicStatusView, options: Render
   <main class="page">
     <section class="hero">
       <div class="brand-line">
-        ${status.logoUrl ? `<img class="logo" src="${escapeHtml(status.logoUrl)}" alt="">` : `<span class="mark">CW</span>`}
-        <span class="brand-name">crt.watch</span>
+        ${status.logoUrl ? `<img class="logo" src="${escapeHtml(status.logoUrl)}" alt="">` : `<span class="mark">SR</span>`}
+        <span class="brand-name">sender.report</span>
       </div>
       <div class="hero-grid">
         <div>

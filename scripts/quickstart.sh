@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO_URL="${CRTWATCH_REPO_URL:-https://github.com/brightcolor/crt.watch.git}"
-INSTALL_DIR="${CRTWATCH_INSTALL_DIR:-/opt/crt.watch}"
+INSTALL_DIR="${CRTWATCH_INSTALL_DIR:-/opt/sender.report}"
 APP_PORT="${CRTWATCH_PORT:-8080}"
 CONTAINER_PORT="${CRTWATCH_CONTAINER_PORT:-8080}"
 
@@ -39,7 +39,7 @@ if [[ -d "${INSTALL_DIR}/.git" ]]; then
   echo "Updating existing checkout in ${INSTALL_DIR}"
   git -C "${INSTALL_DIR}" pull --ff-only
 else
-  echo "Cloning crt.watch into ${INSTALL_DIR}"
+  echo "Cloning sender.report into ${INSTALL_DIR}"
   mkdir -p "$(dirname "${INSTALL_DIR}")"
   git clone "${REPO_URL}" "${INSTALL_DIR}"
 fi
@@ -79,7 +79,7 @@ docker compose pull crt-watch
 docker compose up -d
 
 echo
-echo "crt.watch is starting."
+echo "sender.report is starting."
 echo "Open: http://localhost:${APP_PORT}"
 echo "First run: create the admin account in the browser."
 echo "Data bind mount: ${INSTALL_DIR}/data -> /data"

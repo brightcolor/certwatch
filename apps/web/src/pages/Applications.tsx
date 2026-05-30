@@ -51,7 +51,7 @@ export function Applications({ monitors, onSelect }: { monitors: Monitor[]; onSe
             const html = `${origin}/public/status/${key}.html`;
             const badge = `${origin}/public/badge/tags/${key}.svg`;
             const aliasBadge = `${badge}?label=${encodeURIComponent(label)}`;
-            const iframe = `<iframe src="${html}" title="crt.watch ${label}" loading="lazy"></iframe>`;
+            const iframe = `<iframe src="${html}" title="sender.report ${label}" loading="lazy"></iframe>`;
             const markdown = `[![${label}](${aliasBadge})](${html})`;
             return <div className="embed-card" key={key}><strong>{label}</strong><code>{html}</code><div className="actions"><button onClick={() => navigator.clipboard?.writeText(html)}>URL</button><button onClick={() => navigator.clipboard?.writeText(iframe)}>iframe</button><button onClick={() => navigator.clipboard?.writeText(markdown)}>Badge</button></div></div>;
           })}

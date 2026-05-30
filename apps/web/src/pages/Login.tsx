@@ -33,9 +33,9 @@ export function Login({ setupRequired, registrationEnabled, onLogin, onBack, onR
   return (
     <main className="login">
       <form onSubmit={submit} className="login-panel">
-        <span className="eyebrow">crt.watch</span>
+        <span className="eyebrow">sender.report</span>
         <h1>{setupRequired ? "Create admin" : "Sign in"}</h1>
-        {setupRequired && <p className="muted">Create the first administrator account for this crt.watch instance.</p>}
+        {setupRequired && <p className="muted">Create the first administrator account for this sender.report instance.</p>}
         <label>Email<input value={email} onChange={(e) => setEmail(e.target.value)} /></label>
         {setupRequired && <label>Organization<input value={organizationName} onChange={(e) => setOrganizationName(e.target.value)} /></label>}
         <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>

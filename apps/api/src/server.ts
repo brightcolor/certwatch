@@ -38,6 +38,6 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
 });
 
 app.listen(env.port, () => {
-  console.log(`crt.watch listening on ${env.port}`);
+  console.log(`sender.report listening on ${env.port}`);
   startScheduler();
 });

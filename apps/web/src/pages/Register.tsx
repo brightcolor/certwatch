@@ -30,7 +30,7 @@ export function Register({ inviteToken, onLogin, onBack }: { inviteToken?: strin
   return (
     <main className="login">
       <form onSubmit={submit} className="login-panel">
-        <span className="eyebrow">crt.watch</span>
+        <span className="eyebrow">sender.report</span>
         <h1>{invited ? "Join workspace" : "Create workspace"}</h1>
         <p className="muted">
           {invited ? "Create your account to accept this workspace invitation." : "Create a user account and an isolated organization workspace."}
