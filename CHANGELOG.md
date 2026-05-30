@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.1 - 2026-05-30
+
+- Added a manual SSL Labs trigger API for public HTTPS targets and eligible monitor detail pages.
+- Added an Operations UI form to trigger SSL Labs assessments for arbitrary public hosts.
+- Stored monitor-triggered SSL Labs assessments in check history so the dashboard and monitor detail views update immediately.
+
 ## 0.11.0 - 2026-05-30
 
 - Added workspace permission groups with group roles and effective per-organization member roles.

@@ -245,6 +245,14 @@ function App() {
     navigate("dashboard", cloned.id);
     setToast("Monitor cloned as paused");
   };
+  const triggerSslLabs = async (monitor: Monitor) => {
+    setToast("SSL Labs assessment started");
+    const result = await api.request<any>("/ssl-labs/trigger", { method: "POST", body: JSON.stringify({ monitorId: monitor.id, startNewScan: true }) });
+    await refreshOverview();
+    if (selected === monitor.id) await loadMonitorData(monitor.id);
+    setToast("SSL Labs assessment completed");
+    return result;
+  };
   const navigate = (nextPage: string, nextSelected: string | null = null) => {
     setPage(nextPage);
     setSelected(nextSelected);
@@ -362,6 +370,7 @@ function App() {
           onCheck={() => checkNow(selectedMonitor.id)}
           onClone={() => cloneMonitor(selectedMonitor.id)}
           onDelete={() => deleteMonitor(selectedMonitor.id)}
+          onSslLabs={() => triggerSslLabs(selectedMonitor)}
           onAck={async (id: string, assignee: string) => { await api.request(`/incidents/${id}/ack`, { method: "POST", body: JSON.stringify({ assignee }) }); await loadMonitorData(selectedMonitor.id); }}
           onNote={async (id: string, text: string) => { await api.request(`/incidents/${id}/notes`, { method: "POST", body: JSON.stringify({ text }) }); await loadMonitorData(selectedMonitor.id); }}
         />

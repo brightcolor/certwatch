@@ -9,6 +9,8 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
   const [tlsPolicy, setTlsPolicy] = useState<any>({ profile: "modern", minimumTlsVersion: "TLSv1.2", weakCipherPenalty: 40, requireSan: true, intensiveScan: true });
   const [sslLabs, setSslLabs] = useState<any>({ enabled: false, registeredEmail: "", intervalHours: 24, maxAgeHours: 24, timeoutSeconds: 90, startNewScans: false, publishResults: false });
   const [sslLabsRegistration, setSslLabsRegistration] = useState({ firstName: "", lastName: "", email: "", organization: "" });
+  const [sslLabsTrigger, setSslLabsTrigger] = useState({ host: "", startNewScan: true });
+  const [sslLabsTriggerResult, setSslLabsTriggerResult] = useState<any>(null);
   const [sslLabsStatus, setSslLabsStatus] = useState("");
   const [statusPages, setStatusPages] = useState<any>({ pages: [] });
   const [discovery, setDiscovery] = useState<any>({ enabled: false, intervalHours: 24, domains: [], suggestions: [] });
@@ -69,6 +71,17 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
       setSslLabsStatus(error instanceof Error ? error.message : "SSL Labs registration failed.");
     }
   };
+  const triggerSslLabs = async () => {
+    setSslLabsStatus("Triggering SSL Labs assessment...");
+    setSslLabsTriggerResult(null);
+    try {
+      const result = await api.request<any>("/ssl-labs/trigger", { method: "POST", body: JSON.stringify(sslLabsTrigger) });
+      setSslLabsTriggerResult(result);
+      setSslLabsStatus(`SSL Labs assessment completed for ${result.host}: ${sslLabsSummary(result.assessment)}.`);
+    } catch (error) {
+      setSslLabsStatus(error instanceof Error ? error.message : "SSL Labs trigger failed.");
+    }
+  };
 
   return (
     <section className="content">
@@ -113,6 +126,14 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
             </div>
             <button className="ghost" onClick={registerSslLabs}>Register and use email</button>
             {sslLabsStatus && <p className="muted">{sslLabsStatus}</p>}
+          </div>
+          <div className="form-section">
+            <h3>Trigger assessment</h3>
+            <p className="muted">Run an external SSL Labs assessment now for a public HTTPS host on port 443.</p>
+            <label>Hostname<input value={sslLabsTrigger.host} onChange={(e) => setSslLabsTrigger({ ...sslLabsTrigger, host: e.target.value })} placeholder="example.com" /></label>
+            <label><input type="checkbox" checked={sslLabsTrigger.startNewScan} onChange={(e) => setSslLabsTrigger({ ...sslLabsTrigger, startNewScan: e.target.checked })} /> Start a fresh scan</label>
+            <button className="ghost" onClick={triggerSslLabs}>Trigger SSL Labs</button>
+            {sslLabsTriggerResult?.assessment && <div className="callout callout-info"><strong>{sslLabsSummary(sslLabsTriggerResult.assessment)}</strong><p>{(sslLabsTriggerResult.assessment.sslLabsFindings ?? []).join(" ") || "No SSL Labs findings returned."}</p></div>}
           </div>
         </div>
       </div>
@@ -169,3 +190,8 @@ function Row({ title, detail, onDelete }: { title: string; detail: string; onDel
 }
 
 const dateTime = formatDateTime;
+
+const sslLabsSummary = (assessment: any) => [
+  assessment?.sslLabsGrade ? `grade ${assessment.sslLabsGrade}` : null,
+  assessment?.sslLabsStatus ? `status ${assessment.sslLabsStatus}` : null
+].filter(Boolean).join(", ") || "queued";

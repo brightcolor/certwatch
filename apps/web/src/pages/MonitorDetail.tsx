@@ -5,9 +5,24 @@ import { StatusPill } from "../components/StatusPill";
 import { certificateUnavailableMessage, collectsCertificate } from "../utils/monitorTypes";
 import { formatDateTime } from "../utils/date";
 
-export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onCheck, onClone, onDelete, onAck, onNote }: { monitor: Monitor; results: CheckResult[]; incidents: Incident[]; onBack: () => void; onEdit: () => void; onCheck: () => void; onClone: () => void; onDelete: () => void; onAck: (id: string, assignee: string) => Promise<void>; onNote: (id: string, text: string) => Promise<void> }) {
+type MonitorDetailProps = {
+  monitor: Monitor;
+  results: CheckResult[];
+  incidents: Incident[];
+  onBack: () => void;
+  onEdit: () => void;
+  onCheck: () => void;
+  onClone: () => void;
+  onDelete: () => void;
+  onSslLabs: () => Promise<any>;
+  onAck: (id: string, assignee: string) => Promise<void>;
+  onNote: (id: string, text: string) => Promise<void>;
+};
+
+export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onCheck, onClone, onDelete, onSslLabs, onAck, onNote }: MonitorDetailProps) {
   const [assignee, setAssignee] = useState("");
   const [note, setNote] = useState("");
+  const [sslLabsState, setSslLabsState] = useState({ busy: false, message: "" });
   const latest = results[0] ?? monitor.latestResult;
   const origin = window.location.origin;
   const statusTag = monitor.tags[0] ?? "all";
@@ -18,6 +33,16 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
   const htmlBadge = `<a href="${statusUrl}"><img src="${aliasBadgeUrl}" alt="${escapeHtmlAttr(monitor.name)} status"></a>`;
   const hasCertificateDetails = Boolean(latest?.fingerprintSha256 || latest?.commonName || latest?.validUntil || latest?.tlsVersion || (latest?.chain?.length ?? 0) > 0);
   const certificateExpected = collectsCertificate(monitor.type, monitor.config, monitor.port);
+  const canTriggerSslLabs = ["https", "tls", "http", "http_login"].includes(monitor.type) && monitor.port === 443;
+  const triggerSslLabs = async () => {
+    setSslLabsState({ busy: true, message: "SSL Labs assessment running..." });
+    try {
+      const result = await onSslLabs();
+      setSslLabsState({ busy: false, message: `SSL Labs ${sslLabsSummary(result?.assessment)}` });
+    } catch (error) {
+      setSslLabsState({ busy: false, message: error instanceof Error ? error.message : "SSL Labs trigger failed." });
+    }
+  };
 
   return (
     <section className="content">
@@ -30,8 +55,15 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
             <p>{monitor.host}:{monitor.port} - {monitor.type}</p>
             <small>{monitor.tags.join(", ") || "unlabeled"}</small>
           </div>
-          <div className="actions"><button className="btn btn-primary" onClick={onCheck}>Check now</button><button className="btn btn-outline-secondary" onClick={onClone}><Copy size={16} /> Clone</button><button className="btn btn-outline-secondary" onClick={onEdit}>Edit</button><button className="btn btn-outline-danger" onClick={() => { if (confirm(`Delete monitor "${monitor.name}"?`)) onDelete(); }}>Delete</button></div>
+          <div className="actions">
+            <button className="btn btn-primary" onClick={onCheck}>Check now</button>
+            {canTriggerSslLabs && <button className="btn btn-outline-secondary" disabled={sslLabsState.busy} onClick={triggerSslLabs}>SSL Labs</button>}
+            <button className="btn btn-outline-secondary" onClick={onClone}><Copy size={16} /> Clone</button>
+            <button className="btn btn-outline-secondary" onClick={onEdit}>Edit</button>
+            <button className="btn btn-outline-danger" onClick={() => { if (confirm(`Delete monitor "${monitor.name}"?`)) onDelete(); }}>Delete</button>
+          </div>
         </div>
+        {sslLabsState.message && <p className="muted">{sslLabsState.message}</p>}
       </div>
       {hasCertificateDetails ? <div className="grid two">
           <Panel title="Certificate">
@@ -153,3 +185,4 @@ function EmbedRow({ label, value }: { label: string; value: string }) {
 const dateTime = formatDateTime;
 const shortBadgeLabel = (value: string) => value.trim() || "Monitor";
 const escapeHtmlAttr = (value: string) => value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const sslLabsSummary = (assessment: any) => assessment?.sslLabsGrade ? `grade ${assessment.sslLabsGrade}` : assessment?.sslLabsStatus ? `status ${assessment.sslLabsStatus}` : "assessment completed";

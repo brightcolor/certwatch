@@ -6,6 +6,7 @@ import { applyResultWatches } from "../apps/api/src/checks/changeWatch.js";
 import { isInMaintenance, windowActive } from "../apps/api/src/checks/maintenance.js";
 import { normalizeSslLabsReport, shouldRunSslLabs } from "../apps/api/src/checks/sslLabs.js";
 import { compareDnsAnswers, shouldRunDnsResolution } from "../apps/api/src/checks/dnsResolution.js";
+import { buildManualSslLabsResult, normalizeSslLabsHost } from "../apps/api/src/checks/sslLabsManual.js";
 import type { AlertingSettings, CheckResult } from "../apps/api/src/types.js";
 
 describe("TLS security grading", () => {
@@ -100,6 +101,11 @@ describe("DNS resolver comparison", () => {
 });
 
 describe("SSL Labs assessment normalization", () => {
+  it("normalizes manual SSL Labs trigger hosts", () => {
+    expect(normalizeSslLabsHost("https://Example.COM:443/path")).toBe("example.com");
+    expect(() => normalizeSslLabsHost("localhost")).toThrow("valid public hostname");
+  });
+
   it("uses the worst endpoint grade and extracts findings", () => {
     const result = normalizeSslLabsReport({
       status: "READY",
@@ -121,6 +127,22 @@ describe("SSL Labs assessment normalization", () => {
     const previous = { ...resultFor("OK"), sslLabsCheckedAt: new Date().toISOString() };
 
     expect(shouldRunSslLabs(monitor, previous, settings)).toBe(false);
+  });
+
+  it("stores manual SSL Labs assessments without dropping certificate context", () => {
+    const previous = { ...resultFor("OK"), commonName: "example.com", subjectAltNames: ["example.com"], sslLabsGrade: "A" };
+    const result = buildManualSslLabsResult({ id: "monitor-1", lastStatus: "OK" } as any, previous, {
+      sslLabsGrade: "B",
+      sslLabsScore: 80,
+      sslLabsStatus: "READY",
+      sslLabsUrl: "https://www.ssllabs.com/ssltest/analyze.html?d=example.com",
+      sslLabsCheckedAt: new Date().toISOString(),
+      sslLabsFindings: ["SSL Labs endpoint: warnings affect the score."]
+    });
+
+    expect(result.commonName).toBe("example.com");
+    expect(result.sslLabsGrade).toBe("B");
+    expect(result.message).toContain("Manual SSL Labs assessment completed");
   });
 });
 

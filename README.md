@@ -41,6 +41,7 @@ This stack keeps the application easy to self-host while still supporting real T
 - Optional intensive TLS assessment that probes supported TLS versions and flags deprecated protocol support, weak cipher patterns, missing forward secrecy, small certificate keys, and incomplete chains
 - TLS grading explains persisted score deductions and deterioration alerts include the concrete reason for a grade drop
 - Optional external Qualys SSL Labs v4 assessments for public HTTPS hosts on port `443`, cached per host for at least 24 hours
+- Manual SSL Labs trigger from Operations or eligible monitor detail pages, with the resulting grade stored in monitor history
 - Configurable notifications when a monitor's TLS grade or score deteriorates compared with the previous check
 - Flapping detection for monitors that repeatedly bounce between healthy and failed states
 - Incident timelines for monitors and public status pages
@@ -231,6 +232,7 @@ All API routes require login session authentication except `/api/auth/login`.
 - `GET /api/settings/maintenance`
 - `GET /api/settings/tls-policy`
 - `GET /api/settings/ssl-labs`
+- `POST /api/ssl-labs/trigger`
 - `GET /api/settings/status-pages`
 - `GET /api/settings/discovery`
 - `GET /api/settings/backups`
@@ -281,7 +283,7 @@ The Operations page contains production controls that are intentionally kept out
 - Maintenance windows for labels or individual monitors. Supported formats include `daily 22:00-23:00`, `mon-fri 01:00-02:00`, and ISO intervals such as `2026-06-01T20:00:00/2026-06-01T22:00:00`.
 - TLS policy profiles for grading, including minimum TLS version, weak cipher penalty, and SAN requirements.
 - Intensive TLS probing can be enabled in Operations. It performs additional handshakes to detect supported TLS versions and feeds those findings into the grade.
-- SSL Labs external assessment can be enabled in Operations with a registered SSL Labs API email. There is no API key field; SSL Labs v4 expects the registered organization email in the `email` header. The Operations UI can submit the one-time SSL Labs API registration for first name, last name, email, and organization, then save the email for future assessments. crt.watch respects a minimum 24-hour per-host interval and can either use cached results or start fresh scans when due.
+- SSL Labs external assessment can be enabled in Operations with a registered SSL Labs API email. There is no API key field; SSL Labs v4 expects the registered organization email in the `email` header. The Operations UI can submit the one-time SSL Labs API registration for first name, last name, email, and organization, then save the email for future assessments. Operators can also trigger a manual assessment from Operations or an eligible HTTPS monitor detail page. crt.watch respects the scheduled minimum 24-hour per-host interval and lets manual triggers choose cached or fresh SSL Labs scans.
 - Alert policy can notify on TLS grade or score deterioration. The score-drop threshold controls how sensitive these alerts are.
 - Alert policy can notify on certificate changes and DNS resolution changes. Individual monitors can override both policies and set their own DNS comparison interval.
 - Scheduled discovery for web and mail endpoints, with direct accept buttons for individual suggestions or all suggestions.

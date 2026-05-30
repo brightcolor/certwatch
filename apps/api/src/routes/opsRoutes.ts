@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createBackup, backupPath, deleteBackup, listBackups } from "../backup/backupService.js";
 import { createPlainApiToken, hashToken, requireAdmin, requireTenantRole } from "../auth/auth.js";
 import { discoverMonitors } from "../checks/discovery.js";
+import { buildManualSslLabsResult, normalizeSslLabsHost, runManualSslLabsAssessment } from "../checks/sslLabsManual.js";
 import { apiTokens, appSettings, deliveries, incidents, monitors, results, tenants } from "../storage/repositories.js";
 import { id } from "../utils/id.js";
 import { monitorInputSchema, monitorTypes } from "./monitorSchemas.js";
@@ -27,6 +28,28 @@ opsRoutes.post("/ssl-labs/register", requireTenantRole("owner", "admin"), async 
     res.status(201).json({ ok: true, settings: next, providerResponse });
   } catch (error) {
     res.status(502).json({ error: error instanceof Error ? error.message : "SSL Labs registration failed." });
+  }
+});
+opsRoutes.post("/ssl-labs/trigger", requireTenantRole("owner", "admin", "member"), async (req, res) => {
+  const parsed = sslLabsTriggerSchema.safeParse(req.body ?? {});
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid SSL Labs trigger." });
+  if (!parsed.data.monitorId && req.tenantRole === "member") return res.status(403).json({ error: "Workspace admin permission required for arbitrary hosts." });
+  const monitor = parsed.data.monitorId ? monitors.get(parsed.data.monitorId, req.currentTenant!.id) : null;
+  if (parsed.data.monitorId && !monitor) return res.status(404).json({ error: "Monitor not found." });
+  const settings = appSettings.sslLabs(req.currentTenant!.id);
+  if (!settings.registeredEmail) return res.status(409).json({ error: "Configure a registered SSL Labs email before triggering assessments." });
+  try {
+    const host = normalizeSslLabsHost(monitor?.host ?? parsed.data.host ?? "");
+    const assessment = await runManualSslLabsAssessment(host, monitor ?? undefined, settings, parsed.data.startNewScan);
+    if (!monitor) return res.json({ host, assessment });
+    const previous = results.list(monitor.id, 1)[0];
+    const stored = buildManualSslLabsResult(monitor, previous, assessment);
+    results.insert(stored);
+    res.json({ host, assessment: stored });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "SSL Labs trigger failed.";
+    const status = message.includes("valid public hostname") ? 400 : message.includes("not supported") ? 409 : 502;
+    res.status(status).json({ error: message });
   }
 });
 opsRoutes.get("/settings/status-pages", (req, res) => res.json(appSettings.statusPages(req.currentTenant!.id)));
@@ -164,6 +187,12 @@ const sslLabsRegistrationSchema = z.object({
   email: z.string().trim().email().max(255).transform((email) => email.toLowerCase()),
   organization: z.string().trim().min(1).max(180)
 });
+
+const sslLabsTriggerSchema = z.object({
+  monitorId: z.string().uuid().optional(),
+  host: z.string().trim().max(253).optional(),
+  startNewScan: z.boolean().default(true)
+}).refine((value) => value.monitorId || value.host, { message: "Monitor or host is required." });
 
 const statusPagesSchema = z.object({
   pages: z.array(z.object({
