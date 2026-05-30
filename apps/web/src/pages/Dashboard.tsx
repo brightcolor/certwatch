@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { Copy, RefreshCw, Search, ShieldCheck, Siren, TimerReset, TriangleAlert } from "lucide-react";
 import type { Monitor } from "../api/client";
-import { StatusPill } from "../components/StatusPill";
 import { collectsCertificate } from "../utils/monitorTypes";
 import { formatDate } from "../utils/date";
 
@@ -15,7 +14,6 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
   const groups = useMemo(() => groupMonitors(filtered), [filtered]);
   const statusCounts = useMemo(() => countStatuses(monitors), [monitors]);
   const allSelected = statusFilters.length === 0;
-  const health = healthScore(monitors);
 
   const toggleStatus = (status: string) => {
     setStatusFilters((current) => current.length === 0 ? [status] : current.includes(status) ? current.filter((item) => item !== status) : [...current, status]);
@@ -23,15 +21,11 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
 
   return (
     <section className="content">
-      <div className={`dashboard-hero hero-${health.tone}`}>
-        <div className="score-ring" style={{ "--score": `${health.percent}%` } as any}>
-          <strong>{health.score}</strong>
-          <span>/10</span>
-        </div>
+      <div className={`dashboard-hero hero-${heroTone(statusCounts)}`}>
         <div className="hero-copy">
           <span className="eyebrow">Overall health</span>
-          <h2>{health.title}</h2>
-          <p>{health.description}</p>
+          <h2>{heroTitle(statusCounts)}</h2>
+          <p>{heroDescription(statusCounts)}</p>
           <div className="hero-badges">
             <span className="filter-chip filter-ok active">OK {statusCounts.OK ?? 0}</span>
             <span className="filter-chip filter-warning active">Warnings {statusCounts.WARNING ?? 0}</span>
@@ -77,7 +71,7 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
                 <p>{group.summary}</p>
               </div>
               <div className="group-badges">
-                {statusOptions.slice(0, 4).map((item) => <span className={`mini-count mini-${item.status.toLowerCase()}`} key={item.status}>{group.counts[item.status] ?? 0}</span>)}
+                {statusOptions.slice(0, 4).map((item) => <span className={`mini-count mini-${item.status.toLowerCase()}`} key={item.status}><b>{item.short}</b>{group.counts[item.status] ?? 0}</span>)}
               </div>
             </div>
             {group.monitors.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} key={monitor.id} />)}
@@ -97,9 +91,8 @@ function MonitorRow({ monitor, onSelect, onCheck, onClone }: { monitor: Monitor;
         <span>{resultReason(monitor)}</span>
         <ProblemBadges monitor={monitor} />
       </div>
-      <div className="monitor-target"><strong>{monitor.host}:{monitor.port}</strong><small>{monitor.type} · {monitor.tags.join(", ") || "unlabeled"}</small></div>
-      <div className="monitor-cert">{certificateSummary(monitor)}{gradePill(monitor)}{sslLabsPill(monitor)}<small>{certificateDetail(monitor)}</small></div>
-      <div className="monitor-state"><StatusPill status={monitor.lastStatus} /><strong>{monitor.latestResult?.durationMs ? `${monitor.latestResult.durationMs} ms` : ""}</strong></div>
+      <div className="monitor-target"><strong>{monitor.host}:{monitor.port}</strong><small>{monitor.type} - {monitor.tags.join(", ") || "unlabeled"}</small></div>
+      <div className="monitor-cert"><span className="cert-line"><strong>{certificateSummary(monitor)}</strong><small>{certificateDetail(monitor)}</small>{gradePill(monitor)}{sslLabsPill(monitor)}</span></div>
       <div className="monitor-actions">
         <button className="btn btn-sm btn-outline-secondary monitor-action" title="Check now" aria-label={`Check ${monitor.name} now`} onClick={(e) => { e.stopPropagation(); onCheck(monitor.id); }}><RefreshCw size={14} /></button>
         <button className="btn btn-sm btn-outline-secondary monitor-action" title="Clone monitor" aria-label={`Clone ${monitor.name}`} onClick={(e) => { e.stopPropagation(); onClone(monitor.id); }}><Copy size={14} /></button>
@@ -168,30 +161,31 @@ const problemTone = (status: string) =>
     status === "CRITICAL" || status === "DOWN" ? "danger" : "secondary";
 
 const statusOptions = [
-  { status: "OK", label: "Ok" },
-  { status: "WARNING", label: "Warning" },
-  { status: "CRITICAL", label: "Critical" },
-  { status: "DOWN", label: "Down" },
-  { status: "PAUSED", label: "Paused" },
-  { status: "UNKNOWN", label: "Unknown" }
+  { status: "OK", label: "Ok", short: "OK" },
+  { status: "WARNING", label: "Warning", short: "W" },
+  { status: "CRITICAL", label: "Critical", short: "C" },
+  { status: "DOWN", label: "Down", short: "D" },
+  { status: "PAUSED", label: "Paused", short: "P" },
+  { status: "UNKNOWN", label: "Unknown", short: "?" }
 ];
 
 const countStatuses = (monitors: Monitor[]) =>
   monitors.reduce<Record<string, number>>((acc, monitor) => ({ ...acc, [monitor.lastStatus]: (acc[monitor.lastStatus] ?? 0) + 1 }), {});
 
-const healthScore = (monitors: Monitor[]) => {
-  const counts = countStatuses(monitors);
-  const total = monitors.length || 1;
-  const weighted = (counts.OK ?? 0) + (counts.WARNING ?? 0) * .55 + (counts.PAUSED ?? 0) * .35;
-  const score = Math.max(0, Math.min(10, weighted / total * 10));
-  const critical = (counts.CRITICAL ?? 0) + (counts.DOWN ?? 0);
-  const title = critical ? "Attention required" : (counts.WARNING ?? 0) ? "Mostly healthy, watch warnings" : "All monitored checks look healthy";
-  const description = critical ? "Critical or down monitors need action before customers notice service or certificate problems." : (counts.WARNING ?? 0) ? "The platform is operating, but some checks are approaching thresholds or changed state." : "Certificate, service, and login checks are currently inside their expected operating range.";
-  const tone = critical ? "critical" : (counts.WARNING ?? 0) ? "warning" : "ok";
-  return { score: score.toFixed(1), percent: Math.round(score * 10), title, description, tone };
-};
+const heroTone = (counts: Record<string, number>) =>
+  (counts.CRITICAL ?? 0) + (counts.DOWN ?? 0) ? "critical" : (counts.WARNING ?? 0) ? "warning" : "ok";
 
-const statusMark = (status: string) => ({ OK: "OK", WARNING: "!", CRITICAL: "×", DOWN: "×", PAUSED: "Ⅱ", UNKNOWN: "?" }[status] ?? "?");
+const heroTitle = (counts: Record<string, number>) =>
+  heroTone(counts) === "critical" ? "Attention required" : heroTone(counts) === "warning" ? "Mostly healthy, watch warnings" : "All monitored checks look healthy";
+
+const heroDescription = (counts: Record<string, number>) =>
+  heroTone(counts) === "critical"
+    ? "Critical or down monitors need action before customers notice service or certificate problems."
+    : heroTone(counts) === "warning"
+      ? "The platform is operating, but some checks are approaching thresholds or changed state."
+      : "Certificate, service, and login checks are currently inside their expected operating range.";
+
+const statusMark = (status: string) => ({ OK: "OK", WARNING: "!", CRITICAL: "X", DOWN: "X", PAUSED: "II", UNKNOWN: "?" }[status] ?? "?");
 
 const groupMonitors = (monitors: Monitor[]) => {
   const buckets = new Map<string, Monitor[]>();

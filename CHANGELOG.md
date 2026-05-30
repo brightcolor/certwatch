@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.7 - 2026-05-30
+
+- Removed the duplicate header brand so CertWatch is only shown in the sidebar brand area.
+- Added a functional desktop sidebar collapse that keeps icon-only navigation visible and shows labels on hover.
+- Removed the dashboard score ring while keeping the contextual health header and colored status summary chips.
+- Tuned dashboard row typography, certificate validity display, TLS/SSL grade alignment, and hover surfaces for a denser operator view.
+
 ## 0.9.6 - 2026-05-30
 
 - Reworked the dashboard into a dark, colorful score-and-checklist layout inspired by audit result interfaces.

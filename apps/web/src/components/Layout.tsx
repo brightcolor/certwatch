@@ -15,6 +15,7 @@ const navItems = [
 
 export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, onPage, version, stats = {}, monitors = [], onSelectMonitor, tenants = [], tenantId, onTenant }: any) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [search, setSearch] = useState("");
   const critical = (stats.critical ?? 0) + (stats.down ?? 0);
@@ -30,22 +31,25 @@ export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, 
     setSidebarOpen(false);
     onPage(nextPage);
   };
+  const toggleSidebar = () => {
+    if (window.matchMedia("(max-width: 991.98px)").matches) {
+      setSidebarOpen((current) => !current);
+      return;
+    }
+    setSidebarCollapsed((current) => !current);
+  };
   const jumpToMonitor = (id: string) => {
     setSearch("");
     onSelectMonitor?.(id);
   };
 
   return (
-    <div className={`app-wrapper layout-fixed sidebar-expand-lg certwatch-adminlte${sidebarOpen ? " sidebar-open" : ""}`}>
+    <div className={`app-wrapper layout-fixed sidebar-expand-lg sidebar-mini certwatch-adminlte${sidebarOpen ? " sidebar-open" : ""}${sidebarCollapsed ? " sidebar-collapse" : ""}`}>
       {sidebarOpen && <button className="sidebar-backdrop" type="button" aria-label="Close navigation" onClick={() => setSidebarOpen(false)} />}
       <nav className="app-header navbar navbar-expand bg-body border-bottom">
         <div className="container-fluid gap-2">
-          <button className="nav-link sidebar-toggle" type="button" aria-label="Toggle navigation" onClick={() => setSidebarOpen((current) => !current)}>
+          <button className="nav-link sidebar-toggle" type="button" aria-label="Toggle navigation" onClick={toggleSidebar}>
             <Menu size={20} />
-          </button>
-          <button className="nav-link product-link" type="button" onClick={() => navigate("dashboard")}>
-            <Activity size={18} />
-            <span>CertWatch</span>
           </button>
           <form className="header-search" onSubmit={(event) => { event.preventDefault(); if (matches[0]) jumpToMonitor(matches[0].id); }}>
             <Search size={16} />
@@ -83,7 +87,7 @@ export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, 
       </nav>
       <aside className="app-sidebar bg-body-secondary shadow" data-bs-theme={theme === "dark" ? "dark" : "light"}>
         <div className="sidebar-brand">
-          <button className="brand-link" type="button" onClick={() => navigate("dashboard")}>
+          <button className="brand-link" type="button" onClick={() => navigate("dashboard")} title="CertWatch">
             <span className="brand-image"><Activity size={18} /></span>
             <span className="brand-text fw-semibold">CertWatch</span>
           </button>
@@ -92,7 +96,7 @@ export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, 
           <nav className="mt-2">
             <ul className="nav sidebar-menu flex-column" role="navigation" aria-label="Main navigation">
               {navItems.map((item) => <NavItem key={item.page} item={item} active={page === item.page} stats={stats} onClick={() => navigate(item.page)} />)}
-              <li className="nav-item"><a className="nav-link" href="/api/export/monitors.json"><Download className="nav-icon" size={18} /><p>Export</p></a></li>
+              <li className="nav-item"><a className="nav-link" href="/api/export/monitors.json" title="Export"><Download className="nav-icon" size={18} /><p>Export</p></a></li>
             </ul>
           </nav>
         </div>
@@ -124,7 +128,7 @@ function NavItem({ item, active, stats, onClick }: any) {
   const badge = navBadge(item.page, stats);
   return (
     <li className="nav-item">
-      <button type="button" className={`nav-link${active ? " active" : ""}`} onClick={onClick}>
+      <button type="button" className={`nav-link${active ? " active" : ""}`} onClick={onClick} title={item.label}>
         <Icon className="nav-icon" size={18} />
         <p>{item.label}{badge && <span className={`nav-badge ${badge.className}`}>{badge.value}</span>}</p>
       </button>

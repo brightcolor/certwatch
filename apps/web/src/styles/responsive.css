@@ -11,14 +11,26 @@
   }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 991.98px) {
   .certwatch-adminlte .app-sidebar {
     position: fixed;
     top: 0;
     bottom: 0;
     z-index: 1045;
+    width: min(19.5rem, 86vw);
     transform: translateX(-100%);
     transition: transform .2s ease;
+  }
+
+  .certwatch-adminlte.sidebar-collapse .app-sidebar {
+    min-width: var(--lte-sidebar-width);
+    max-width: var(--lte-sidebar-width);
+  }
+
+  .certwatch-adminlte.sidebar-collapse .brand-text,
+  .certwatch-adminlte.sidebar-collapse .sidebar-menu .nav-link p {
+    max-width: none;
+    visibility: visible;
   }
 
   .certwatch-adminlte.sidebar-open .app-sidebar {

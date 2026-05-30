@@ -134,7 +134,7 @@
 
 .dashboard-hero {
   display: grid;
-  grid-template-columns: 9.5rem minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.35rem;
   align-items: center;
   border: 1px solid var(--bs-border-color);
@@ -161,36 +161,11 @@
   --hero-rgb: var(--bs-danger-rgb);
 }
 
-.score-ring {
-  display: grid;
-  width: 8.5rem;
-  height: 8.5rem;
-  place-items: center;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at center, var(--bs-secondary-bg) 0 59%, transparent 60%),
-    conic-gradient(var(--hero) var(--score), rgba(var(--bs-secondary-color-rgb), .16) 0);
-  color: var(--hero);
-}
-
-.score-ring strong {
-  margin-top: 1.2rem;
-  font-size: 2.15rem;
-  line-height: 1;
-}
-
-.score-ring span {
-  margin-top: -2.2rem;
-  color: var(--bs-emphasis-color);
-  font-size: .85rem;
-  font-weight: 800;
-}
-
 .hero-copy h2 {
   margin: .25rem 0 .35rem;
   color: var(--bs-emphasis-color);
   font-size: clamp(1.7rem, 2.7vw, 2.65rem);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .hero-copy p {
@@ -256,7 +231,7 @@
   border-radius: 999px;
   padding: .16rem .5rem;
   font-size: .78rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .mini-ok {
@@ -278,7 +253,7 @@
 .monitor-row {
   position: relative;
   display: grid;
-  grid-template-columns: 3rem minmax(230px, 1.3fr) minmax(175px, .8fr) minmax(190px, .9fr) minmax(122px, .6fr) 4.75rem;
+  grid-template-columns: 3rem minmax(230px, 1.35fr) minmax(175px, .8fr) minmax(270px, 1fr) 4.75rem;
   gap: .85rem;
   align-items: center;
   border-bottom: 1px solid var(--bs-border-color);
@@ -304,7 +279,6 @@
 .monitor-row:hover .monitor-main,
 .monitor-row:hover .monitor-target,
 .monitor-row:hover .monitor-cert,
-.monitor-row:hover .monitor-state,
 .monitor-row:hover .monitor-actions {
   background: transparent;
 }
@@ -343,7 +317,7 @@
   justify-content: center;
   border-radius: .45rem;
   font-size: .75rem;
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .mark-ok {
@@ -370,8 +344,7 @@
 
 .monitor-main,
 .monitor-target,
-.monitor-cert,
-.monitor-state {
+.monitor-cert {
   display: grid;
   min-width: 0;
   gap: .12rem;
@@ -381,7 +354,7 @@
 .monitor-target strong {
   overflow: hidden;
   color: var(--bs-emphasis-color);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.15;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -399,20 +372,30 @@
 
 .monitor-cert {
   color: var(--bs-emphasis-color);
-  font-weight: 800;
+  font-weight: 700;
 }
 
-.monitor-state {
-  justify-items: end;
+.cert-line {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: .35rem;
+  flex-wrap: wrap;
 }
 
-.monitor-state .status {
-  min-width: 6rem;
+.cert-line > strong {
+  font-weight: 700;
+  line-height: 1.15;
 }
 
-.monitor-state strong {
+.cert-line > small {
   color: var(--bs-secondary-color);
-  font-size: .78rem;
+  font-size: .72rem;
+  font-weight: 600;
+}
+
+.cert-line .grade-pill {
+  margin-left: .1rem;
 }
 
 .monitor-actions {
@@ -445,7 +428,7 @@
   padding: .1rem .36rem;
   overflow: hidden;
   font-size: .68rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -472,7 +455,7 @@
 
 @media (max-width: 1180px) {
   .monitor-row {
-    grid-template-columns: 3rem minmax(0, 1fr) minmax(160px, .7fr) minmax(122px, auto) 4.75rem;
+    grid-template-columns: 3rem minmax(0, 1fr) minmax(160px, .7fr) 4.75rem;
   }
 
   .monitor-cert {
@@ -486,16 +469,10 @@
     grid-template-columns: 1fr;
   }
 
-  .score-ring {
-    width: 7rem;
-    height: 7rem;
-  }
-
   .monitor-row {
     padding-left: 1rem;
   }
 
-  .monitor-state,
   .monitor-actions {
     justify-items: start;
     justify-content: flex-start;

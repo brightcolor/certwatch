@@ -21,7 +21,8 @@ This stack keeps the application easy to self-host while still supporting real T
 ## Features
 
 - Dashboard with OK, warning, critical, down, paused, and unknown status counts
-- Dark, colorful dashboard with an overall health score, grouped checklist rows, color-coded multi-select status filters, and monitor cloning
+- Dark, colorful dashboard with a contextual health header, grouped checklist rows, color-coded multi-select status filters, and monitor cloning
+- Collapsible AdminLTE sidebar that can shrink to icon-only navigation while keeping labels available on hover
 - Live-refreshing UI views that update visible status, monitor details, operations, reports, users, workspaces, and settings without a manual reload
 - Dashboard problem chips that show certificate, TLS, DNS, SSL Labs, and service issues directly in the monitor overview
 - SaaS-ready workspace model with tenant-scoped monitors, notification providers, settings, and role-based memberships
