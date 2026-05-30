@@ -106,7 +106,6 @@ export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, 
           <div className="container-fluid">
             <div className="adminlte-titlebar">
               <div>
-                <span className="eyebrow">Selfhosted TLS monitoring</span>
                 <h1>{titleFor(page)}</h1>
               </div>
               <ol className="breadcrumb mb-0">

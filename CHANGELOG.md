@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.9 - 2026-05-30
+
+- Removed the redundant `Selfhosted TLS monitoring` eyebrow from the application title bar.
+
 ## 0.11.8 - 2026-05-30
 
 - Made dashboard list view the default monitor layout.
