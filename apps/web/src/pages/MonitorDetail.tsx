@@ -13,13 +13,14 @@ type MonitorDetailProps = {
   onEdit: () => void;
   onCheck: () => void;
   onClone: () => void;
+  onToggleEnabled: () => void;
   onDelete: () => void;
   onSslLabs: () => Promise<any>;
   onAck: (id: string, assignee: string) => Promise<void>;
   onNote: (id: string, text: string) => Promise<void>;
 };
 
-export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onCheck, onClone, onDelete, onSslLabs, onAck, onNote }: MonitorDetailProps) {
+export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onCheck, onClone, onToggleEnabled, onDelete, onSslLabs, onAck, onNote }: MonitorDetailProps) {
   const [assignee, setAssignee] = useState("");
   const [note, setNote] = useState("");
   const [sslLabsState, setSslLabsState] = useState({ busy: false, message: "" });
@@ -56,8 +57,9 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
             <small>{monitor.tags.join(", ") || "unlabeled"}</small>
           </div>
           <div className="actions">
-            <button className="btn btn-primary" onClick={onCheck}>Check now</button>
+            <button className="btn btn-primary" disabled={!monitor.enabled} onClick={onCheck}>Check now</button>
             {canTriggerSslLabs && <button className="btn btn-outline-secondary" disabled={sslLabsState.busy} onClick={triggerSslLabs}>SSL Labs</button>}
+            <button className={`btn ${monitor.enabled ? "btn-outline-warning warning" : "btn-success success"}`} onClick={onToggleEnabled}>{monitor.enabled ? "Pause" : "Resume"}</button>
             <button className="btn btn-outline-secondary" onClick={onClone}><Copy size={16} /> Clone</button>
             <button className="btn btn-outline-secondary" onClick={onEdit}>Edit</button>
             <button className="btn btn-outline-danger danger" onClick={() => { if (confirm(`Delete monitor "${monitor.name}"?`)) onDelete(); }}>Delete</button>

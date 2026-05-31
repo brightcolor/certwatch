@@ -75,6 +75,18 @@ authRoutes.post("/logout", requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+authRoutes.post("/change-password", requireAuth, async (req, res) => {
+  const parsed = z.object({
+    currentPassword: z.string().min(1),
+    newPassword: z.string().min(12, "Password must be at least 12 characters long.")
+  }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid password payload." });
+  const user = users.findById(req.user!.id);
+  if (!user || !(await bcrypt.compare(parsed.data.currentPassword, user.passwordHash))) return res.status(401).json({ error: "Current password is incorrect." });
+  users.update(user.id, user.role, await bcrypt.hash(parsed.data.newPassword, 12));
+  res.json({ ok: true });
+});
+
 authRoutes.get("/me", requireAuth, (req, res) => {
   res.json({ ...withMemberships(publicUser(req.user!), req.csrfToken, req.user!.id), impersonator: req.impersonator ? publicUser(req.impersonator) : null });
 });

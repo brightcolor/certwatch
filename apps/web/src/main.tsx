@@ -15,6 +15,7 @@ import { Applications } from "./pages/Applications";
 import { Operations } from "./pages/Operations";
 import { Reports } from "./pages/Reports";
 import { TenantsPage } from "./pages/Tenants";
+import { Profile } from "./pages/Profile";
 import { useLiveRefresh } from "./hooks/useLiveRefresh";
 import { applyStatusFavicon } from "./utils/favicon";
 import "./styles/app.css";
@@ -251,6 +252,23 @@ function App() {
     navigate("dashboard", cloned.id);
     setToast("Monitor cloned as paused");
   };
+  const setMonitorEnabled = async (monitor: Monitor, enabled: boolean) => {
+    await api.request(`/monitors/${monitor.id}`, { method: "PUT", body: JSON.stringify({ ...monitor, enabled }) });
+    await refresh();
+    if (selected === monitor.id) await loadMonitorData(monitor.id);
+    setToast(enabled ? "Monitor resumed" : "Monitor paused");
+  };
+  const logout = async () => {
+    await api.request("/auth/logout", { method: "POST", body: "{}" });
+    api.setCsrf("");
+    setUser(null);
+    setImpersonator(null);
+    setMonitors([]);
+    setStats({});
+    setPage("dashboard");
+    setSelected(null);
+    setAuthMode(publicConfig.frontPageEnabled ? "front" : "login");
+  };
   const triggerSslLabs = async (monitor: Monitor) => {
     setToast("SSL Labs assessment started");
     const result = await api.request<any>("/ssl-labs/trigger", { method: "POST", body: JSON.stringify({ monitorId: monitor.id, startNewScan: true }) });
@@ -316,6 +334,8 @@ function App() {
       user={user}
       impersonator={impersonator}
       onStopImpersonation={async () => finishLogin(await api.request("/auth/stop-impersonation", { method: "POST", body: "{}" }))}
+      onProfile={() => navigate("profile")}
+      onLogout={logout}
     >
       {toast && <div className="toast" onAnimationEnd={() => setToast("")}>{toast}</div>}
       {page === "settings" ? (
@@ -376,6 +396,13 @@ function App() {
         />
       ) : page === "applications" ? (
         <Applications monitors={monitors} onSelect={(id) => navigate("dashboard", id)} />
+      ) : page === "profile" ? (
+        <Profile
+          user={user}
+          tenants={tenants}
+          onChangePassword={(data: any) => api.request("/auth/change-password", { method: "POST", body: JSON.stringify(data) })}
+          onLogout={logout}
+        />
       ) : page === "operations" ? (
         <Operations liveRefreshKey={liveRefreshKey} />
       ) : page === "reports" ? (
@@ -389,13 +416,14 @@ function App() {
           onEdit={() => setEditing(selectedMonitor)}
           onCheck={() => checkNow(selectedMonitor.id)}
           onClone={() => cloneMonitor(selectedMonitor.id)}
+          onToggleEnabled={() => setMonitorEnabled(selectedMonitor, !selectedMonitor.enabled)}
           onDelete={() => deleteMonitor(selectedMonitor.id)}
           onSslLabs={() => triggerSslLabs(selectedMonitor)}
           onAck={async (id: string, assignee: string) => { await api.request(`/incidents/${id}/ack`, { method: "POST", body: JSON.stringify({ assignee }) }); await loadMonitorData(selectedMonitor.id); }}
           onNote={async (id: string, text: string) => { await api.request(`/incidents/${id}/notes`, { method: "POST", body: JSON.stringify({ text }) }); await loadMonitorData(selectedMonitor.id); }}
         />
       ) : (
-        <Dashboard monitors={monitors} stats={stats} query={query} setQuery={setQuery} onSelect={(id: string) => navigate("dashboard", id)} onCheck={checkNow} onClone={cloneMonitor} />
+        <Dashboard monitors={monitors} stats={stats} query={query} setQuery={setQuery} onSelect={(id: string) => navigate("dashboard", id)} onCheck={checkNow} onClone={cloneMonitor} onToggleEnabled={(monitor: Monitor) => setMonitorEnabled(monitor, !monitor.enabled)} />
       )}
       {editing && <MonitorForm channels={channels} monitor={editing === "new" ? null : editing} onCancel={() => setEditing(null)} onSave={saveMonitor} onSaveAndCheck={saveAndCheck} />}
     </Layout>

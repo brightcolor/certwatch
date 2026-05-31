@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
-import { Copy, RefreshCw, Search, ShieldCheck, Siren, TimerReset, TriangleAlert } from "lucide-react";
+import { Copy, Pause, Play, RefreshCw, Search, ShieldCheck, Siren, TimerReset, TriangleAlert } from "lucide-react";
 import type { Monitor } from "../api/client";
 import { collectsCertificate } from "../utils/monitorTypes";
 import { formatDate } from "../utils/date";
 
-export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck, onClone }: any) {
+export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck, onClone, onToggleEnabled }: any) {
   const [viewMode, setViewMode] = useState<"grouped" | "list">("list");
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [issueFilters, setIssueFilters] = useState<string[]>([]);
@@ -87,15 +87,15 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
                 {statusOptions.slice(0, 4).map((item) => <button type="button" className={`mini-count mini-${item.status.toLowerCase()}`} key={item.status} onClick={() => setOnlyStatuses([item.status])}><b>{item.short}</b>{group.counts[item.status] ?? 0}</button>)}
               </div>
             </div>
-            {group.monitors.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} onStatus={toggleStatus} onIssue={toggleIssue} onMoreIssues={toggleExpandedIssues} issueFilters={issueFilters} expandedIssues={expandedIssueMonitor === monitor.id} key={monitor.id} />)}
+            {group.monitors.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} onToggleEnabled={onToggleEnabled} onStatus={toggleStatus} onIssue={toggleIssue} onMoreIssues={toggleExpandedIssues} issueFilters={issueFilters} expandedIssues={expandedIssueMonitor === monitor.id} key={monitor.id} />)}
           </section>
-        )) : filtered.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} onStatus={toggleStatus} onIssue={toggleIssue} onMoreIssues={toggleExpandedIssues} issueFilters={issueFilters} expandedIssues={expandedIssueMonitor === monitor.id} key={monitor.id} />)}
+        )) : filtered.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} onToggleEnabled={onToggleEnabled} onStatus={toggleStatus} onIssue={toggleIssue} onMoreIssues={toggleExpandedIssues} issueFilters={issueFilters} expandedIssues={expandedIssueMonitor === monitor.id} key={monitor.id} />)}
       </div>
     </section>
   );
 }
 
-function MonitorRow({ monitor, onSelect, onCheck, onClone, onStatus, onIssue, onMoreIssues, issueFilters, expandedIssues }: { monitor: Monitor; onSelect: (id: string) => void; onCheck: (id: string) => void; onClone: (id: string) => void; onStatus: (status: string) => void; onIssue: (issue: string) => void; onMoreIssues: (id: string) => void; issueFilters: string[]; expandedIssues: boolean }) {
+function MonitorRow({ monitor, onSelect, onCheck, onClone, onToggleEnabled, onStatus, onIssue, onMoreIssues, issueFilters, expandedIssues }: { monitor: Monitor; onSelect: (id: string) => void; onCheck: (id: string) => void; onClone: (id: string) => void; onToggleEnabled: (monitor: Monitor) => void; onStatus: (status: string) => void; onIssue: (issue: string) => void; onMoreIssues: (id: string) => void; issueFilters: string[]; expandedIssues: boolean }) {
   const reason = resultReason(monitor);
   return (
     <div className={`monitor-row tone-${monitor.lastStatus.toLowerCase()}`} onClick={() => onSelect(monitor.id)}>
@@ -108,7 +108,8 @@ function MonitorRow({ monitor, onSelect, onCheck, onClone, onStatus, onIssue, on
       <div className="monitor-target"><strong>{monitor.host}:{monitor.port}</strong><small>{monitor.type} - {monitor.tags.join(", ") || "unlabeled"}</small></div>
       <div className="monitor-cert"><span className="cert-line"><strong>{certificateSummary(monitor)}</strong><small>{certificateDetail(monitor)}</small>{gradePill(monitor)}{sslLabsPill(monitor)}</span></div>
       <div className="monitor-actions">
-        <button className="btn btn-sm btn-outline-secondary monitor-action" title="Check now" aria-label={`Check ${monitor.name} now`} onClick={(e) => { e.stopPropagation(); onCheck(monitor.id); }}><RefreshCw size={14} /></button>
+        <button className={`btn btn-sm monitor-action ${monitor.enabled ? "btn-outline-warning warning" : "btn-success success"}`} title={monitor.enabled ? "Pause monitor" : "Resume monitor"} aria-label={`${monitor.enabled ? "Pause" : "Resume"} ${monitor.name}`} onClick={(e) => { e.stopPropagation(); onToggleEnabled(monitor); }}>{monitor.enabled ? <Pause size={14} /> : <Play size={14} />}</button>
+        <button className="btn btn-sm btn-outline-secondary monitor-action" disabled={!monitor.enabled} title={monitor.enabled ? "Check now" : "Resume before running checks"} aria-label={`Check ${monitor.name} now`} onClick={(e) => { e.stopPropagation(); onCheck(monitor.id); }}><RefreshCw size={14} /></button>
         <button className="btn btn-sm btn-outline-secondary monitor-action" title="Clone monitor" aria-label={`Clone ${monitor.name}`} onClick={(e) => { e.stopPropagation(); onClone(monitor.id); }}><Copy size={14} /></button>
       </div>
     </div>

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.3 - 2026-05-31
+
+- Added a profile page with account details, logout, and self-service password changes that require the current password.
+- Added a header profile menu so logout and profile actions are always discoverable.
+- Added direct pause/resume controls for monitors in the dashboard list and monitor detail view.
+
 ## 0.12.2 - 2026-05-31
 
 - Rebranded the visible product name to `crt.watch` across the web UI, public pages, notifications, documentation, tests, quickstart output, and logo asset.

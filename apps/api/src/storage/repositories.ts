@@ -1,7 +1,7 @@
 import { db, rowToApiToken, rowToChannel, rowToDelivery, rowToIncident, rowToInvite, rowToMembership, rowToMonitor, rowToResult, rowToSubscription, rowToTenant, rowToTenantGroup, rowToUser, rowToUserAlertSettings } from "./db.js";
 import { id } from "../utils/id.js";
 import { addSecondsIso, nowIso } from "../utils/time.js";
-import type { AlertingSettings, ApiToken, BackupSettings, CheckResult, CtWatchSettings, DiscoverySettings, Incident, IncidentNote, MaintenanceSettings, Monitor, NotificationChannel, NotificationDelivery, NotificationRoute, PlatformSettings, RetentionSettings, SslLabsSettings, StatusPageSettings, StatusSubscription, SmtpSettings, Tenant, TenantGroup, TenantInvite, TenantMembership, TenantRole, TlsPolicySettings, User, UserAlertSettings, UserRole } from "../types.js";
+import type { AlertingSettings, ApiToken, BackupSettings, CheckResult, CtWatchSettings, DiscoverySettings, Incident, IncidentNote, MaintenanceSettings, Monitor, MonitorStatus, NotificationChannel, NotificationDelivery, NotificationRoute, PlatformSettings, RetentionSettings, SslLabsSettings, StatusPageSettings, StatusSubscription, SmtpSettings, Tenant, TenantGroup, TenantInvite, TenantMembership, TenantRole, TlsPolicySettings, User, UserAlertSettings, UserRole } from "../types.js";
 import { DEFAULT_TENANT_ID } from "../types.js";
 import { decryptConfigSecrets, encryptConfigSecrets } from "../utils/secrets.js";
 
@@ -289,7 +289,8 @@ export const monitors = {
     return monitor;
   },
   update(monitor: Monitor): Monitor {
-    const updated = { ...monitor, updatedAt: nowIso(), lastStatus: monitor.enabled ? monitor.lastStatus : "PAUSED" };
+    const lastStatus: MonitorStatus = monitor.enabled ? (monitor.lastStatus === "PAUSED" ? "UNKNOWN" : monitor.lastStatus) : "PAUSED";
+    const updated = { ...monitor, updatedAt: nowIso(), lastStatus };
     db.prepare(`
       UPDATE monitors SET name=@name, host=@host, port=@port, type=@type, enabled=@enabled,
       interval_seconds=@intervalSeconds, timeout_seconds=@timeoutSeconds, warning_days=@warningDays,

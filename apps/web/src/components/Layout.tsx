@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Activity, BarChart3, Bell, Boxes, Download, Menu, Plus, Search, Settings, Users, Upload } from "lucide-react";
+import { Activity, BarChart3, Bell, Boxes, Download, LogOut, Menu, Plus, Search, Settings, UserCircle, Users, Upload } from "lucide-react";
 import type { Monitor } from "../api/client";
 
 const navItems = [
@@ -13,10 +13,11 @@ const navItems = [
   { page: "users", label: "Users", icon: Users }
 ];
 
-export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, onPage, version, stats = {}, monitors = [], onSelectMonitor, tenants = [], tenantId, onTenant, user, impersonator, onStopImpersonation }: any) {
+export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, onPage, version, stats = {}, monitors = [], onSelectMonitor, tenants = [], tenantId, onTenant, user, impersonator, onStopImpersonation, onProfile, onLogout }: any) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [search, setSearch] = useState("");
   const critical = (stats.critical ?? 0) + (stats.down ?? 0);
   const matches = useMemo(() => {
@@ -85,6 +86,21 @@ export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, 
               <option value="auto">Auto</option>
             </select>
             <button className="btn btn-primary btn-sm" type="button" onClick={onNew}><Plus size={16} /> Monitor</button>
+            <div className="nav-item profile-dropdown">
+              <button className="btn btn-outline-secondary btn-sm profile-button" type="button" onClick={() => setProfileOpen((current) => !current)} aria-expanded={profileOpen} title={user?.email ?? "Profile"}>
+                <UserCircle size={16} /><span>{shortEmail(user?.email)}</span>
+              </button>
+              {profileOpen && <div className="profile-menu card shadow">
+                <div className="card-header">
+                  <strong>{user?.email}</strong>
+                  <small>{user?.role}</small>
+                </div>
+                <div className="list-group list-group-flush">
+                  <button className="list-group-item list-group-item-action" type="button" onClick={() => { setProfileOpen(false); onProfile?.(); }}><UserCircle size={16} /> Profile</button>
+                  <button className="list-group-item list-group-item-action text-danger" type="button" onClick={() => { setProfileOpen(false); onLogout?.(); }}><LogOut size={16} /> Log out</button>
+                </div>
+              </div>}
+            </div>
           </div>
         </div>
       </nav>
@@ -178,5 +194,11 @@ const titleFor = (page: string) => ({
   users: "Users",
   tenants: "Workspaces",
   import: "Bulk Import",
-  applications: "Applications"
+  applications: "Applications",
+  profile: "Profile"
 }[page] ?? "Dashboard");
+
+const shortEmail = (email?: string) => {
+  if (!email) return "Profile";
+  return email.length > 24 ? `${email.slice(0, 21)}...` : email;
+};
