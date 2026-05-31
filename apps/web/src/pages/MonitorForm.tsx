@@ -58,6 +58,7 @@ const protocolOptions = [
   ] }
 ];
 const flatProtocolOptions = protocolOptions.flatMap((group) => group.options);
+const labelSuggestions = ["prod", "staging", "mail", "web", "api", "dns", "customer", "internal"];
 
 export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAndCheck }: { monitor?: Monitor | null; channels?: any[]; onCancel: () => void; onSave: (data: any) => void; onSaveAndCheck: (data: any) => void }) {
   const [form, setForm] = useState<any>({ ...blank, ...monitor, tags: monitor?.tags ?? [] });
@@ -114,7 +115,7 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
           </select></label>}
           <label>Hostname<input value={form.host} onChange={(e) => set("host", e.target.value)} required /></label>
           <label>Port<input type="number" min="1" max="65535" value={form.port} onChange={(e) => set("port", e.target.value)} /></label>
-          <TagInput value={form.tags ?? []} onChange={(tags) => set("tags", tags)} />
+          <TagInput value={form.tags ?? []} onChange={(tags) => set("tags", tags)} suggestions={labelSuggestions} hint="Labels group monitors, drive status pages and badges, and can target alert routes." />
           <label>Owner<input value={form.owner ?? ""} onChange={(e) => set("owner", e.target.value)} placeholder="Team or person" /></label>
         </FormSection>
         <FormSection title="Schedule and thresholds">
@@ -200,7 +201,7 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
           </div>
         </div>
         <label>Notes<textarea value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value)} /></label>
-        <div className="actions end"><button type="button" className="danger" onClick={onCancel}>Cancel</button><button type="button" className="success" onClick={() => onSaveAndCheck(data())}>Save and check</button><button className="success" type="submit">Save</button></div>
+        <div className="actions end sticky-actions"><button type="button" className="danger" onClick={onCancel}>Cancel</button><button type="button" className="success" onClick={() => onSaveAndCheck(data())}>Save and check</button><button className="success" type="submit">Save</button></div>
       </form>
     </div>
   );

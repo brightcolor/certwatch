@@ -77,6 +77,11 @@
   padding: .45rem .6rem;
 }
 
+.tag-field {
+  display: grid;
+  gap: .45rem;
+}
+
 .tag-input {
   display: flex;
   min-height: 42px;
@@ -108,6 +113,7 @@
 .tag-chip {
   display: inline-flex;
   align-items: center;
+  gap: .35rem;
   min-height: 1.75rem;
   border-radius: 999px;
   font-size: .75rem;
@@ -116,4 +122,93 @@
   background: rgba(var(--bs-primary-rgb), .18);
   color: var(--bs-emphasis-color);
   padding: .25rem .65rem;
+}
+
+.tag-chip span {
+  opacity: .7;
+}
+
+.tag-actions,
+.tag-meta,
+.tag-suggestions,
+.member-picker {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+.tag-meta {
+  justify-content: space-between;
+}
+
+.tag-suggestion {
+  min-height: 1.55rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 999px;
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-body-color);
+  padding: .15rem .55rem;
+  font-size: .74rem;
+}
+
+.danger-link {
+  color: var(--bs-danger);
+}
+
+.sticky-actions {
+  position: sticky;
+  right: 0;
+  bottom: -1.25rem;
+  z-index: 5;
+  margin: 0 -1.25rem -1.25rem;
+  border-top: 1px solid var(--bs-border-color);
+  background: color-mix(in srgb, var(--bs-body-bg) 94%, transparent);
+  padding: .8rem 1.25rem;
+  backdrop-filter: blur(10px);
+}
+
+.member-picker {
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-tertiary-bg);
+  padding: .7rem;
+}
+
+.member-picker > div {
+  display: grid;
+  margin-right: auto;
+}
+
+.access-group-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: .8rem;
+  align-items: center;
+  border-top: 1px solid var(--bs-border-color);
+  padding: .75rem 0;
+}
+
+.access-group-row > div:first-child {
+  display: grid;
+  min-width: 0;
+}
+
+.role-pill {
+  border-radius: 999px;
+  padding: .18rem .65rem;
+  font-size: .78rem;
+  font-weight: 600;
+}
+
+.role-viewer { background: rgba(var(--bs-secondary-rgb), .25); color: var(--bs-secondary-color); }
+.role-member { background: rgba(var(--bs-info-rgb), .22); color: var(--bs-info); }
+.role-admin { background: rgba(var(--bs-warning-rgb), .24); color: var(--bs-warning); }
+.role-owner { background: rgba(var(--bs-danger-rgb), .2); color: var(--bs-danger); }
+
+.role-hint {
+  grid-column: 1 / -1;
+  margin: -.2rem 0 0;
 }

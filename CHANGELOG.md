@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.12.4 - 2026-05-31
+
+- Improved label/tag entry with stable chips, blur/tab commit behavior, text mode, quick suggestions, and clear/remove actions.
+- Reused the label input in personal alert preferences and notification routing so label handling is consistent across forms.
+- Clarified workspace groups as access groups with role explanations, selected member counts, select-all/clear controls, and clearer group rows.
+- Added a sticky monitor form action bar so save, save-and-check, and cancel actions stay visible in long forms.
+- Constrained the public frontpage content to 80% desktop width for a calmer landing-page layout.
+
 ## 0.12.3 - 2026-05-31
 
 - Added a profile page with account details, logout, and self-service password changes that require the current password.

@@ -11,13 +11,15 @@
   top: 0;
   z-index: 20;
   display: flex;
+  width: min(80vw, 1600px);
   min-height: 4.25rem;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   border-bottom: 1px solid var(--bs-border-color);
   background: rgba(var(--bs-body-bg-rgb), .92);
-  padding: .85rem clamp(1rem, 4vw, 4rem);
+  margin-inline: auto;
+  padding: .85rem 0;
   backdrop-filter: blur(14px);
 }
 
@@ -67,9 +69,11 @@
 
 .frontpage-hero {
   position: relative;
+  width: min(80vw, 1600px);
   min-height: 74vh;
   overflow: hidden;
-  padding: 5rem clamp(1rem, 4vw, 4rem);
+  margin-inline: auto;
+  padding: 5rem 0;
 }
 
 .frontpage-copy {
@@ -83,7 +87,7 @@
 .frontpage-copy h1 {
   max-width: 680px;
   font-size: 4.5rem;
-  font-weight: 720;
+  font-weight: 600;
   line-height: .98;
 }
 
@@ -110,7 +114,7 @@
 
 .frontpage-visual {
   position: absolute;
-  right: clamp(1rem, 4vw, 4rem);
+  right: 0;
   bottom: 3rem;
   width: min(44rem, 48vw);
   display: grid;
@@ -187,7 +191,9 @@
 
 .frontpage-strip,
 .frontpage-section {
-  padding: 0 clamp(1rem, 4vw, 4rem) clamp(3rem, 6vw, 5rem);
+  width: min(80vw, 1600px);
+  margin-inline: auto;
+  padding: 0 0 clamp(3rem, 6vw, 5rem);
 }
 
 .frontpage-strip {
@@ -250,6 +256,16 @@
 }
 
 @media (max-width: 980px) {
+  .frontpage-nav,
+  .frontpage-hero,
+  .frontpage-strip,
+  .frontpage-section {
+    width: auto;
+    margin-inline: 0;
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
   .frontpage-nav,
   .frontpage-nav nav,
   .frontpage-actions {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Bell, Mail, PlugZap, Trash2 } from "lucide-react";
+import { TagInput } from "../components/TagInput";
 
 const providerFields: Record<string, Array<{ key: string; label: string; type?: string; placeholder?: string }>> = {
   email: [{ key: "from", label: "Sender override", placeholder: "crt.watch@example.com" }],
@@ -29,7 +30,7 @@ export function Settings(props: any) {
   const [retentionForm, setRetentionForm] = useState(retention);
   const [ctForm, setCtForm] = useState(ctWatch);
   const [ctResult, setCtResult] = useState<any>(null);
-  const [routeForm, setRouteForm] = useState({ name: "", tags: "", severities: ["critical"], channelIds: [] as string[], recipients: {} as Record<string, string>, delayMinutes: 0, enabled: true });
+  const [routeForm, setRouteForm] = useState({ name: "", tags: [] as string[], severities: ["critical"], channelIds: [] as string[], recipients: {} as Record<string, string>, delayMinutes: 0, enabled: true });
   const fields = useMemo(() => providerFields[channel.type] ?? providerFields.webhook, [channel.type]);
 
   useEffect(() => setAlertForm(alerting), [alerting]);
@@ -47,14 +48,14 @@ export function Settings(props: any) {
     props.onSaveRoutes([...(routes ?? []), {
       id: crypto.randomUUID(),
       name: routeForm.name,
-      tags: routeForm.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+      tags: routeForm.tags,
       severities: routeForm.severities,
       channelIds: routeForm.channelIds,
       recipients: routeForm.recipients,
       delayMinutes: routeForm.delayMinutes,
       enabled: true
     }]);
-    setRouteForm({ name: "", tags: "", severities: ["critical"], channelIds: [], recipients: {}, delayMinutes: 0, enabled: true });
+    setRouteForm({ name: "", tags: [], severities: ["critical"], channelIds: [], recipients: {}, delayMinutes: 0, enabled: true });
   };
 
   return (
@@ -77,7 +78,7 @@ export function Settings(props: any) {
           <p className="muted">Personal alerts can subscribe to info, warning, and recovery events. Critical delivery always follows the workspace admin routes.</p>
           {personalForm && <>
             <label><input type="checkbox" checked={personalForm.enabled} onChange={(e) => setPersonalForm({ ...personalForm, enabled: e.target.checked })} /> Enable personal alerts</label>
-            <label>Tags<input value={(personalForm.tags ?? []).join(",")} placeholder="prod,mail or empty for all" onChange={(e) => setPersonalForm({ ...personalForm, tags: e.target.value.split(",").map((tag) => tag.trim()).filter(Boolean) })} /></label>
+            <TagInput label="Labels" value={personalForm.tags ?? []} onChange={(tags) => setPersonalForm({ ...personalForm, tags })} placeholder="empty means all labels" hint="Leave empty to receive matching personal alerts for every monitor you can access." suggestions={["prod", "mail", "web", "api", "internal"]} />
             <div className="checks">
               {["warning", "recovery", "info"].map((severity) => <label key={severity}><input type="checkbox" checked={(personalForm.severities ?? []).includes(severity)} onChange={() => setPersonalForm((current: any) => ({ ...current, severities: toggle(current.severities ?? [], severity) }))} /> {severity}</label>)}
             </div>
@@ -149,7 +150,7 @@ export function Settings(props: any) {
         <div className="panel">
           <h3>Notification routing</h3>
           <label>Name<input value={routeForm.name} onChange={(e) => setRouteForm({ ...routeForm, name: e.target.value })} /></label>
-          <label>Tags<input value={routeForm.tags} placeholder="prod,mail" onChange={(e) => setRouteForm({ ...routeForm, tags: e.target.value })} /></label>
+          <TagInput label="Labels" value={routeForm.tags} onChange={(tags) => setRouteForm({ ...routeForm, tags })} placeholder="empty means all labels" hint="Routes match monitors that have any selected label. Leave empty for a global route." suggestions={["prod", "mail", "web", "api", "internal"]} />
           <label>Severity<select value={routeForm.severities[0] ?? "critical"} onChange={(e) => setRouteForm({ ...routeForm, severities: [e.target.value] })}><option value="warning">Warning</option><option value="critical">Critical</option><option value="recovery">Recovery</option></select></label>
           <label>Escalation delay minutes<input type="number" min="0" max="10080" value={routeForm.delayMinutes} onChange={(e) => setRouteForm({ ...routeForm, delayMinutes: Number(e.target.value) })} /></label>
           <div className="grid two">{channels.map((item: any) => <div className="panel compact" key={item.id}><label><input type="checkbox" checked={routeForm.channelIds.includes(item.id)} onChange={() => setRouteForm((current) => ({ ...current, channelIds: current.channelIds.includes(item.id) ? current.channelIds.filter((id) => id !== item.id) : [...current.channelIds, item.id] }))} /> {item.name}</label>{routeForm.channelIds.includes(item.id) && <label>{recipientLabel(item.type)}<input value={routeForm.recipients[item.id] ?? ""} onChange={(e) => setRouteForm((current) => ({ ...current, recipients: { ...current.recipients, [item.id]: e.target.value } }))} /></label>}</div>)}</div>

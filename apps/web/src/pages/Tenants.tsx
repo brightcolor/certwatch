@@ -76,24 +76,33 @@ export function TenantsPage({ tenants, members, invites, groups, onCreateTenant,
       </div>
       <div className="grid two">
         <form className="panel" onSubmit={saveGroup}>
-          <h3>{group.id ? "Edit group" : "Create group"}</h3>
-          <p className="muted">Groups grant an additional workspace role. A member's effective role is the highest direct or group role.</p>
+          <h3>{group.id ? "Edit access group" : "Create access group"}</h3>
+          <p className="muted">Access groups bundle members and grant an additional workspace role. A member's effective role is the highest direct or group role.</p>
           <label>Name<input value={group.name} onChange={(event) => setGroup({ ...group, name: event.target.value })} /></label>
-          <label>Group role<select value={group.role} onChange={(event) => setGroup({ ...group, role: event.target.value })}>
+          <label>Granted role<select value={group.role} onChange={(event) => setGroup({ ...group, role: event.target.value })}>
             <option value="viewer">Viewer</option>
             <option value="member">Member</option>
             <option value="admin">Admin</option>
             <option value="owner">Owner</option>
           </select></label>
+          <RoleHint role={group.role} />
+          <div className="member-picker">
+            <div>
+              <strong>Members</strong>
+              <span className="muted">{group.memberIds.length} selected</span>
+            </div>
+            <button type="button" className="ghost" onClick={() => setGroup((current) => ({ ...current, memberIds: members.map((item) => item.userId) }))}>Select all</button>
+            <button type="button" className="ghost" onClick={() => setGroup((current) => ({ ...current, memberIds: [] }))}>Clear</button>
+          </div>
           <div className="checks">
             {members.map((item) => <label key={item.userId}><input type="checkbox" checked={group.memberIds.includes(item.userId)} onChange={() => setGroup((current) => ({ ...current, memberIds: toggle(current.memberIds, item.userId) }))} /> {item.email}</label>)}
           </div>
           <div className="actions"><button className="success">{group.id ? "Save group" : "Create group"}</button>{group.id && <button className="danger" type="button" onClick={() => setGroup({ name: "", role: "viewer", memberIds: [] })}>Cancel edit</button>}</div>
         </form>
         <div className="panel">
-          <h3>Groups</h3>
-          {groups.map((item) => <div className="channel" key={item.id}><strong>{item.name}</strong><span>{item.role} - {item.memberIds.length} members</span><div className="actions end"><button onClick={() => setGroup({ id: item.id, name: item.name, role: item.role, memberIds: item.memberIds })}>Edit</button><button className="danger" onClick={() => onDeleteGroup(item.id)}>Delete</button></div></div>)}
-          {!groups.length && <span className="muted">No groups created.</span>}
+          <h3>Access groups</h3>
+          {groups.map((item) => <div className="access-group-row" key={item.id}><div><strong>{item.name}</strong><span>{item.memberIds.length} members</span></div><span className={`role-pill role-${item.role}`}>{item.role}</span><div className="actions end"><button onClick={() => setGroup({ id: item.id, name: item.name, role: item.role, memberIds: item.memberIds })}>Edit</button><button className="danger" onClick={() => onDeleteGroup(item.id)}>Delete</button></div></div>)}
+          {!groups.length && <span className="muted">No access groups created.</span>}
         </div>
       </div>
       <div className="panel">
@@ -134,7 +143,7 @@ function MemberRow({ member, groups, onSave, onRemove }: { member: any; groups: 
       </select></label>
       <div className="checks compact-checks">
         {groups.map((group) => <label key={group.id}><input type="checkbox" checked={groupIds.includes(group.id)} onChange={() => setGroupIds((current) => toggle(current, group.id))} /> {group.name}</label>)}
-        {!groups.length && <span className="muted">No groups</span>}
+        {!groups.length && <span className="muted">No access groups</span>}
       </div>
       <div className="actions end"><button className="success" onClick={() => onSave(member.userId, { role, groupIds })}>Save</button><button className="danger" onClick={() => onRemove(member.userId)}>Remove</button></div>
     </div>
@@ -143,3 +152,14 @@ function MemberRow({ member, groups, onSave, onRemove }: { member: any; groups: 
 
 const toggle = (values: string[], value: string) =>
   values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
+
+function RoleHint({ role }: { role: string }) {
+  return <p className="muted role-hint">{roleDescriptions[role] ?? roleDescriptions.viewer}</p>;
+}
+
+const roleDescriptions: Record<string, string> = {
+  viewer: "Viewer can inspect monitors, results, reports, and settings but cannot change checks.",
+  member: "Member can create and update monitors and run checks.",
+  admin: "Admin can manage monitors, alerts, providers, groups, invites, and members.",
+  owner: "Owner has full workspace control, including ownership-sensitive membership changes."
+};
