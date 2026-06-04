@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.13.0 - 2026-06-04
+
+- Rebuilt the auth entry point around Passport Local while keeping secure HTTP-only API sessions and CSRF protection.
+- Added optional Passport GitHub strategy configuration for a future GitHub login flow.
+- Removed the previous workspace access-group/effective-role logic from the API and UI.
+- Reworked organization and team management around direct tenant roles and direct team roles.
+- Renamed current SaaS/user-management wording from workspaces to organizations/tenants across the active UI and documentation.
+- Stopped creating legacy access-group tables for fresh installations while leaving existing legacy tables untouched.
+
 ## 0.12.7 - 2026-06-04
 
 - Fixed fresh-database user creation by inserting explicit user columns so CI and new installs work with the impersonation column.

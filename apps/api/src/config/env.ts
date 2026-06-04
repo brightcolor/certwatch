@@ -25,5 +25,8 @@ export const env = {
   checkConcurrency: numberFromEnv("CHECK_CONCURRENCY", 4),
   defaultIntervalSeconds: numberFromEnv("DEFAULT_INTERVAL_SECONDS", 3600),
   defaultWarningDays: numberFromEnv("DEFAULT_WARNING_DAYS", 30),
-  defaultCriticalDays: numberFromEnv("DEFAULT_CRITICAL_DAYS", 7)
+  defaultCriticalDays: numberFromEnv("DEFAULT_CRITICAL_DAYS", 7),
+  githubClientId: process.env.GITHUB_CLIENT_ID ?? "",
+  githubClientSecret: process.env.GITHUB_CLIENT_SECRET ?? "",
+  githubCallbackUrl: process.env.GITHUB_CALLBACK_URL ?? `${process.env.BASE_URL ?? "http://localhost:8080"}/api/auth/github/callback`
 };

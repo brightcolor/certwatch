@@ -33,7 +33,7 @@ opsRoutes.post("/ssl-labs/register", requireTenantRole("owner", "admin"), async 
 opsRoutes.post("/ssl-labs/trigger", requireTenantRole("owner", "admin", "member"), async (req, res) => {
   const parsed = sslLabsTriggerSchema.safeParse(req.body ?? {});
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid SSL Labs trigger." });
-  if (!parsed.data.monitorId && req.tenantRole === "member") return res.status(403).json({ error: "Workspace admin permission required for arbitrary hosts." });
+  if (!parsed.data.monitorId && req.tenantRole === "member") return res.status(403).json({ error: "Organization admin permission required for arbitrary hosts." });
   const monitor = parsed.data.monitorId ? monitors.get(parsed.data.monitorId, req.currentTenant!.id) : null;
   if (parsed.data.monitorId && !monitor) return res.status(404).json({ error: "Monitor not found." });
   const settings = appSettings.sslLabs(req.currentTenant!.id);
@@ -82,7 +82,7 @@ opsRoutes.post("/discovery/import", requireTenantRole("owner", "admin", "member"
       continue;
     }
     if (!monitorQuotaAvailable(req.currentTenant!.id, created.length)) {
-      errors.push({ monitor: suggestion, error: "Workspace monitor limit reached." });
+      errors.push({ monitor: suggestion, error: "Organization monitor limit reached." });
       continue;
     }
     const parsedMonitor = monitorInputSchema.safeParse(monitorFromDiscovery(suggestion));

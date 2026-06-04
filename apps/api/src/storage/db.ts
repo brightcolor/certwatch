@@ -3,7 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import initSqlJs, { Database as SqlJsDatabase, SqlValue } from "sql.js";
 import { env } from "../config/env.js";
-import type { ApiToken, AuditLogEntry, CheckResult, Incident, Monitor, NotificationChannel, NotificationDelivery, StatusSubscription, Team, TeamMembership, Tenant, TenantGroup, TenantInvite, TenantMembership, User, UserAlertSettings } from "../types.js";
+import type { ApiToken, AuditLogEntry, CheckResult, Incident, Monitor, NotificationChannel, NotificationDelivery, StatusSubscription, Team, TeamMembership, Tenant, TenantInvite, TenantMembership, User, UserAlertSettings } from "../types.js";
 import { DEFAULT_TENANT_ID } from "../types.js";
 import { decryptConfigSecrets } from "../utils/secrets.js";
 
@@ -147,20 +147,6 @@ export const migrate = () => {
       expires_at TEXT NOT NULL,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL DEFAULT ''
-    );
-    CREATE TABLE IF NOT EXISTS tenant_groups (
-      id TEXT PRIMARY KEY,
-      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-      name TEXT NOT NULL,
-      role TEXT NOT NULL,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS tenant_group_members (
-      group_id TEXT NOT NULL REFERENCES tenant_groups(id) ON DELETE CASCADE,
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      created_at TEXT NOT NULL,
-      PRIMARY KEY (group_id, user_id)
     );
     CREATE TABLE IF NOT EXISTS teams (
       id TEXT PRIMARY KEY,
@@ -377,7 +363,7 @@ export const migrate = () => {
   db.prepare(`
     INSERT OR IGNORE INTO tenants (id, name, slug, plan, status, monitor_limit, user_limit, team_limit, settings_json, created_at, updated_at, deleted_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, '{}', ?, ?, NULL)
-  `).run(DEFAULT_TENANT_ID, "Default workspace", "default", "team", "active", 1000, 100, 100, new Date().toISOString(), new Date().toISOString());
+  `).run(DEFAULT_TENANT_ID, "Default organization", "default", "team", "active", 1000, 100, 100, new Date().toISOString(), new Date().toISOString());
   db.prepare("UPDATE tenants SET updated_at = created_at WHERE updated_at IS NULL OR updated_at = ''").run();
   db.prepare(`
     INSERT OR IGNORE INTO tenant_memberships (id, tenant_id, user_id, role, status, created_at, updated_at)
@@ -471,7 +457,7 @@ const ensureDefaultTeams = () => {
     if (!existing) {
       db.prepare(`
         INSERT INTO teams (id, tenant_id, name, slug, description, visibility, status, settings_json, created_by_user_id, created_at, updated_at, deleted_at)
-        VALUES (?, ?, 'General', 'general', 'Default team for this workspace.', 'tenant_visible', 'active', '{}', NULL, ?, ?, NULL)
+        VALUES (?, ?, 'General', 'general', 'Default team for this organization.', 'tenant_visible', 'active', '{}', NULL, ?, ?, NULL)
       `).run(teamId, row.id, now, now);
     }
     db.prepare(`
@@ -646,13 +632,10 @@ export const rowToMembership = (row: any): TenantMembership => ({
   userId: row.user_id,
   role: row.role,
   status: row.membership_status ?? row.status ?? "active",
-  effectiveRole: row.effective_role ?? row.role,
   createdAt: row.created_at,
   updatedAt: row.membership_updated_at ?? row.updated_at,
   tenant: rowToTenant(row),
-  userEmail: row.email,
-  groupIds: parse<string[]>(row.group_ids_json, []),
-  groupNames: parse<string[]>(row.group_names_json, [])
+  userEmail: row.email
 });
 
 export const rowToInvite = (row: any): TenantInvite => ({
@@ -667,16 +650,6 @@ export const rowToInvite = (row: any): TenantInvite => ({
   acceptedAt: row.accepted_at,
   revokedAt: row.revoked_at,
   expiresAt: row.expires_at,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at
-});
-
-export const rowToTenantGroup = (row: any): TenantGroup => ({
-  id: row.id,
-  tenantId: row.tenant_id,
-  name: row.name,
-  role: row.role,
-  memberIds: parse<string[]>(row.member_ids_json, []),
   createdAt: row.created_at,
   updatedAt: row.updated_at
 });

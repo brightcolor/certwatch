@@ -9,7 +9,7 @@ const navItems = [
   { page: "operations", label: "Operations", icon: Settings },
   { page: "reports", label: "Reports", icon: BarChart3 },
   { page: "import", label: "Import", icon: Upload },
-  { page: "tenants", label: "Workspaces", icon: Boxes },
+  { page: "tenants", label: "Organizations", icon: Boxes },
   { page: "users", label: "Users", icon: Users }
 ];
 
@@ -70,7 +70,7 @@ export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, 
             {impersonator && <button className="btn btn-warning btn-sm" type="button" onClick={onStopImpersonation} title={`Impersonating ${user?.email}`}>
               Stop impersonation
             </button>}
-            {tenants.length > 1 && <select className="form-select form-select-sm tenant-select" value={tenantId ?? ""} onChange={(event) => onTenant?.(event.target.value)} aria-label="Workspace">
+            {tenants.length > 1 && <select className="form-select form-select-sm tenant-select" value={tenantId ?? ""} onChange={(event) => onTenant?.(event.target.value)} aria-label="Organization">
               {tenants.map((item: any) => <option key={item.tenantId} value={item.tenantId}>{item.tenant.name}</option>)}
             </select>}
             {teams.length > 0 && <select className="form-select form-select-sm tenant-select" value={teamId ?? ""} onChange={(event) => onTeam?.(event.target.value)} aria-label="Team">
@@ -195,7 +195,7 @@ const titleFor = (page: string) => ({
   operations: "Operations",
   reports: "Reports",
   users: "Users",
-  tenants: "Workspaces",
+  tenants: "Organizations",
   import: "Bulk Import",
   applications: "Applications",
   profile: "Profile"

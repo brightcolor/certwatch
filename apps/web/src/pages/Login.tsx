@@ -11,7 +11,7 @@ export function Login({ setupRequired, registrationEnabled, onLogin, onBack, onR
   const [email, setEmail] = useState("admin@example.com");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [organizationName, setOrganizationName] = useState("Default workspace");
+  const [organizationName, setOrganizationName] = useState("Default organization");
   const [error, setError] = useState("");
 
   const submit = async (event: React.FormEvent) => {

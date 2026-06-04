@@ -31,9 +31,9 @@ export function Register({ inviteToken, onLogin, onBack }: { inviteToken?: strin
     <main className="login">
       <form onSubmit={submit} className="login-panel">
         <span className="eyebrow">crt.watch</span>
-        <h1>{invited ? "Join workspace" : "Create workspace"}</h1>
+        <h1>{invited ? "Join organization" : "Create organization"}</h1>
         <p className="muted">
-          {invited ? "Create your account to accept this workspace invitation." : "Create a user account and an isolated organization workspace."}
+          {invited ? "Create your account to accept this organization invitation." : "Create a user account and an isolated organization."}
         </p>
         <label>Email<input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required /></label>
         {!invited && <label>Organization<input value={form.organizationName} onChange={(e) => setForm({ ...form, organizationName: e.target.value })} required /></label>}

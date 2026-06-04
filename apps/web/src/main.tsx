@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { api, Monitor, CheckResult, Incident, StatusSubscription, Team, TeamMembership, TenantGroup, TenantInvite, TenantMembership, UserAlertSettings } from "./api/client";
+import { api, Monitor, CheckResult, Incident, StatusSubscription, Team, TeamMembership, TenantInvite, TenantMembership, UserAlertSettings } from "./api/client";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./pages/Dashboard";
 import { FrontPage } from "./pages/FrontPage";
@@ -49,7 +49,6 @@ function App() {
   const [tenants, setTenants] = useState<TenantMembership[]>([]);
   const [tenantMembers, setTenantMembers] = useState<any[]>([]);
   const [tenantInvites, setTenantInvites] = useState<TenantInvite[]>([]);
-  const [tenantGroups, setTenantGroups] = useState<TenantGroup[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMembership[]>([]);
   const [tenantId, setTenantId] = useState(localStorage.getItem("tenantId") ?? "");
@@ -201,19 +200,16 @@ function App() {
     const id = localStorage.getItem("tenantId");
     if (!id) {
       setTenantMembers([]);
-      setTenantGroups([]);
       return setTenantInvites([]);
     }
     try {
-      const [members, invites, groups] = await Promise.all([
+      const [members, invites] = await Promise.all([
         api.request<any[]>(`/tenants/${id}/members`),
-        api.request<TenantInvite[]>(`/tenants/${id}/invites`),
-        api.request<TenantGroup[]>(`/tenants/${id}/groups`)
+        api.request<TenantInvite[]>(`/tenants/${id}/invites`)
       ]);
       const teamData = await api.request<Team[]>(`/tenants/${id}/teams`);
       setTenantMembers(members);
       setTenantInvites(invites);
-      setTenantGroups(groups);
       setTeams(teamData);
       const existingTeam = localStorage.getItem("teamId");
       const selectedTeam = teamData.find((item) => item.id === existingTeam)?.id ?? teamData[0]?.id ?? "";
@@ -227,7 +223,6 @@ function App() {
     } catch {
       setTenantMembers([]);
       setTenantInvites([]);
-      setTenantGroups([]);
       setTeams([]);
       setTeamMembers([]);
     }
@@ -420,7 +415,6 @@ function App() {
           tenants={tenants}
           members={tenantMembers}
           invites={tenantInvites}
-          groups={tenantGroups}
           teams={teams}
           teamMembers={teamMembers}
           onCreateTenant={async (name) => { const created = await api.request<any>("/tenants", { method: "POST", body: JSON.stringify({ name }) }); api.setTenant(created.tenantId); setTenantId(created.tenantId); await refresh(); }}
@@ -428,8 +422,6 @@ function App() {
           onUpdateMember={async (userId, data) => { await api.request(`/tenants/${tenantId}/members/${userId}`, { method: "PUT", body: JSON.stringify(data) }); await loadTenantMembers(); }}
           onRemoveMember={async (userId) => { await api.request(`/tenants/${tenantId}/members/${userId}`, { method: "DELETE" }); await loadTenantMembers(); }}
           onDeleteInvite={async (inviteId) => { await api.request(`/tenants/${tenantId}/invites/${inviteId}`, { method: "DELETE" }); await loadTenantMembers(); }}
-          onSaveGroup={async (group) => { await api.request(group.id ? `/tenants/${tenantId}/groups/${group.id}` : `/tenants/${tenantId}/groups`, { method: group.id ? "PUT" : "POST", body: JSON.stringify(group) }); await loadTenantMembers(); }}
-          onDeleteGroup={async (groupId) => { await api.request(`/tenants/${tenantId}/groups/${groupId}`, { method: "DELETE" }); await loadTenantMembers(); }}
           onCreateTeam={async (team) => { await api.request(`/tenants/${tenantId}/teams`, { method: "POST", body: JSON.stringify(team) }); await loadTenantMembers(); }}
           onUpdateTeam={async (id, team) => { await api.request(`/tenants/${tenantId}/teams/${id}`, { method: "PUT", body: JSON.stringify(team) }); await loadTenantMembers(); }}
           onArchiveTeam={async (id) => { await api.request(`/tenants/${tenantId}/teams/${id}`, { method: "DELETE" }); await loadTenantMembers(); }}

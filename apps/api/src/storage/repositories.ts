@@ -1,8 +1,8 @@
-import { db, rowToApiToken, rowToAuditLog, rowToChannel, rowToDelivery, rowToIncident, rowToInvite, rowToMembership, rowToMonitor, rowToResult, rowToSubscription, rowToTeam, rowToTeamMembership, rowToTenant, rowToTenantGroup, rowToUser, rowToUserAlertSettings } from "./db.js";
+import { db, rowToApiToken, rowToAuditLog, rowToChannel, rowToDelivery, rowToIncident, rowToInvite, rowToMembership, rowToMonitor, rowToResult, rowToSubscription, rowToTeam, rowToTeamMembership, rowToTenant, rowToUser, rowToUserAlertSettings } from "./db.js";
 import { createHash } from "node:crypto";
 import { id } from "../utils/id.js";
 import { addSecondsIso, nowIso } from "../utils/time.js";
-import type { AlertingSettings, ApiToken, AuditLogEntry, BackupSettings, CheckResult, CtWatchSettings, DiscoverySettings, Incident, IncidentNote, MaintenanceSettings, Monitor, MonitorStatus, NotificationChannel, NotificationDelivery, NotificationRoute, PlatformSettings, RetentionSettings, SslLabsSettings, StatusPageSettings, StatusSubscription, SmtpSettings, Team, TeamMembership, TeamRole, TeamVisibility, Tenant, TenantGroup, TenantInvite, TenantMembership, TenantRole, TlsPolicySettings, User, UserAlertSettings, UserRole } from "../types.js";
+import type { AlertingSettings, ApiToken, AuditLogEntry, BackupSettings, CheckResult, CtWatchSettings, DiscoverySettings, Incident, IncidentNote, MaintenanceSettings, Monitor, MonitorStatus, NotificationChannel, NotificationDelivery, NotificationRoute, PlatformSettings, RetentionSettings, SslLabsSettings, StatusPageSettings, StatusSubscription, SmtpSettings, Team, TeamMembership, TeamRole, TeamVisibility, Tenant, TenantInvite, TenantMembership, TenantRole, TlsPolicySettings, User, UserAlertSettings, UserRole } from "../types.js";
 import { DEFAULT_TENANT_ID } from "../types.js";
 import { decryptConfigSecrets, encryptConfigSecrets } from "../utils/secrets.js";
 
@@ -54,7 +54,7 @@ export const tenants = {
       JOIN users u ON u.id = tm.user_id
       WHERE tm.user_id = ? AND tm.status = 'active' AND t.deleted_at IS NULL AND t.status IN ('active', 'trialing')
       ORDER BY t.name
-    `).all(userId).map(rowToMembership).map(withGroupRole);
+    `).all(userId).map(rowToMembership);
   },
   members(tenantId: string): TenantMembership[] {
     return db.prepare(`
@@ -65,7 +65,7 @@ export const tenants = {
       JOIN users u ON u.id = tm.user_id
       WHERE tm.tenant_id = ? AND t.deleted_at IS NULL
       ORDER BY u.email
-    `).all(tenantId).map(rowToMembership).map(withGroupRole);
+    `).all(tenantId).map(rowToMembership);
   },
   create(name: string, ownerUserId: string): Tenant {
     const createdAt = nowIso();
@@ -75,7 +75,7 @@ export const tenants = {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, '{}', ?, ?, NULL)
     `).run(tenant.id, tenant.name, tenant.slug, tenant.plan, tenant.status, tenant.monitorLimit, tenant.userLimit, tenant.teamLimit, tenant.createdAt, tenant.updatedAt);
     this.addMember(tenant.id, ownerUserId, "owner");
-    teams.create(tenant.id, "General", "Default team for this workspace.", "tenant_visible", ownerUserId);
+    teams.create(tenant.id, "General", "Default team for this organization.", "tenant_visible", ownerUserId);
     return tenant;
   },
   addMember(tenantId: string, userId: string, role: TenantRole) {
@@ -149,68 +149,6 @@ export const tenantInvites = {
   },
   delete(inviteId: string, tenantId: string) {
     db.prepare("UPDATE tenant_invites SET revoked_at = ?, updated_at = ? WHERE id = ? AND tenant_id = ?").run(nowIso(), nowIso(), inviteId, tenantId);
-  }
-};
-
-export const tenantGroups = {
-  list(tenantId: string): TenantGroup[] {
-    return db.prepare("SELECT * FROM tenant_groups WHERE tenant_id = ? ORDER BY name").all(tenantId).map((row) => ({
-      ...rowToTenantGroup(row),
-      memberIds: groupMemberIds(String((row as any).id))
-    }));
-  },
-  forUser(tenantId: string, userId: string): TenantGroup[] {
-    return db.prepare(`
-      SELECT tg.* FROM tenant_groups tg
-      JOIN tenant_group_members tgm ON tgm.group_id = tg.id
-      WHERE tg.tenant_id = ? AND tgm.user_id = ?
-      ORDER BY tg.name
-    `).all(tenantId, userId).map((row) => ({
-      ...rowToTenantGroup(row),
-      memberIds: groupMemberIds(String((row as any).id))
-    }));
-  },
-  create(tenantId: string, name: string, role: TenantRole, memberIds: string[] = []): TenantGroup {
-    const now = nowIso();
-    const group = { id: id(), tenantId, name, role, memberIds: [], createdAt: now, updatedAt: now };
-    db.prepare("INSERT INTO tenant_groups VALUES (?, ?, ?, ?, ?, ?)").run(group.id, group.tenantId, group.name, group.role, group.createdAt, group.updatedAt);
-    this.setMembers(group.id, tenantId, memberIds);
-    return { ...group, memberIds: groupMemberIds(group.id) };
-  },
-  update(groupId: string, tenantId: string, name: string, role: TenantRole, memberIds: string[]): TenantGroup | null {
-    db.prepare("UPDATE tenant_groups SET name = ?, role = ?, updated_at = ? WHERE id = ? AND tenant_id = ?").run(name, role, nowIso(), groupId, tenantId);
-    this.setMembers(groupId, tenantId, memberIds);
-    return this.get(groupId, tenantId);
-  },
-  get(groupId: string, tenantId: string): TenantGroup | null {
-    const row = db.prepare("SELECT * FROM tenant_groups WHERE id = ? AND tenant_id = ?").get(groupId, tenantId);
-    return row ? { ...rowToTenantGroup(row), memberIds: groupMemberIds(groupId) } : null;
-  },
-  setMembers(groupId: string, tenantId: string, memberIds: string[]) {
-    if (!this.get(groupId, tenantId)) return;
-    db.prepare("DELETE FROM tenant_group_members WHERE group_id = ?").run(groupId);
-    for (const userId of unique(memberIds)) {
-      if (db.prepare("SELECT user_id FROM tenant_memberships WHERE tenant_id = ? AND user_id = ?").get(tenantId, userId)) {
-        db.prepare("INSERT OR IGNORE INTO tenant_group_members VALUES (?, ?, ?)").run(groupId, userId, nowIso());
-      }
-    }
-  },
-  setUserGroups(tenantId: string, userId: string, groupIds: string[]) {
-    this.pruneUser(tenantId, userId);
-    for (const groupId of unique(groupIds)) {
-      if (this.get(groupId, tenantId) && db.prepare("SELECT user_id FROM tenant_memberships WHERE tenant_id = ? AND user_id = ?").get(tenantId, userId)) {
-        db.prepare("INSERT OR IGNORE INTO tenant_group_members VALUES (?, ?, ?)").run(groupId, userId, nowIso());
-      }
-    }
-  },
-  delete(groupId: string, tenantId: string) {
-    db.prepare("DELETE FROM tenant_groups WHERE id = ? AND tenant_id = ?").run(groupId, tenantId);
-  },
-  pruneUser(tenantId: string, userId: string) {
-    db.prepare(`
-      DELETE FROM tenant_group_members
-      WHERE user_id = ? AND group_id IN (SELECT id FROM tenant_groups WHERE tenant_id = ?)
-    `).run(userId, tenantId);
   }
 };
 
@@ -777,26 +715,6 @@ const isPlainSettingsObject = (value: unknown): value is Record<string, unknown>
 
 const settingKey = (key: string, tenantId?: string) => tenantId && tenantId !== DEFAULT_TENANT_ID ? `tenant:${tenantId}:${key}` : key;
 
-const withGroupRole = (membership: TenantMembership): TenantMembership => {
-  const groups = tenantGroups.forUser(membership.tenantId, membership.userId);
-  return {
-    ...membership,
-    effectiveRole: highestRole([membership.role, ...groups.map((group) => group.role)]),
-    groupIds: groups.map((group) => group.id),
-    groupNames: groups.map((group) => group.name)
-  };
-};
-
-const highestRole = (roles: TenantRole[]): TenantRole =>
-  roles.sort((a, b) => roleRank(b) - roleRank(a))[0] ?? "viewer";
-
-const roleRank = (role: TenantRole) => ({ owner: 4, admin: 3, member: 2, viewer: 1 }[role]);
-
-const groupMemberIds = (groupId: string) =>
-  (db.prepare("SELECT user_id FROM tenant_group_members WHERE group_id = ? ORDER BY created_at").all(groupId) as Array<{ user_id: string }>).map((row) => row.user_id);
-
-const unique = (values: string[]) => [...new Set(values.filter(Boolean))];
-
 const defaultUserAlerts = (tenantId: string, userId: string): UserAlertSettings => ({
   tenantId,
   userId,
@@ -809,7 +727,7 @@ const defaultUserAlerts = (tenantId: string, userId: string): UserAlertSettings 
 });
 
 const slugify = (value: string) =>
-  value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "workspace";
+  value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "organization";
 
 const uniqueSlug = (base: string) => {
   let slug = base;

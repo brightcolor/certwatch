@@ -17,7 +17,7 @@ monitorRoutes.get("/", (_req, res) => {
 monitorRoutes.post("/", requireTenantRole("owner", "admin", "member"), async (req, res) => {
   const parsed = monitorInputSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid monitor." });
-  if (!monitorQuotaAvailable(req.currentTenant!.id)) return res.status(402).json({ error: "Workspace monitor limit reached." });
+  if (!monitorQuotaAvailable(req.currentTenant!.id)) return res.status(402).json({ error: "Organization monitor limit reached." });
   const monitor = monitors.create({ ...parsed.data, tenantId: req.currentTenant!.id });
   res.status(201).json(publicMonitor(monitor));
 });
@@ -25,7 +25,7 @@ monitorRoutes.post("/", requireTenantRole("owner", "admin", "member"), async (re
 monitorRoutes.post("/:id/clone", requireTenantRole("owner", "admin", "member"), (req, res) => {
   const source = monitors.get(req.params.id, req.currentTenant!.id);
   if (!source) return res.status(404).json({ error: "Monitor not found." });
-  if (!monitorQuotaAvailable(req.currentTenant!.id)) return res.status(402).json({ error: "Workspace monitor limit reached." });
+  if (!monitorQuotaAvailable(req.currentTenant!.id)) return res.status(402).json({ error: "Organization monitor limit reached." });
   const monitor = monitors.create(cloneMonitor(source, req.currentTenant!.id));
   res.status(201).json(publicMonitor(monitor));
 });
@@ -38,7 +38,7 @@ monitorRoutes.post("/bulk", requireTenantRole("owner", "admin", "member"), (req,
     const parsedLine = parseBulkLine(line);
     const parsed = monitorInputSchema.safeParse(parsedLine);
     if (parsed.success && monitorQuotaAvailable(req.currentTenant!.id, created.length)) created.push(publicMonitor(monitors.create({ ...parsed.data, tenantId: req.currentTenant!.id })));
-    else if (parsed.success) errors.push({ line, error: "Workspace monitor limit reached." });
+    else if (parsed.success) errors.push({ line, error: "Organization monitor limit reached." });
     else errors.push({ line, error: parsed.error.issues[0]?.message ?? "Invalid monitor." });
   }
   res.status(errors.length ? 207 : 201).json({ imported: created.length, errors, monitors: created });

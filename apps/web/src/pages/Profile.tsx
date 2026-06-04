@@ -24,7 +24,7 @@ export function Profile({ user, tenants, onChangePassword, onLogout }: any) {
           <h3>Profile</h3>
           <Info label="Email" value={user?.email} />
           <Info label="Platform role" value={user?.role} />
-          <Info label="Workspaces" value={(tenants ?? []).map((item: any) => `${item.tenant.name} (${item.role})`).join(", ")} />
+          <Info label="Organizations" value={(tenants ?? []).map((item: any) => `${item.tenant.name} (${item.role})`).join(", ")} />
           <div className="actions">
             <button className="btn btn-outline-danger danger" type="button" onClick={onLogout}>Log out</button>
           </div>

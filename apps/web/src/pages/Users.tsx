@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 
 export function UsersPage({ users, currentUser, platformSettings, onSavePlatformSettings, onCreate, onUpdate, onDelete, onImpersonate }: any) {
-  const [form, setForm] = useState({ email: "", password: "", role: "viewer", workspaceRole: "viewer" });
+  const [form, setForm] = useState({ email: "", password: "", role: "viewer", tenantRole: "viewer" });
   const [settings, setSettings] = useState(platformSettings ?? { publicRegistrationEnabled: true });
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -18,7 +18,7 @@ export function UsersPage({ users, currentUser, platformSettings, onSavePlatform
     setSaving(true);
     try {
       await onCreate({ ...form, email });
-      setForm({ email: "", password: "", role: "viewer", workspaceRole: "viewer" });
+      setForm({ email: "", password: "", role: "viewer", tenantRole: "viewer" });
       setMessage("User created.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "User could not be created.");
@@ -38,11 +38,11 @@ export function UsersPage({ users, currentUser, platformSettings, onSavePlatform
         </div>
         <form className="panel" onSubmit={submit}>
           <h3>Create user</h3>
-          <p className="muted">Super admins manage the instance. Workspace rights are still assigned per organization.</p>
+          <p className="muted">Super admins manage the instance. Organization rights are assigned per tenant.</p>
           <label>Email<input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required /></label>
           <label>Password<input type="password" minLength={12} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required autoComplete="new-password" /></label>
           <label>Platform role<select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>{platformRoleOptions()}</select></label>
-          <label>Current workspace role<select value={form.workspaceRole} onChange={(e) => setForm({ ...form, workspaceRole: e.target.value })}>{workspaceRoleOptions()}</select></label>
+          <label>Current organization role<select value={form.tenantRole} onChange={(e) => setForm({ ...form, tenantRole: e.target.value })}>{tenantRoleOptions()}</select></label>
           {error && <p className="error">{error}</p>}
           {message && <p className="success">{message}</p>}
           <button className="success" type="submit" disabled={saving}>{saving ? "Creating..." : "Create user"}</button>
@@ -85,7 +85,7 @@ const platformRoleOptions = () => <>
   <option value="super_admin">Super admin</option>
 </>;
 
-const workspaceRoleOptions = () => <>
+const tenantRoleOptions = () => <>
   <option value="viewer">Viewer</option>
   <option value="member">Member</option>
   <option value="admin">Admin</option>

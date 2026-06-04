@@ -176,13 +176,10 @@ export interface TenantMembership {
   userId: string;
   role: TenantRole;
   status?: MembershipStatus;
-  effectiveRole?: TenantRole;
   createdAt: string;
   updatedAt?: string;
   tenant: Tenant;
   userEmail?: string;
-  groupIds?: string[];
-  groupNames?: string[];
 }
 
 export interface TenantInvite {
@@ -199,16 +196,6 @@ export interface TenantInvite {
   expiresAt: string;
   createdAt: string;
   updatedAt?: string;
-}
-
-export interface TenantGroup {
-  id: string;
-  tenantId: string;
-  name: string;
-  role: TenantRole;
-  memberIds: string[];
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface Team {

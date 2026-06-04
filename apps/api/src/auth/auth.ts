@@ -1,14 +1,15 @@
-import { createHash, randomBytes } from "node:crypto";
-import bcrypt from "bcryptjs";
+import { createHash } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 import { env } from "../config/env.js";
 import { apiTokens, sessions, teamMemberships, teams, tenants, users } from "../storage/repositories.js";
-import type { ApiToken, Team, TeamMembership, TeamRole, Tenant, TenantMembership, TenantRole, User } from "../types.js";
+import type { ApiToken, Team, TeamMembership, TeamRole, Tenant, TenantMembership, TenantRole, User as AppUser } from "../types.js";
+import { createUserSession } from "./passport.js";
+import { randomToken } from "./tokens.js";
 
 declare global {
   namespace Express {
+    interface User extends AppUser {}
     interface Request {
-      user?: User;
       apiToken?: ApiToken;
       csrfToken?: string;
       currentTenant?: Tenant;
@@ -17,29 +18,18 @@ declare global {
       teamRole?: TeamRole;
       tenantMemberships?: TenantMembership[];
       teamMemberships?: TeamMembership[];
-      impersonator?: User;
+      impersonator?: AppUser;
     }
   }
 }
 
 const cookieName = "crtwatch_session";
 
-export const login = async (email: string, password: string) => {
-  const user = users.findByEmail(email);
-  if (!user || !(await bcrypt.compare(password, user.passwordHash))) return null;
-  const token = randomBytes(32).toString("hex");
-  const csrfToken = randomBytes(24).toString("hex");
-  sessions.create(user.id, token, csrfToken);
-  return { token, csrfToken, user: publicUser(user) };
-};
-
 export const createImpersonationSession = (targetUserId: string, impersonatorUserId: string) => {
   const target = users.findById(targetUserId);
   const impersonator = users.findById(impersonatorUserId);
   if (!target || !impersonator || impersonator.role !== "super_admin" || target.id === impersonator.id) return null;
-  const token = randomBytes(32).toString("hex");
-  const csrfToken = randomBytes(24).toString("hex");
-  sessions.create(target.id, token, csrfToken, impersonator.id);
+  const { token, csrfToken } = createUserSession(target.id, impersonator.id);
   return { token, csrfToken, user: publicUser(target), impersonator: publicUser(impersonator) };
 };
 
@@ -82,11 +72,11 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
 export const resolveTenant = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user) return next();
   const memberships = tenants.forUser(req.user.id);
-  if (!memberships.length) return res.status(403).json({ error: "No workspace membership found." });
+  if (!memberships.length) return res.status(403).json({ error: "No organization membership found." });
   const requested = req.get("x-tenant-id");
   const membership = memberships.find((item) => item.tenantId === requested) ?? memberships[0];
   req.currentTenant = membership.tenant;
-  req.tenantRole = membership.effectiveRole ?? membership.role;
+  req.tenantRole = membership.role;
   req.tenantMemberships = memberships;
   const availableTeams = teams.listForUser(membership.tenantId, req.user.id, req.tenantRole);
   req.teamMemberships = teamMemberships.activeForUser(membership.tenantId, req.user.id);
@@ -98,12 +88,12 @@ export const resolveTenant = (req: Request, res: Response, next: NextFunction) =
 };
 
 export const requireTenantRole = (...roles: TenantRole[]) => (req: Request, res: Response, next: NextFunction) => {
-  if (!req.tenantRole || !roles.includes(req.tenantRole)) return res.status(403).json({ error: "Workspace permission required." });
+  if (!req.tenantRole || !roles.includes(req.tenantRole)) return res.status(403).json({ error: "Organization permission required." });
   next();
 };
 
 export const requireTeamAccess = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.currentTeam) return res.status(404).json({ error: "Team not found in this workspace." });
+  if (!req.currentTeam) return res.status(404).json({ error: "Team not found in this organization." });
   if (req.tenantRole === "owner" || req.tenantRole === "admin" || req.currentTeam.visibility === "tenant_visible" || req.teamRole) return next();
   return res.status(403).json({ error: "Team permission required." });
 };
@@ -139,7 +129,7 @@ export const clearSessionCookie = (req: Request, res: Response) => {
   res.clearCookie(cookieName);
 };
 
-export const publicUser = (user: User) => ({ id: user.id, email: user.email, role: user.role });
+export const publicUser = (user: AppUser) => ({ id: user.id, email: user.email, role: user.role });
 
-export const createPlainApiToken = () => `cw_${randomBytes(32).toString("base64url")}`;
+export const createPlainApiToken = () => `cw_${randomToken(32)}`;
 export const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");

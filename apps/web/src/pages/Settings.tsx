@@ -75,7 +75,7 @@ export function Settings(props: any) {
         </div>
         <div className="panel">
           <h3><Bell size={18} /> My alert preferences</h3>
-          <p className="muted">Personal alerts can subscribe to info, warning, and recovery events. Critical delivery always follows the workspace admin routes.</p>
+          <p className="muted">Personal alerts can subscribe to info, warning, and recovery events. Critical delivery always follows the organization admin routes.</p>
           {personalForm && <>
             <label><input type="checkbox" checked={personalForm.enabled} onChange={(e) => setPersonalForm({ ...personalForm, enabled: e.target.checked })} /> Enable personal alerts</label>
             <TagInput label="Labels" value={personalForm.tags ?? []} onChange={(tags) => setPersonalForm({ ...personalForm, tags })} placeholder="empty means all labels" hint="Leave empty to receive matching personal alerts for every monitor you can access." suggestions={["prod", "mail", "web", "api", "internal"]} />
