@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.7 - 2026-06-04
+
+- Fixed fresh-database user creation by inserting explicit user columns so CI and new installs work with the impersonation column.
+
 ## 0.12.6 - 2026-06-04
 
 - Added tenant-scoped teams with private or tenant-visible visibility, team roles, team memberships, and a team selector in the app shell.

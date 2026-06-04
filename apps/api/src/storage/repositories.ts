@@ -25,7 +25,7 @@ export const users = {
   create(email: string, passwordHash: string, role: UserRole): User {
     const createdAt = nowIso();
     const user = { id: id(), email: email.toLowerCase(), passwordHash, role, createdAt };
-    db.prepare("INSERT INTO users VALUES (?, ?, ?, ?, ?)").run(user.id, user.email, user.passwordHash, user.role, user.createdAt);
+    db.prepare("INSERT INTO users (id, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?)").run(user.id, user.email, user.passwordHash, user.role, user.createdAt);
     return user;
   },
   update(userId: string, role: UserRole, passwordHash?: string) {
