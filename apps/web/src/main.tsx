@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { api, Monitor, CheckResult, Incident, StatusSubscription, TenantGroup, TenantInvite, TenantMembership, UserAlertSettings } from "./api/client";
+import { api, Monitor, CheckResult, Incident, StatusSubscription, Team, TeamMembership, TenantGroup, TenantInvite, TenantMembership, UserAlertSettings } from "./api/client";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./pages/Dashboard";
 import { FrontPage } from "./pages/FrontPage";
@@ -50,7 +50,10 @@ function App() {
   const [tenantMembers, setTenantMembers] = useState<any[]>([]);
   const [tenantInvites, setTenantInvites] = useState<TenantInvite[]>([]);
   const [tenantGroups, setTenantGroups] = useState<TenantGroup[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMembership[]>([]);
   const [tenantId, setTenantId] = useState(localStorage.getItem("tenantId") ?? "");
+  const [teamId, setTeamId] = useState(localStorage.getItem("teamId") ?? "");
   const [users, setUsers] = useState<any[]>([]);
   const [platformSettings, setPlatformSettings] = useState<any>({ publicRegistrationEnabled: true });
   const [impersonator, setImpersonator] = useState<any>(null);
@@ -175,7 +178,23 @@ function App() {
   const switchTenant = (nextTenantId: string) => {
     api.setTenant(nextTenantId);
     setTenantId(nextTenantId);
+    localStorage.removeItem("teamId");
+    setTeamId("");
     navigate("dashboard");
+  };
+
+  const switchTeam = async (nextTeamId: string) => {
+    api.setTeam(nextTeamId);
+    setTeamId(nextTeamId);
+    const id = localStorage.getItem("tenantId");
+    if (id && nextTeamId) {
+      try {
+        setTeamMembers(await api.request<TeamMembership[]>(`/tenants/${id}/teams/${nextTeamId}/members`));
+      } catch {
+        setTeamMembers([]);
+      }
+    }
+    await refreshOverview();
   };
 
   const loadTenantMembers = async () => {
@@ -191,13 +210,26 @@ function App() {
         api.request<TenantInvite[]>(`/tenants/${id}/invites`),
         api.request<TenantGroup[]>(`/tenants/${id}/groups`)
       ]);
+      const teamData = await api.request<Team[]>(`/tenants/${id}/teams`);
       setTenantMembers(members);
       setTenantInvites(invites);
       setTenantGroups(groups);
+      setTeams(teamData);
+      const existingTeam = localStorage.getItem("teamId");
+      const selectedTeam = teamData.find((item) => item.id === existingTeam)?.id ?? teamData[0]?.id ?? "";
+      if (selectedTeam) {
+        api.setTeam(selectedTeam);
+        setTeamId(selectedTeam);
+        setTeamMembers(await api.request<TeamMembership[]>(`/tenants/${id}/teams/${selectedTeam}/members`));
+      } else {
+        setTeamMembers([]);
+      }
     } catch {
       setTenantMembers([]);
       setTenantInvites([]);
       setTenantGroups([]);
+      setTeams([]);
+      setTeamMembers([]);
     }
   };
 
@@ -331,6 +363,9 @@ function App() {
       tenants={tenants}
       tenantId={tenantId}
       onTenant={switchTenant}
+      teams={teams}
+      teamId={teamId}
+      onTeam={switchTeam}
       user={user}
       impersonator={impersonator}
       onStopImpersonation={async () => finishLogin(await api.request("/auth/stop-impersonation", { method: "POST", body: "{}" }))}
@@ -386,13 +421,21 @@ function App() {
           members={tenantMembers}
           invites={tenantInvites}
           groups={tenantGroups}
+          teams={teams}
+          teamMembers={teamMembers}
           onCreateTenant={async (name) => { const created = await api.request<any>("/tenants", { method: "POST", body: JSON.stringify({ name }) }); api.setTenant(created.tenantId); setTenantId(created.tenantId); await refresh(); }}
-          onInviteMember={async (email, role) => { const result = await api.request<any>(`/tenants/${tenantId}/invites`, { method: "POST", body: JSON.stringify({ email, role }) }); await loadTenantMembers(); return result.invite ?? null; }}
+          onInviteMember={async (input) => { const result = await api.request<any>(`/tenants/${tenantId}/invites`, { method: "POST", body: JSON.stringify(input) }); await loadTenantMembers(); return result.invite ?? null; }}
           onUpdateMember={async (userId, data) => { await api.request(`/tenants/${tenantId}/members/${userId}`, { method: "PUT", body: JSON.stringify(data) }); await loadTenantMembers(); }}
           onRemoveMember={async (userId) => { await api.request(`/tenants/${tenantId}/members/${userId}`, { method: "DELETE" }); await loadTenantMembers(); }}
           onDeleteInvite={async (inviteId) => { await api.request(`/tenants/${tenantId}/invites/${inviteId}`, { method: "DELETE" }); await loadTenantMembers(); }}
           onSaveGroup={async (group) => { await api.request(group.id ? `/tenants/${tenantId}/groups/${group.id}` : `/tenants/${tenantId}/groups`, { method: group.id ? "PUT" : "POST", body: JSON.stringify(group) }); await loadTenantMembers(); }}
           onDeleteGroup={async (groupId) => { await api.request(`/tenants/${tenantId}/groups/${groupId}`, { method: "DELETE" }); await loadTenantMembers(); }}
+          onCreateTeam={async (team) => { await api.request(`/tenants/${tenantId}/teams`, { method: "POST", body: JSON.stringify(team) }); await loadTenantMembers(); }}
+          onUpdateTeam={async (id, team) => { await api.request(`/tenants/${tenantId}/teams/${id}`, { method: "PUT", body: JSON.stringify(team) }); await loadTenantMembers(); }}
+          onArchiveTeam={async (id) => { await api.request(`/tenants/${tenantId}/teams/${id}`, { method: "DELETE" }); await loadTenantMembers(); }}
+          onAddTeamMember={async (teamId, email, role) => { await api.request(`/tenants/${tenantId}/teams/${teamId}/members`, { method: "POST", body: JSON.stringify({ email, role }) }); await loadTenantMembers(); }}
+          onUpdateTeamMember={async (teamId, userId, data) => { await api.request(`/tenants/${tenantId}/teams/${teamId}/members/${userId}`, { method: "PUT", body: JSON.stringify(data) }); await loadTenantMembers(); }}
+          onRemoveTeamMember={async (teamId, userId) => { await api.request(`/tenants/${tenantId}/teams/${teamId}/members/${userId}`, { method: "DELETE" }); await loadTenantMembers(); }}
         />
       ) : page === "applications" ? (
         <Applications monitors={monitors} onSelect={(id) => navigate("dashboard", id)} />

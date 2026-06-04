@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.12.6 - 2026-06-04
+
+- Added tenant-scoped teams with private or tenant-visible visibility, team roles, team memberships, and a team selector in the app shell.
+- Added team management to the workspace admin UI, including create, edit, archive, member assignment, role changes, and member removal.
+- Added optional initial team assignment to workspace invites so accepted invitations can create both tenant and team memberships.
+- Hardened multi-tenant access with server-side `X-Team-Id` validation, active membership checks, last-owner protections, disabled membership handling, and audit log entries for team changes.
+- Stored new invite tokens as hashes at rest and only exposed the raw invite URL immediately after invite creation.
+- Added focused multi-tenant tests for team boundaries and owner-count protections.
+
 ## 0.12.5 - 2026-06-04
 
 - Split the monitor form into mobile-friendly steps for Basics, Checks, Alerts, and Advanced settings.

@@ -15,6 +15,10 @@ export type ServiceMonitorType = "http" | "tcp" | "dns" | "http_login" | "ssh" |
 export type MonitorStatus = "OK" | "WARNING" | "CRITICAL" | "DOWN" | "PAUSED" | "UNKNOWN";
 export type Severity = "info" | "warning" | "critical" | "recovery";
 export type TenantRole = "owner" | "admin" | "member" | "viewer";
+export type MembershipStatus = "active" | "invited" | "disabled";
+export type TeamRole = "team_owner" | "team_admin" | "team_member";
+export type TeamVisibility = "private" | "tenant_visible";
+export type TeamStatus = "active" | "archived";
 export const DEFAULT_TENANT_ID = "00000000-0000-4000-8000-000000000001";
 export type ChannelType =
   | "email"
@@ -156,18 +160,25 @@ export interface Tenant {
   name: string;
   slug: string;
   plan: "free" | "team" | "business" | "enterprise";
-  status: "active" | "trialing" | "past_due" | "suspended";
+  status: "active" | "disabled" | "trialing" | "past_due" | "suspended";
   monitorLimit: number;
   userLimit: number;
+  teamLimit?: number;
+  settings?: Record<string, unknown>;
   createdAt: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
 }
 
 export interface TenantMembership {
+  id?: string;
   tenantId: string;
   userId: string;
   role: TenantRole;
+  status?: MembershipStatus;
   effectiveRole?: TenantRole;
   createdAt: string;
+  updatedAt?: string;
   tenant: Tenant;
   userEmail?: string;
   groupIds?: string[];
@@ -180,10 +191,14 @@ export interface TenantInvite {
   email: string;
   role: TenantRole;
   token: string;
+  teamId?: string | null;
+  teamRole?: TeamRole | null;
   invitedByUserId?: string | null;
   acceptedAt?: string | null;
+  revokedAt?: string | null;
   expiresAt: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface TenantGroup {
@@ -194,6 +209,45 @@ export interface TenantGroup {
   memberIds: string[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Team {
+  id: string;
+  tenantId: string;
+  name: string;
+  slug: string;
+  description: string;
+  visibility: TeamVisibility;
+  status: TeamStatus;
+  settings: Record<string, unknown>;
+  createdByUserId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
+}
+
+export interface TeamMembership {
+  id: string;
+  tenantId: string;
+  teamId: string;
+  userId: string;
+  role: TeamRole;
+  status: MembershipStatus;
+  createdAt: string;
+  updatedAt: string;
+  userEmail?: string;
+  team?: Team;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  tenantId?: string | null;
+  teamId?: string | null;
+  actorUserId?: string | null;
+  targetUserId?: string | null;
+  action: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
 }
 
 export interface UserAlertSettings {

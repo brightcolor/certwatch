@@ -13,7 +13,7 @@ const navItems = [
   { page: "users", label: "Users", icon: Users }
 ];
 
-export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, onPage, version, stats = {}, monitors = [], onSelectMonitor, tenants = [], tenantId, onTenant, user, impersonator, onStopImpersonation, onProfile, onLogout }: any) {
+export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, onPage, version, stats = {}, monitors = [], onSelectMonitor, tenants = [], tenantId, onTenant, teams = [], teamId, onTeam, user, impersonator, onStopImpersonation, onProfile, onLogout }: any) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
@@ -72,6 +72,9 @@ export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, 
             </button>}
             {tenants.length > 1 && <select className="form-select form-select-sm tenant-select" value={tenantId ?? ""} onChange={(event) => onTenant?.(event.target.value)} aria-label="Workspace">
               {tenants.map((item: any) => <option key={item.tenantId} value={item.tenantId}>{item.tenant.name}</option>)}
+            </select>}
+            {teams.length > 0 && <select className="form-select form-select-sm tenant-select" value={teamId ?? ""} onChange={(event) => onTeam?.(event.target.value)} aria-label="Team">
+              {teams.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>}
             <div className="nav-item status-dropdown">
               <button className="btn btn-outline-secondary btn-sm position-relative" type="button" onClick={() => setStatusOpen((current) => !current)} aria-expanded={statusOpen}>

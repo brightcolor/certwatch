@@ -301,16 +301,20 @@ The Settings page includes the remaining interface preference for dark or light 
 crt.watch now has a workspace layer that prepares the app for SaaS operation:
 
 - Each authenticated request is scoped to the selected workspace through the `X-Tenant-Id` header.
+- Team context is selected with `X-Team-Id` and verified server-side against the active workspace membership.
 - Monitors, notification providers, alert policy, SMTP settings, TLS policy, discovery, status page settings, and backups are tenant-scoped.
 - Workspace memberships support `owner`, `admin`, `member`, and `viewer` roles.
+- Workspaces can contain tenant-scoped teams with `team_owner`, `team_admin`, and `team_member` roles. Private teams are visible to members, while tenant-visible teams are readable by the whole workspace.
 - Public registration creates an isolated organization workspace for the new user when `PUBLIC_REGISTRATION_ENABLED=true`.
 - Owners and workspace admins can invite users by email with an explicit workspace role. If no role is selected, invites default to `viewer`.
 - The same user can belong to several organizations with different direct roles, for example admin in one workspace and viewer in another.
 - Workspace permission groups can grant additional roles to multiple members. The effective role is the highest direct or group role inside that organization.
-- Viewers can read workspace data, members can operate monitors, and owners/admins can manage settings, providers, groups, invites, and members.
-- Tenants include plan, status, monitor limit, and user limit fields so billing or subscription logic can be added later.
+- Viewers can read workspace data, members can operate monitors, and owners/admins can manage settings, providers, teams, access groups, invites, and members.
+- The last active workspace owner and the last active team owner are protected from accidental removal or demotion.
+- Invite tokens are hashed at rest. The raw invite URL is shown when an invite is created and is not reconstructed from stored hashes later.
+- Tenants include plan, status, monitor limit, user limit, and team limit fields so billing or subscription logic can be added later.
 
-Billing, automated invite emails, and per-tenant custom domains are intentionally not included yet.
+Billing, automated invite emails, team-scoped monitor ownership, and per-tenant custom domains are intentionally not included yet.
 
 ## Prometheus
 

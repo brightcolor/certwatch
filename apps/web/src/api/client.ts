@@ -118,6 +118,8 @@ export interface TenantInvite {
   tenantId: string;
   email: string;
   role: "owner" | "admin" | "member" | "viewer";
+  teamId?: string | null;
+  teamRole?: "team_owner" | "team_admin" | "team_member" | null;
   expiresAt: string;
   createdAt: string;
   inviteUrl: string;
@@ -131,6 +133,32 @@ export interface TenantGroup {
   memberIds: string[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Team {
+  id: string;
+  tenantId: string;
+  name: string;
+  slug: string;
+  description: string;
+  visibility: "private" | "tenant_visible";
+  status: "active" | "archived";
+  settings: Record<string, unknown>;
+  createdByUserId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamMembership {
+  id: string;
+  tenantId: string;
+  teamId: string;
+  userId: string;
+  role: "team_owner" | "team_admin" | "team_member";
+  status: "active" | "invited" | "disabled";
+  createdAt: string;
+  updatedAt: string;
+  userEmail?: string;
 }
 
 export interface UserAlertSettings {
@@ -155,6 +183,7 @@ export const api = {
         "content-type": "application/json",
         ...(csrfToken ? { "x-csrf-token": csrfToken } : {}),
         ...(localStorage.getItem("tenantId") ? { "x-tenant-id": localStorage.getItem("tenantId")! } : {}),
+        ...(localStorage.getItem("teamId") ? { "x-team-id": localStorage.getItem("teamId")! } : {}),
         ...(init.headers ?? {})
       }
     });
@@ -167,5 +196,8 @@ export const api = {
   },
   setTenant(tenantId: string) {
     localStorage.setItem("tenantId", tenantId);
+  },
+  setTeam(teamId: string) {
+    localStorage.setItem("teamId", teamId);
   }
 };

@@ -2,8 +2,8 @@ import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import type { NextFunction, Request, Response } from "express";
 import { env } from "../config/env.js";
-import { apiTokens, sessions, tenants, users } from "../storage/repositories.js";
-import type { ApiToken, Tenant, TenantMembership, TenantRole, User } from "../types.js";
+import { apiTokens, sessions, teamMemberships, teams, tenants, users } from "../storage/repositories.js";
+import type { ApiToken, Team, TeamMembership, TeamRole, Tenant, TenantMembership, TenantRole, User } from "../types.js";
 
 declare global {
   namespace Express {
@@ -12,8 +12,11 @@ declare global {
       apiToken?: ApiToken;
       csrfToken?: string;
       currentTenant?: Tenant;
+      currentTeam?: Team;
       tenantRole?: TenantRole;
+      teamRole?: TeamRole;
       tenantMemberships?: TenantMembership[];
+      teamMemberships?: TeamMembership[];
       impersonator?: User;
     }
   }
@@ -85,11 +88,29 @@ export const resolveTenant = (req: Request, res: Response, next: NextFunction) =
   req.currentTenant = membership.tenant;
   req.tenantRole = membership.effectiveRole ?? membership.role;
   req.tenantMemberships = memberships;
+  const availableTeams = teams.listForUser(membership.tenantId, req.user.id, req.tenantRole);
+  req.teamMemberships = teamMemberships.activeForUser(membership.tenantId, req.user.id);
+  const requestedTeam = req.get("x-team-id");
+  const team = requestedTeam ? availableTeams.find((item) => item.id === requestedTeam) : undefined;
+  req.currentTeam = team ?? availableTeams[0];
+  req.teamRole = req.currentTeam ? req.teamMemberships.find((item) => item.teamId === req.currentTeam!.id)?.role : undefined;
   next();
 };
 
 export const requireTenantRole = (...roles: TenantRole[]) => (req: Request, res: Response, next: NextFunction) => {
   if (!req.tenantRole || !roles.includes(req.tenantRole)) return res.status(403).json({ error: "Workspace permission required." });
+  next();
+};
+
+export const requireTeamAccess = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.currentTeam) return res.status(404).json({ error: "Team not found in this workspace." });
+  if (req.tenantRole === "owner" || req.tenantRole === "admin" || req.currentTeam.visibility === "tenant_visible" || req.teamRole) return next();
+  return res.status(403).json({ error: "Team permission required." });
+};
+
+export const requireTeamRole = (...roles: TeamRole[]) => (req: Request, res: Response, next: NextFunction) => {
+  if (req.tenantRole === "owner" || req.tenantRole === "admin") return next();
+  if (!req.teamRole || !roles.includes(req.teamRole)) return res.status(403).json({ error: "Team permission required." });
   next();
 };
 

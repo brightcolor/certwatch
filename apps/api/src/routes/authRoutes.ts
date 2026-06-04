@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { clearSessionCookie, login, publicUser, requireAuth, setSessionCookie } from "../auth/auth.js";
 import { env } from "../config/env.js";
-import { appSettings, sessions, tenantInvites, tenants, users } from "../storage/repositories.js";
+import { appSettings, sessions, teams, tenantInvites, tenants, users } from "../storage/repositories.js";
 
 export const authRoutes = Router();
 
@@ -105,7 +105,8 @@ authRoutes.post("/stop-impersonation", requireAuth, async (req, res) => {
 const withMemberships = (user: ReturnType<typeof publicUser>, csrfToken: string | undefined, userId: string) => ({
   user,
   csrfToken,
-  tenants: tenants.forUser(userId).map(publicMembership)
+  tenants: tenants.forUser(userId).map(publicMembership),
+  teams: teamsForUser(userId)
 });
 
 const publicMembership = (membership: any) => ({
@@ -116,6 +117,12 @@ const publicMembership = (membership: any) => ({
   groupNames: membership.groupNames ?? [],
   tenant: membership.tenant
 });
+
+const teamsForUser = (userId: string) =>
+  Object.fromEntries(tenants.forUser(userId).map((membership) => [
+    membership.tenantId,
+    teams.listForUser(membership.tenantId, userId, membership.effectiveRole ?? membership.role)
+  ]));
 
 const registerSchema = z.object({
   email: z.string().trim().email().transform((email) => email.toLowerCase()),

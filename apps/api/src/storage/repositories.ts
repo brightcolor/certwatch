@@ -1,7 +1,8 @@
-import { db, rowToApiToken, rowToChannel, rowToDelivery, rowToIncident, rowToInvite, rowToMembership, rowToMonitor, rowToResult, rowToSubscription, rowToTenant, rowToTenantGroup, rowToUser, rowToUserAlertSettings } from "./db.js";
+import { db, rowToApiToken, rowToAuditLog, rowToChannel, rowToDelivery, rowToIncident, rowToInvite, rowToMembership, rowToMonitor, rowToResult, rowToSubscription, rowToTeam, rowToTeamMembership, rowToTenant, rowToTenantGroup, rowToUser, rowToUserAlertSettings } from "./db.js";
+import { createHash } from "node:crypto";
 import { id } from "../utils/id.js";
 import { addSecondsIso, nowIso } from "../utils/time.js";
-import type { AlertingSettings, ApiToken, BackupSettings, CheckResult, CtWatchSettings, DiscoverySettings, Incident, IncidentNote, MaintenanceSettings, Monitor, MonitorStatus, NotificationChannel, NotificationDelivery, NotificationRoute, PlatformSettings, RetentionSettings, SslLabsSettings, StatusPageSettings, StatusSubscription, SmtpSettings, Tenant, TenantGroup, TenantInvite, TenantMembership, TenantRole, TlsPolicySettings, User, UserAlertSettings, UserRole } from "../types.js";
+import type { AlertingSettings, ApiToken, AuditLogEntry, BackupSettings, CheckResult, CtWatchSettings, DiscoverySettings, Incident, IncidentNote, MaintenanceSettings, Monitor, MonitorStatus, NotificationChannel, NotificationDelivery, NotificationRoute, PlatformSettings, RetentionSettings, SslLabsSettings, StatusPageSettings, StatusSubscription, SmtpSettings, Team, TeamMembership, TeamRole, TeamVisibility, Tenant, TenantGroup, TenantInvite, TenantMembership, TenantRole, TlsPolicySettings, User, UserAlertSettings, UserRole } from "../types.js";
 import { DEFAULT_TENANT_ID } from "../types.js";
 import { decryptConfigSecrets, encryptConfigSecrets } from "../utils/secrets.js";
 
@@ -38,47 +39,69 @@ export const users = {
 
 export const tenants = {
   list(): Tenant[] {
-    return db.prepare("SELECT * FROM tenants ORDER BY name").all().map(rowToTenant);
+    return db.prepare("SELECT * FROM tenants WHERE deleted_at IS NULL ORDER BY name").all().map(rowToTenant);
   },
   get(tenantId: string): Tenant | null {
-    const row = db.prepare("SELECT * FROM tenants WHERE id = ?").get(tenantId);
+    const row = db.prepare("SELECT * FROM tenants WHERE id = ? AND deleted_at IS NULL").get(tenantId);
     return row ? rowToTenant(row) : null;
   },
   forUser(userId: string): TenantMembership[] {
     return db.prepare(`
-      SELECT t.*, tm.tenant_id, tm.user_id, tm.role, tm.created_at, u.email
+      SELECT t.*, tm.id AS membership_id, tm.tenant_id, tm.user_id, tm.role,
+        tm.status AS membership_status, tm.created_at, tm.updated_at AS membership_updated_at, u.email
       FROM tenant_memberships tm
       JOIN tenants t ON t.id = tm.tenant_id
       JOIN users u ON u.id = tm.user_id
-      WHERE tm.user_id = ?
+      WHERE tm.user_id = ? AND tm.status = 'active' AND t.deleted_at IS NULL AND t.status IN ('active', 'trialing')
       ORDER BY t.name
     `).all(userId).map(rowToMembership).map(withGroupRole);
   },
   members(tenantId: string): TenantMembership[] {
     return db.prepare(`
-      SELECT t.*, tm.tenant_id, tm.user_id, tm.role, tm.created_at, u.email
+      SELECT t.*, tm.id AS membership_id, tm.tenant_id, tm.user_id, tm.role,
+        tm.status AS membership_status, tm.created_at, tm.updated_at AS membership_updated_at, u.email
       FROM tenant_memberships tm
       JOIN tenants t ON t.id = tm.tenant_id
       JOIN users u ON u.id = tm.user_id
-      WHERE tm.tenant_id = ?
+      WHERE tm.tenant_id = ? AND t.deleted_at IS NULL
       ORDER BY u.email
     `).all(tenantId).map(rowToMembership).map(withGroupRole);
   },
   create(name: string, ownerUserId: string): Tenant {
     const createdAt = nowIso();
-    const tenant = { id: id(), name, slug: uniqueSlug(slugify(name)), plan: "free" as const, status: "trialing" as const, monitorLimit: 50, userLimit: 5, createdAt };
-    db.prepare("INSERT INTO tenants VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(tenant.id, tenant.name, tenant.slug, tenant.plan, tenant.status, tenant.monitorLimit, tenant.userLimit, tenant.createdAt);
+    const tenant = { id: id(), name, slug: uniqueSlug(slugify(name)), plan: "free" as const, status: "active" as const, monitorLimit: 50, userLimit: 5, teamLimit: 10, settings: {}, createdAt, updatedAt: createdAt, deletedAt: null };
+    db.prepare(`
+      INSERT INTO tenants (id, name, slug, plan, status, monitor_limit, user_limit, team_limit, settings_json, created_at, updated_at, deleted_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, '{}', ?, ?, NULL)
+    `).run(tenant.id, tenant.name, tenant.slug, tenant.plan, tenant.status, tenant.monitorLimit, tenant.userLimit, tenant.teamLimit, tenant.createdAt, tenant.updatedAt);
     this.addMember(tenant.id, ownerUserId, "owner");
+    teams.create(tenant.id, "General", "Default team for this workspace.", "tenant_visible", ownerUserId);
     return tenant;
   },
   addMember(tenantId: string, userId: string, role: TenantRole) {
-    db.prepare("INSERT INTO tenant_memberships VALUES (?, ?, ?, ?) ON CONFLICT(tenant_id, user_id) DO UPDATE SET role = excluded.role").run(tenantId, userId, role, nowIso());
+    const now = nowIso();
+    db.prepare(`
+      INSERT INTO tenant_memberships (id, tenant_id, user_id, role, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 'active', ?, ?)
+      ON CONFLICT(tenant_id, user_id) DO UPDATE SET role = excluded.role, status = 'active', updated_at = excluded.updated_at
+    `).run(id(), tenantId, userId, role, now, now);
+    const general = teams.bySlug(tenantId, "general");
+    if (general) teamMemberships.add(tenantId, general.id, userId, role === "owner" || role === "admin" ? "team_owner" : "team_member");
   },
   updateMember(tenantId: string, userId: string, role: TenantRole) {
-    db.prepare("UPDATE tenant_memberships SET role = ? WHERE tenant_id = ? AND user_id = ?").run(role, tenantId, userId);
+    db.prepare("UPDATE tenant_memberships SET role = ?, updated_at = ? WHERE tenant_id = ? AND user_id = ?").run(role, nowIso(), tenantId, userId);
+  },
+  setMemberStatus(tenantId: string, userId: string, status: "active" | "disabled") {
+    db.prepare("UPDATE tenant_memberships SET status = ?, updated_at = ? WHERE tenant_id = ? AND user_id = ?").run(status, nowIso(), tenantId, userId);
+    if (status !== "active") teamMemberships.disableForUser(tenantId, userId);
   },
   removeMember(tenantId: string, userId: string) {
+    teamMemberships.disableForUser(tenantId, userId);
     db.prepare("DELETE FROM tenant_memberships WHERE tenant_id = ? AND user_id = ?").run(tenantId, userId);
+  },
+  activeOwnerCount(tenantId: string): number {
+    const row = db.prepare("SELECT COUNT(*) AS count FROM tenant_memberships WHERE tenant_id = ? AND role = 'owner' AND status = 'active'").get(tenantId) as { count?: number } | undefined;
+    return Number(row?.count ?? 0);
   }
 };
 
@@ -86,38 +109,46 @@ export const tenantInvites = {
   list(tenantId: string): TenantInvite[] {
     return db.prepare(`
       SELECT * FROM tenant_invites
-      WHERE tenant_id = ? AND accepted_at IS NULL AND expires_at > ?
+      WHERE tenant_id = ? AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at > ?
       ORDER BY created_at DESC
     `).all(tenantId, nowIso()).map(rowToInvite);
   },
-  create(tenantId: string, email: string, role: TenantRole, invitedByUserId?: string): TenantInvite {
+  create(tenantId: string, email: string, role: TenantRole, invitedByUserId?: string, teamId?: string | null, teamRole?: TeamRole | null): TenantInvite {
+    const rawToken = id().replaceAll("-", "");
+    const now = nowIso();
     const invite = {
       id: id(),
       tenantId,
       email: email.toLowerCase(),
       role,
-      token: id().replaceAll("-", ""),
+      token: rawToken,
+      tokenHash: hashInviteToken(rawToken),
+      teamId: teamId ?? null,
+      teamRole: teamRole ?? null,
       invitedByUserId: invitedByUserId ?? null,
       acceptedAt: null,
+      revokedAt: null,
       expiresAt: addSecondsIso(60 * 60 * 24 * 14),
-      createdAt: nowIso()
+      createdAt: now,
+      updatedAt: now
     };
     db.prepare(`
-      INSERT INTO tenant_invites (id, tenant_id, email, role, token, invited_by_user_id, accepted_at, expires_at, created_at)
-      VALUES (@id, @tenantId, @email, @role, @token, @invitedByUserId, @acceptedAt, @expiresAt, @createdAt)
+      INSERT INTO tenant_invites (id, tenant_id, email, role, token, token_hash, team_id, team_role, invited_by_user_id, accepted_at, revoked_at, expires_at, created_at, updated_at)
+      VALUES (@id, @tenantId, @email, @role, @tokenHash, @tokenHash, @teamId, @teamRole, @invitedByUserId, @acceptedAt, @revokedAt, @expiresAt, @createdAt, @updatedAt)
     `).run(invite);
     return invite;
   },
   findByToken(token: string): TenantInvite | null {
-    const row = db.prepare("SELECT * FROM tenant_invites WHERE token = ? AND accepted_at IS NULL AND expires_at > ?").get(token, nowIso());
+    const row = db.prepare("SELECT * FROM tenant_invites WHERE (token_hash = ? OR token = ?) AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at > ?").get(hashInviteToken(token), token, nowIso());
     return row ? rowToInvite(row) : null;
   },
   accept(invite: TenantInvite, userId: string) {
     tenants.addMember(invite.tenantId, userId, invite.role);
+    if (invite.teamId && invite.teamRole) teamMemberships.add(invite.tenantId, invite.teamId, userId, invite.teamRole);
     db.prepare("UPDATE tenant_invites SET accepted_at = ? WHERE id = ?").run(nowIso(), invite.id);
   },
   delete(inviteId: string, tenantId: string) {
-    db.prepare("DELETE FROM tenant_invites WHERE id = ? AND tenant_id = ?").run(inviteId, tenantId);
+    db.prepare("UPDATE tenant_invites SET revoked_at = ?, updated_at = ? WHERE id = ? AND tenant_id = ?").run(nowIso(), nowIso(), inviteId, tenantId);
   }
 };
 
@@ -180,6 +211,136 @@ export const tenantGroups = {
       DELETE FROM tenant_group_members
       WHERE user_id = ? AND group_id IN (SELECT id FROM tenant_groups WHERE tenant_id = ?)
     `).run(userId, tenantId);
+  }
+};
+
+export const teams = {
+  listForUser(tenantId: string, userId: string, tenantRole: TenantRole): Team[] {
+    if (tenantRole === "owner" || tenantRole === "admin") return this.list(tenantId, true);
+    return db.prepare(`
+      SELECT DISTINCT t.* FROM teams t
+      LEFT JOIN team_memberships tm ON tm.team_id = t.id AND tm.user_id = ? AND tm.status = 'active'
+      WHERE t.tenant_id = ? AND t.deleted_at IS NULL AND (t.visibility = 'tenant_visible' OR tm.user_id IS NOT NULL)
+      ORDER BY t.name
+    `).all(userId, tenantId).map(rowToTeam);
+  },
+  list(tenantId: string, includeArchived = false): Team[] {
+    return db.prepare(`
+      SELECT * FROM teams
+      WHERE tenant_id = ? AND deleted_at IS NULL ${includeArchived ? "" : "AND status = 'active'"}
+      ORDER BY status, name
+    `).all(tenantId).map(rowToTeam);
+  },
+  get(tenantId: string, teamId: string): Team | null {
+    const row = db.prepare("SELECT * FROM teams WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL").get(teamId, tenantId);
+    return row ? rowToTeam(row) : null;
+  },
+  bySlug(tenantId: string, slug: string): Team | null {
+    const row = db.prepare("SELECT * FROM teams WHERE tenant_id = ? AND slug = ? AND deleted_at IS NULL").get(tenantId, slug);
+    return row ? rowToTeam(row) : null;
+  },
+  create(tenantId: string, name: string, description: string, visibility: TeamVisibility, createdByUserId?: string | null): Team {
+    const now = nowIso();
+    const slug = uniqueTeamSlug(tenantId, slugify(name));
+    const team: Team = { id: id(), tenantId, name, slug, description, visibility, status: "active", settings: {}, createdByUserId: createdByUserId ?? null, createdAt: now, updatedAt: now, deletedAt: null };
+    db.prepare(`
+      INSERT INTO teams (id, tenant_id, name, slug, description, visibility, status, settings_json, created_by_user_id, created_at, updated_at, deleted_at)
+      VALUES (@id, @tenantId, @name, @slug, @description, @visibility, @status, @settingsJson, @createdByUserId, @createdAt, @updatedAt, @deletedAt)
+    `).run({ ...team, settingsJson: JSON.stringify(team.settings) });
+    if (createdByUserId) teamMemberships.add(tenantId, team.id, createdByUserId, "team_owner");
+    return team;
+  },
+  update(tenantId: string, teamId: string, input: Pick<Team, "name" | "description" | "visibility" | "status">): Team | null {
+    const existing = this.get(tenantId, teamId);
+    if (!existing) return null;
+    const slug = existing.name === input.name ? existing.slug : uniqueTeamSlug(tenantId, slugify(input.name), teamId);
+    db.prepare(`
+      UPDATE teams SET name = ?, slug = ?, description = ?, visibility = ?, status = ?, updated_at = ?
+      WHERE id = ? AND tenant_id = ?
+    `).run(input.name, slug, input.description, input.visibility, input.status, nowIso(), teamId, tenantId);
+    return this.get(tenantId, teamId);
+  },
+  archive(tenantId: string, teamId: string): Team | null {
+    const team = this.get(tenantId, teamId);
+    if (!team) return null;
+    db.prepare("UPDATE teams SET status = 'archived', updated_at = ? WHERE id = ? AND tenant_id = ?").run(nowIso(), teamId, tenantId);
+    teamMemberships.disableForTeam(tenantId, teamId);
+    return this.get(tenantId, teamId);
+  },
+  delete(tenantId: string, teamId: string) {
+    db.prepare("UPDATE teams SET deleted_at = ?, status = 'archived', updated_at = ? WHERE id = ? AND tenant_id = ?").run(nowIso(), nowIso(), teamId, tenantId);
+    teamMemberships.disableForTeam(tenantId, teamId);
+  }
+};
+
+export const teamMemberships = {
+  list(tenantId: string, teamId: string): TeamMembership[] {
+    return db.prepare(`
+      SELECT tm.*, u.email FROM team_memberships tm
+      JOIN users u ON u.id = tm.user_id
+      WHERE tm.tenant_id = ? AND tm.team_id = ?
+      ORDER BY u.email
+    `).all(tenantId, teamId).map(rowToTeamMembership);
+  },
+  activeForUser(tenantId: string, userId: string): TeamMembership[] {
+    return db.prepare(`
+      SELECT tm.id AS membership_id, tm.tenant_id AS membership_tenant_id,
+        tm.team_id AS membership_team_id, tm.user_id, tm.role,
+        tm.status AS membership_status, tm.created_at AS membership_created_at,
+        tm.updated_at AS membership_updated_at, t.*, u.email
+      FROM team_memberships tm
+      JOIN teams t ON t.id = tm.team_id AND t.tenant_id = tm.tenant_id
+      JOIN users u ON u.id = tm.user_id
+      WHERE tm.tenant_id = ? AND tm.user_id = ? AND tm.status = 'active' AND t.status = 'active' AND t.deleted_at IS NULL
+      ORDER BY t.name
+    `).all(tenantId, userId).map(rowToTeamMembership);
+  },
+  get(tenantId: string, teamId: string, userId: string): TeamMembership | null {
+    const row = db.prepare("SELECT tm.*, u.email FROM team_memberships tm JOIN users u ON u.id = tm.user_id WHERE tm.tenant_id = ? AND tm.team_id = ? AND tm.user_id = ?").get(tenantId, teamId, userId);
+    return row ? rowToTeamMembership(row) : null;
+  },
+  add(tenantId: string, teamId: string, userId: string, role: TeamRole): TeamMembership | null {
+    if (!teams.get(tenantId, teamId)) return null;
+    if (!activeTenantMember(tenantId, userId)) return null;
+    const now = nowIso();
+    db.prepare(`
+      INSERT INTO team_memberships (id, tenant_id, team_id, user_id, role, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, 'active', ?, ?)
+      ON CONFLICT(team_id, user_id) DO UPDATE SET role = excluded.role, status = 'active', updated_at = excluded.updated_at
+    `).run(id(), tenantId, teamId, userId, role, now, now);
+    return this.get(tenantId, teamId, userId);
+  },
+  updateRole(tenantId: string, teamId: string, userId: string, role: TeamRole): TeamMembership | null {
+    db.prepare("UPDATE team_memberships SET role = ?, updated_at = ? WHERE tenant_id = ? AND team_id = ? AND user_id = ?").run(role, nowIso(), tenantId, teamId, userId);
+    return this.get(tenantId, teamId, userId);
+  },
+  setStatus(tenantId: string, teamId: string, userId: string, status: "active" | "disabled") {
+    db.prepare("UPDATE team_memberships SET status = ?, updated_at = ? WHERE tenant_id = ? AND team_id = ? AND user_id = ?").run(status, nowIso(), tenantId, teamId, userId);
+  },
+  remove(tenantId: string, teamId: string, userId: string) {
+    db.prepare("DELETE FROM team_memberships WHERE tenant_id = ? AND team_id = ? AND user_id = ?").run(tenantId, teamId, userId);
+  },
+  disableForUser(tenantId: string, userId: string) {
+    db.prepare("UPDATE team_memberships SET status = 'disabled', updated_at = ? WHERE tenant_id = ? AND user_id = ?").run(nowIso(), tenantId, userId);
+  },
+  disableForTeam(tenantId: string, teamId: string) {
+    db.prepare("UPDATE team_memberships SET status = 'disabled', updated_at = ? WHERE tenant_id = ? AND team_id = ?").run(nowIso(), tenantId, teamId);
+  },
+  activeOwnerCount(tenantId: string, teamId: string): number {
+    const row = db.prepare("SELECT COUNT(*) AS count FROM team_memberships WHERE tenant_id = ? AND team_id = ? AND role = 'team_owner' AND status = 'active'").get(tenantId, teamId) as { count?: number } | undefined;
+    return Number(row?.count ?? 0);
+  }
+};
+
+export const auditLogs = {
+  record(input: Omit<AuditLogEntry, "id" | "createdAt">) {
+    db.prepare(`
+      INSERT INTO audit_log (id, tenant_id, team_id, actor_user_id, target_user_id, action, entity_type, entity_id, metadata_json, details_json, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id(), input.tenantId ?? null, input.teamId ?? null, input.actorUserId ?? null, input.targetUserId ?? null, input.action, input.action.split(".")[0] ?? "system", input.teamId ?? input.tenantId ?? null, JSON.stringify(input.metadata), JSON.stringify(input.metadata), nowIso());
+  },
+  list(tenantId: string, limit = 100): AuditLogEntry[] {
+    return db.prepare("SELECT * FROM audit_log WHERE tenant_id = ? ORDER BY created_at DESC LIMIT ?").all(tenantId, limit).map(rowToAuditLog);
   }
 };
 
@@ -659,3 +820,19 @@ const uniqueSlug = (base: string) => {
   }
   return slug;
 };
+
+const uniqueTeamSlug = (tenantId: string, base: string, ignoreTeamId?: string) => {
+  let slug = base;
+  let suffix = 2;
+  while (db.prepare("SELECT id FROM teams WHERE tenant_id = ? AND slug = ? AND id <> COALESCE(?, '')").get(tenantId, slug, ignoreTeamId ?? "")) {
+    slug = `${base}-${suffix}`;
+    suffix += 1;
+  }
+  return slug;
+};
+
+const activeTenantMember = (tenantId: string, userId: string) =>
+  Boolean(db.prepare("SELECT user_id FROM tenant_memberships WHERE tenant_id = ? AND user_id = ? AND status = 'active'").get(tenantId, userId));
+
+const hashInviteToken = (token: string) =>
+  createHash("sha256").update(token).digest("hex");
