@@ -12,8 +12,8 @@
   --accent: var(--bs-success);
   --warn: var(--bs-warning);
   --crit: var(--bs-danger);
-  --brand: #80848e;
-  --brand-soft: rgba(128, 132, 142, .16);
+  --brand: var(--bs-primary);
+  --brand-soft: rgba(var(--bs-primary-rgb), .14);
 }
 
 :root[data-theme="dark"] {
@@ -32,8 +32,8 @@
   --bs-emphasis-color-rgb: 242, 243, 245;
   --bs-border-color: #3f4147;
   --bs-border-color-translucent: rgba(181, 186, 193, .22);
-  --bs-primary: #80848e;
-  --bs-primary-rgb: 128, 132, 142;
+  --bs-primary: #6366f1;
+  --bs-primary-rgb: 99, 102, 241;
   --bs-link-color: #f2f3f5;
   --bs-link-color-rgb: 242, 243, 245;
   --bs-success: #22c55e;
@@ -71,8 +71,8 @@
   --bs-secondary-bg-rgb: 242, 243, 245;
   --bs-tertiary-bg: #e3e5e8;
   --bs-tertiary-bg-rgb: 227, 229, 232;
-  --bs-primary: #5f626a;
-  --bs-primary-rgb: 95, 98, 106;
+  --bs-primary: #4f46e5;
+  --bs-primary-rgb: 79, 70, 229;
   --bs-success: #16a34a;
   --bs-success-rgb: 22, 163, 74;
   --bs-warning: #d97706;
@@ -101,6 +101,7 @@ body {
   margin: 0;
   background: var(--bs-tertiary-bg);
   color: var(--bs-body-color);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -125,7 +126,7 @@ button:not(.btn):not(.nav-link):not(.brand-link):not(.dropdown-item):not(.list-g
   border: 1px solid var(--bs-primary);
   border-radius: var(--bs-border-radius);
   background: var(--bs-primary);
-  color: #fff;
+  color: var(--bs-white);
   padding: .38rem .68rem;
   cursor: pointer;
   font-size: .86rem;
@@ -162,15 +163,15 @@ button:not(.btn):not(.nav-link):not(.brand-link):not(.dropdown-item):not(.list-g
 }
 
 .btn-primary {
-  --bs-btn-color: #fff;
-  --bs-btn-hover-color: #fff;
-  --bs-btn-active-color: #fff;
+  --bs-btn-color: var(--bs-white);
+  --bs-btn-hover-color: var(--bs-white);
+  --bs-btn-active-color: var(--bs-white);
 }
 
 .btn-outline-primary {
   --bs-btn-color: var(--bs-emphasis-color);
-  --bs-btn-hover-color: #fff;
-  --bs-btn-active-color: #fff;
+  --bs-btn-hover-color: var(--bs-white);
+  --bs-btn-active-color: var(--bs-white);
 }
 
 .text-bg-primary,
@@ -212,7 +213,7 @@ button.danger {
 
 button.danger:hover {
   background: var(--bs-danger) !important;
-  color: #fff !important;
+  color: var(--bs-white) !important;
   filter: none !important;
 }
 
@@ -225,7 +226,7 @@ button.success {
 
 button.success:hover {
   background: var(--bs-success) !important;
-  color: #07140b !important;
+  color: var(--bs-dark) !important;
   filter: none !important;
 }
 
@@ -238,7 +239,7 @@ button.warning {
 
 button.warning:hover {
   background: var(--bs-warning) !important;
-  color: #171006 !important;
+  color: var(--bs-dark) !important;
   filter: none !important;
 }
 
@@ -338,13 +339,22 @@ h2,
 h3 {
   color: var(--bs-emphasis-color);
   font-weight: 600;
+  letter-spacing: -.015em;
 }
 
 code {
   overflow: hidden;
   color: var(--bs-secondary-color);
+  font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.info strong,
+.info-box-number,
+.metric-value,
+.sr-num {
+  font-variant-numeric: tabular-nums;
 }
 
 .muted,

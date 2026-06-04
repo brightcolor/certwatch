@@ -11,7 +11,7 @@ The codebase is deliberately simple and compact. It also shows the signs of a fa
 ## Stack Decision
 
 - Backend: Node.js with TypeScript and Express
-- Frontend: React with Vite
+- Frontend: React with Vite, Bootstrap 5.3/AdminLTE, Bootstrap Icons, and a small custom soft-UI layer
 - Database: SQLite by default through a small repository layer, with a structure that can later be adapted for PostgreSQL
 - Worker: in-process scheduler with bounded concurrent checks
 - Deployment: one Docker image served on port `8080`

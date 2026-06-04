@@ -1,0 +1,184 @@
+:root {
+  font-family: InterVariable, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+:root,
+[data-bs-theme="light"],
+[data-bs-theme="dark"] {
+  --cw-radius: .75rem;
+  --cw-radius-sm: .55rem;
+  --cw-shadow: 0 1px 2px rgba(var(--bs-body-color-rgb), .04), 0 .65rem 1.9rem rgba(var(--bs-body-color-rgb), .06);
+  --cw-shadow-subtle: 0 1px 2px rgba(var(--bs-body-color-rgb), .05);
+}
+
+.card,
+.panel,
+.detail-hero,
+.login-panel,
+.table,
+.frontpage-card,
+.frontpage-command,
+.frontpage-strip > div,
+.monitor-group,
+.toolbar-panel,
+.info-box {
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--cw-radius);
+  box-shadow: var(--cw-shadow-subtle);
+}
+
+.card-header,
+.panel > h3,
+.login-panel > h1 {
+  background: transparent;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.btn {
+  border-radius: var(--cw-radius-sm);
+  box-shadow: none;
+}
+
+.btn-primary,
+button:not(.btn):not(.nav-link):not(.brand-link):not(.dropdown-item):not(.list-group-item):not(.ghost):not(.icon):not(.danger):not(.success):not(.warning) {
+  background: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
+
+.soft-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: .22rem .6rem;
+  font-size: .75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.soft-pill.success,
+.soft-icon.success {
+  border-color: rgba(var(--bs-success-rgb), .32);
+  background: rgba(var(--bs-success-rgb), .1);
+  color: var(--bs-success);
+}
+
+.soft-pill.warning,
+.soft-icon.warning {
+  border-color: rgba(var(--bs-warning-rgb), .35);
+  background: rgba(var(--bs-warning-rgb), .1);
+  color: var(--bs-warning);
+}
+
+.soft-pill.danger,
+.soft-icon.danger {
+  border-color: rgba(var(--bs-danger-rgb), .32);
+  background: rgba(var(--bs-danger-rgb), .1);
+  color: var(--bs-danger);
+}
+
+.soft-pill.info,
+.soft-icon.info {
+  border-color: rgba(var(--bs-info-rgb), .32);
+  background: rgba(var(--bs-info-rgb), .1);
+  color: var(--bs-info);
+}
+
+.soft-icon {
+  display: inline-flex;
+  width: 1.65rem;
+  height: 1.65rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: .45rem;
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.soft-glow {
+  position: relative;
+  overflow: hidden;
+  --glow-rgb: var(--bs-primary-rgb);
+}
+
+.soft-glow::before {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 65% 115% at 0 0, rgba(var(--glow-rgb), .16), rgba(var(--glow-rgb), .06) 46%, transparent 72%);
+  content: "";
+  pointer-events: none;
+}
+
+.soft-glow > * {
+  position: relative;
+}
+
+.soft-accent {
+  border-left: 3px solid rgba(var(--bs-primary-rgb), .7);
+}
+
+.soft-accent.success { border-left-color: var(--bs-success); }
+.soft-accent.warning { border-left-color: var(--bs-warning); }
+.soft-accent.danger { border-left-color: var(--bs-danger); }
+.soft-accent.info { border-left-color: var(--bs-info); }
+
+.form-steps {
+  display: flex;
+  gap: .55rem;
+  overflow-x: auto;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--cw-radius);
+  background: var(--bs-tertiary-bg);
+  padding: .45rem;
+}
+
+.form-step {
+  display: inline-flex;
+  min-height: 2.6rem;
+  align-items: center;
+  gap: .55rem;
+  border: 1px solid transparent !important;
+  border-radius: var(--cw-radius-sm) !important;
+  background: transparent !important;
+  color: var(--bs-secondary-color) !important;
+  padding: .45rem .75rem !important;
+  box-shadow: none !important;
+}
+
+.form-step.active {
+  border-color: rgba(var(--bs-primary-rgb), .35) !important;
+  background: rgba(var(--bs-primary-rgb), .1) !important;
+  color: var(--bs-emphasis-color) !important;
+}
+
+.form-step span {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border-radius: .45rem;
+  background: rgba(var(--bs-secondary-rgb), .12);
+  color: inherit;
+}
+
+.form-step.active span {
+  background: rgba(var(--bs-primary-rgb), .16);
+  color: var(--bs-primary);
+}
+
+.step-summary {
+  display: flex;
+  gap: .55rem;
+  flex-wrap: wrap;
+}
+
+.soft-section {
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--cw-radius);
+  background: var(--bs-card-bg);
+  padding: 1rem;
+}

@@ -1,8 +1,6 @@
 .form-section {
   display: grid;
-  gap: .9rem;
-  border-top: 1px solid var(--bs-border-color);
-  padding-top: 1rem;
+  gap: 1rem;
 }
 
 .modal-head + .form-section {
@@ -24,6 +22,14 @@
 .form-section .grid.two,
 .panel > .grid.two {
   grid-template-columns: 1fr;
+}
+
+.modal-panel > .form-section {
+  border-top: 0;
+}
+
+.modal-panel .soft-section {
+  padding: 1rem;
 }
 
 .form-section .grid > label:not(:has(input[type="checkbox"])),
@@ -49,6 +55,10 @@
   border-radius: var(--bs-border-radius);
   background: var(--bs-tertiary-bg);
   padding: .8rem;
+}
+
+.form-steps + .step-summary {
+  margin-top: -.3rem;
 }
 
 .datetime-builder {

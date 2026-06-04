@@ -1,5 +1,8 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
 @import "admin-lte/dist/css/adminlte.css";
+@import "bootstrap-icons/font/bootstrap-icons.css";
 @import "./base.css";
+@import "./soft-ui.css";
 @import "./adminlte-shell.css";
 @import "./components.css";
 @import "./frontpage.css";

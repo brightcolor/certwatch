@@ -47,12 +47,12 @@
 }
 
 :root[data-theme="dark"] .crtwatch-adminlte .app-sidebar {
-  background: #2b2d31 !important;
+  background: var(--bs-secondary-bg) !important;
 }
 
 :root[data-theme="dark"] .crtwatch-adminlte .app-header,
 :root[data-theme="dark"] .crtwatch-adminlte .app-footer {
-  background: #313338 !important;
+  background: var(--bs-body-bg) !important;
 }
 
 .crtwatch-adminlte .sidebar-wrapper {
@@ -83,7 +83,7 @@
 }
 
 .crtwatch-adminlte .sidebar-menu .nav-link.active {
-  background: #404249;
+  background: rgba(var(--bs-primary-rgb), .1);
   color: var(--bs-emphasis-color);
   box-shadow: none;
 }
@@ -101,7 +101,7 @@
   min-width: 1.35rem;
   border-radius: 999px;
   padding: .12rem .45rem;
-  color: #fff;
+  color: var(--bs-white);
   font-size: .72rem;
   text-align: center;
 }
@@ -112,7 +112,7 @@
 
 .nav-badge.warning {
   background: var(--bs-warning);
-  color: #111;
+  color: var(--bs-dark);
 }
 
 .header-search {
@@ -286,7 +286,7 @@
   z-index: 2000;
   display: grid;
   place-items: center;
-  background: rgba(0, 0, 0, .55);
+  background: rgba(var(--bs-dark-rgb), .55);
   padding: 1.25rem;
 }
 

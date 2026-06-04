@@ -62,6 +62,7 @@ const labelSuggestions = ["prod", "staging", "mail", "web", "api", "dns", "custo
 
 export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAndCheck }: { monitor?: Monitor | null; channels?: any[]; onCancel: () => void; onSave: (data: any) => void; onSaveAndCheck: (data: any) => void }) {
   const [form, setForm] = useState<any>({ ...blank, ...monitor, tags: monitor?.tags ?? [] });
+  const [activeStep, setActiveStep] = useState<MonitorFormStep>("basics");
   const data = () => ({ ...form, port: Number(form.port), intervalSeconds: Number(form.intervalSeconds), timeoutSeconds: Number(form.timeoutSeconds), warningDays: Number(form.warningDays), criticalDays: Number(form.criticalDays), gracePeriodSeconds: Number(form.gracePeriodSeconds), sniHost: form.sniHost || null });
   const set = (key: string, value: unknown) => setForm((current: any) => ({ ...current, [key]: value }));
   const setConfig = (key: string, value: unknown) => set("config", { ...(form.config ?? {}), [key]: value });
@@ -104,55 +105,61 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
           </div>
           <button type="button" className="danger" onClick={onCancel}>Close</button>
         </div>
-        <FormSection title="Target">
-          <label>Name<input value={form.name} onChange={(e) => set("name", e.target.value)} required /></label>
-          <label>Type<select value={form.type} onChange={(e) => setProtocol(e.target.value)}>{protocolOptions.map((group) => <optgroup key={group.group} label={group.group}>{group.options.map((option) => <option value={option.value} key={option.value}>{option.label} ({option.port})</option>)}</optgroup>)}</select></label>
-          {supportsTransportSecurity(form.type) && <label>Transport security<select value={transportMode} onChange={(e) => setTransportSecurity(e.target.value)}>
-            <option value="auto">Auto</option>
-            {form.type !== "tcp" && <option value="starttls">STARTTLS / explicit TLS</option>}
-            <option value="tls">SSL/TLS</option>
-            <option value="plain">Plain</option>
-          </select></label>}
-          <label>Hostname<input value={form.host} onChange={(e) => set("host", e.target.value)} required /></label>
-          <label>Port<input type="number" min="1" max="65535" value={form.port} onChange={(e) => set("port", e.target.value)} /></label>
-          <TagInput value={form.tags ?? []} onChange={(tags) => set("tags", tags)} suggestions={labelSuggestions} hint="Labels group monitors, drive status pages and badges, and can target alert routes." />
-          <label>Owner<input value={form.owner ?? ""} onChange={(e) => set("owner", e.target.value)} placeholder="Team or person" /></label>
-        </FormSection>
-        <FormSection title="Schedule and thresholds">
-          <label>Interval seconds<input type="number" min="60" value={form.intervalSeconds} onChange={(e) => set("intervalSeconds", e.target.value)} /></label>
-          <label>Timeout seconds<input type="number" min="2" value={form.timeoutSeconds} onChange={(e) => set("timeoutSeconds", e.target.value)} /></label>
-          <label>Warning days<input type="number" min="1" value={form.warningDays} onChange={(e) => set("warningDays", e.target.value)} /></label>
-          <label>Critical days<input type="number" min="0" value={form.criticalDays} onChange={(e) => set("criticalDays", e.target.value)} /></label>
-          <label>Alert grace period seconds<input type="number" min="0" max="604800" value={form.gracePeriodSeconds ?? 0} onChange={(e) => set("gracePeriodSeconds", e.target.value)} /></label>
-          <MaintenanceWindowBuilder onUse={appendMaintenanceWindow} buttonLabel="Append range" />
-          <label>Maintenance windows<textarea value={form.maintenanceWindows ?? ""} placeholder="daily 22:00-23:00&#10;mon-fri 01:00-02:00&#10;2026-06-01T20:00:00/2026-06-01T22:00:00" onChange={(e) => set("maintenanceWindows", e.target.value)} /></label>
-        </FormSection>
-        <FormSection title="DNS and change watches">
-          <label><input type="checkbox" checked={form.config?.dnsCheckEnabled !== false} onChange={(e) => setConfig("dnsCheckEnabled", e.target.checked)} /> Collect resolved IPs and compare resolvers</label>
-          <label>DNS change alerts<select value={String(form.config?.dnsChangeAlertMode ?? "global")} onChange={(e) => setConfig("dnsChangeAlertMode", e.target.value)}>
-            <option value="global">Use global policy</option>
-            <option value="enabled">Always alert for this monitor</option>
-            <option value="disabled">Never alert for this monitor</option>
-          </select></label>
-          <label>Certificate change alerts<select value={String(form.config?.certificateChangeAlertMode ?? "global")} onChange={(e) => setConfig("certificateChangeAlertMode", e.target.value)}>
-            <option value="global">Use global policy</option>
-            <option value="enabled">Always alert for this monitor</option>
-            <option value="disabled">Never alert for this monitor</option>
-          </select></label>
-          <p className="muted">DNS comparison uses fresh lookups against the authoritative nameservers plus Cloudflare, Quad9, and Google on every check. Results are shown in monitor details; alerts only fire when enabled globally or for this monitor.</p>
-        </FormSection>
-        {collectsCertificate(form.type, form.config, Number(form.port)) && <FormSection title="TLS validation">
-          <label>SNI hostname<input value={form.sniHost ?? ""} onChange={(e) => set("sniHost", e.target.value)} /></label>
-          <div className="checks">
-            <label><input type="checkbox" checked={form.enabled} onChange={(e) => set("enabled", e.target.checked)} /> Active</label>
-            <label><input type="checkbox" checked={form.sniEnabled} onChange={(e) => set("sniEnabled", e.target.checked)} /> Use SNI</label>
-            <label><input type="checkbox" checked={form.validateCertificate} onChange={(e) => set("validateCertificate", e.target.checked)} /> Validate chain</label>
-            <label><input type="checkbox" checked={form.allowSelfSigned} onChange={(e) => set("allowSelfSigned", e.target.checked)} /> Allow self-signed</label>
-            {sslLabsEligible(form.type, Number(form.port), form.config) && <label><input type="checkbox" checked={Boolean(form.config?.sslLabsEnabled)} onChange={(e) => setConfig("sslLabsEnabled", e.target.checked)} /> External SSL Labs check every 24h</label>}
-          </div>
-          {!sslLabsEligible(form.type, Number(form.port), form.config) && <p className="muted">SSL Labs is available for public HTTPS hosts on port 443. STARTTLS, mail, and private targets continue to use crt.watch's local TLS checks.</p>}
-        </FormSection>}
-        {usesServiceConfig(form.type) && <FormSection title="Service and login check">
+        <FormSteps active={activeStep} onChange={setActiveStep} />
+        <div className="step-summary">
+          <span className={`soft-pill ${form.enabled ? "success" : "info"}`}><i className={`bi ${form.enabled ? "bi-play-fill" : "bi-pause-fill"}`}></i>{form.enabled ? "Active" : "Paused"}</span>
+          <span className="soft-pill info"><i className="bi bi-hdd-network"></i>{form.host || "No host"}:{form.port}</span>
+          <span className="soft-pill info"><i className="bi bi-tags"></i>{(form.tags ?? []).length || 0} labels</span>
+        </div>
+        {activeStep === "basics" && <>
+          <FormSection title="Target">
+            <label>Name<input value={form.name} onChange={(e) => set("name", e.target.value)} required /></label>
+            <label>Type<select value={form.type} onChange={(e) => setProtocol(e.target.value)}>{protocolOptions.map((group) => <optgroup key={group.group} label={group.group}>{group.options.map((option) => <option value={option.value} key={option.value}>{option.label} ({option.port})</option>)}</optgroup>)}</select></label>
+            {supportsTransportSecurity(form.type) && <label>Transport security<select value={transportMode} onChange={(e) => setTransportSecurity(e.target.value)}>
+              <option value="auto">Auto</option>
+              {form.type !== "tcp" && <option value="starttls">STARTTLS / explicit TLS</option>}
+              <option value="tls">SSL/TLS</option>
+              <option value="plain">Plain</option>
+            </select></label>}
+            <label>Hostname<input value={form.host} onChange={(e) => set("host", e.target.value)} required /></label>
+            <label>Port<input type="number" min="1" max="65535" value={form.port} onChange={(e) => set("port", e.target.value)} /></label>
+            <TagInput value={form.tags ?? []} onChange={(tags) => set("tags", tags)} suggestions={labelSuggestions} hint="Labels group monitors, drive status pages and badges, and can target alert routes." />
+            <label>Owner<input value={form.owner ?? ""} onChange={(e) => set("owner", e.target.value)} placeholder="Team or person" /></label>
+          </FormSection>
+          <FormSection title="Schedule">
+            <label>Interval seconds<input type="number" min="60" value={form.intervalSeconds} onChange={(e) => set("intervalSeconds", e.target.value)} /></label>
+            <label>Timeout seconds<input type="number" min="2" value={form.timeoutSeconds} onChange={(e) => set("timeoutSeconds", e.target.value)} /></label>
+            <div className="checks">
+              <label><input type="checkbox" checked={form.enabled} onChange={(e) => set("enabled", e.target.checked)} /> Active</label>
+            </div>
+          </FormSection>
+        </>}
+        {activeStep === "checks" && <>
+          <FormSection title="DNS and change watches">
+            <label><input type="checkbox" checked={form.config?.dnsCheckEnabled !== false} onChange={(e) => setConfig("dnsCheckEnabled", e.target.checked)} /> Collect resolved IPs and compare resolvers</label>
+            <label>DNS change alerts<select value={String(form.config?.dnsChangeAlertMode ?? "global")} onChange={(e) => setConfig("dnsChangeAlertMode", e.target.value)}>
+              <option value="global">Use global policy</option>
+              <option value="enabled">Always alert for this monitor</option>
+              <option value="disabled">Never alert for this monitor</option>
+            </select></label>
+            <label>Certificate change alerts<select value={String(form.config?.certificateChangeAlertMode ?? "global")} onChange={(e) => setConfig("certificateChangeAlertMode", e.target.value)}>
+              <option value="global">Use global policy</option>
+              <option value="enabled">Always alert for this monitor</option>
+              <option value="disabled">Never alert for this monitor</option>
+            </select></label>
+            <p className="muted">DNS comparison uses fresh lookups against the authoritative nameservers plus Cloudflare, Quad9, and Google on every check. Results are shown in monitor details; alerts only fire when enabled globally or for this monitor.</p>
+          </FormSection>
+          {collectsCertificate(form.type, form.config, Number(form.port)) && <FormSection title="TLS validation">
+            <label>SNI hostname<input value={form.sniHost ?? ""} onChange={(e) => set("sniHost", e.target.value)} /></label>
+            <div className="checks">
+              <label><input type="checkbox" checked={form.sniEnabled} onChange={(e) => set("sniEnabled", e.target.checked)} /> Use SNI</label>
+              <label><input type="checkbox" checked={form.validateCertificate} onChange={(e) => set("validateCertificate", e.target.checked)} /> Validate chain</label>
+              <label><input type="checkbox" checked={form.allowSelfSigned} onChange={(e) => set("allowSelfSigned", e.target.checked)} /> Allow self-signed</label>
+              {sslLabsEligible(form.type, Number(form.port), form.config) && <label><input type="checkbox" checked={Boolean(form.config?.sslLabsEnabled)} onChange={(e) => setConfig("sslLabsEnabled", e.target.checked)} /> External SSL Labs check every 24h</label>}
+            </div>
+            {!sslLabsEligible(form.type, Number(form.port), form.config) && <p className="muted">SSL Labs is available for public HTTPS hosts on port 443. STARTTLS, mail, and private targets continue to use crt.watch's local TLS checks.</p>}
+          </FormSection>}
+          {usesServiceConfig(form.type) && <FormSection title="Service and login check">
             {usesHttpConfig(form.type) && <>
               <label>Scheme<select value={String(form.config?.scheme ?? (form.port === 443 ? "https" : "http"))} onChange={(e) => setConfig("scheme", e.target.value)}><option value="https">HTTPS</option><option value="http">HTTP</option></select></label>
               <label>Path<input value={String(form.config?.path ?? "/")} onChange={(e) => setConfig("path", e.target.value)} /></label>
@@ -186,8 +193,15 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
               {form.type !== "ssh" && transportMode !== "tls" && transportMode !== "starttls" && <label><input type="checkbox" checked={Boolean(form.config?.allowInsecureLogin)} onChange={(e) => setConfig("allowInsecureLogin", e.target.checked)} /> Allow plaintext fallback login</label>}
             </>}
           {(form.type === "http_login" || usesProtocolLogin(form.type) || usesTlsLogin(form.type)) && <p className="muted">Login secrets are encrypted at rest and masked after saving. FTP, SMTP, IMAP, POP3, and TCP can collect certificate details when transport security is Auto, STARTTLS, or SSL/TLS. Plain mode verifies availability or credentials only.</p>}
-        </FormSection>}
-        <div className="form-section">
+          </FormSection>}
+        </>}
+        {activeStep === "alerts" && <>
+          <FormSection title="Alert thresholds">
+            <label>Warning days<input type="number" min="1" value={form.warningDays} onChange={(e) => set("warningDays", e.target.value)} /></label>
+            <label>Critical days<input type="number" min="0" value={form.criticalDays} onChange={(e) => set("criticalDays", e.target.value)} /></label>
+            <label>Alert grace period seconds<input type="number" min="0" max="604800" value={form.gracePeriodSeconds ?? 0} onChange={(e) => set("gracePeriodSeconds", e.target.value)} /></label>
+          </FormSection>
+          <div className="form-section">
           <h3>Notifications</h3>
           <p className="muted">Select provider channels and set the recipient or target for this monitor.</p>
           <div className="grid two">
@@ -199,8 +213,15 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
             ))}
             {!channels.length && <span className="muted">No channels configured yet.</span>}
           </div>
-        </div>
-        <label>Notes<textarea value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value)} /></label>
+          </div>
+        </>}
+        {activeStep === "advanced" && <>
+          <FormSection title="Maintenance">
+            <MaintenanceWindowBuilder onUse={appendMaintenanceWindow} buttonLabel="Append range" />
+            <label>Maintenance windows<textarea value={form.maintenanceWindows ?? ""} placeholder="daily 22:00-23:00&#10;mon-fri 01:00-02:00&#10;2026-06-01T20:00:00/2026-06-01T22:00:00" onChange={(e) => set("maintenanceWindows", e.target.value)} /></label>
+          </FormSection>
+          <label>Notes<textarea value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value)} /></label>
+        </>}
         <div className="actions end sticky-actions"><button type="button" className="danger" onClick={onCancel}>Cancel</button><button type="button" className="success" onClick={() => onSaveAndCheck(data())}>Save and check</button><button className="success" type="submit">Save</button></div>
       </form>
     </div>
@@ -210,8 +231,29 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
 const recipientLabel = (type: string) => type === "email" ? "Recipients" : type === "telegram" ? "Chat ID" : type === "pushover" ? "User key" : type === "matrix" ? "Room ID" : type === "pagerduty" ? "Routing key override" : type === "opsgenie" ? "Responder/alias override" : "Target URL";
 const recipientPlaceholder = (type: string) => type === "email" ? "ops@example.com, admin@example.com" : type === "telegram" ? "-1001234567890" : type === "pushover" ? "Pushover user key" : type === "matrix" ? "!room:example.com" : "https://...";
 
+type MonitorFormStep = "basics" | "checks" | "alerts" | "advanced";
+
+const monitorSteps: Array<{ id: MonitorFormStep; label: string; icon: string }> = [
+  { id: "basics", label: "Basics", icon: "bi-bullseye" },
+  { id: "checks", label: "Checks", icon: "bi-shield-check" },
+  { id: "alerts", label: "Alerts", icon: "bi-bell" },
+  { id: "advanced", label: "Advanced", icon: "bi-sliders" }
+];
+
+function FormSteps({ active, onChange }: { active: MonitorFormStep; onChange: (step: MonitorFormStep) => void }) {
+  return (
+    <div className="form-steps" role="tablist" aria-label="Monitor form sections">
+      {monitorSteps.map((step) => (
+        <button type="button" className={`form-step ${active === step.id ? "active" : ""}`} key={step.id} onClick={() => onChange(step.id)} role="tab" aria-selected={active === step.id}>
+          <span><i className={`bi ${step.icon}`}></i></span>{step.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function FormSection({ title, children }: { title: string; children: ReactNode }) {
-  return <div className="form-section"><h3>{title}</h3><div className="grid two">{children}</div></div>;
+  return <div className="form-section soft-section"><h3>{title}</h3><div className="grid two">{children}</div></div>;
 }
 
 const usesHttpConfig = (type: string) => type === "http" || type === "http_login";

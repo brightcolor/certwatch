@@ -29,7 +29,7 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
 
   return (
     <section className="content">
-      <div className={`dashboard-hero hero-${heroTone(statusCounts)}`}>
+      <div className={`dashboard-hero soft-glow hero-${heroTone(statusCounts)}`}>
         <div className="hero-copy">
           <span className="eyebrow">Overall health</span>
           <h2>{heroTitle(statusCounts)}</h2>
@@ -118,7 +118,7 @@ function MonitorRow({ monitor, onSelect, onCheck, onClone, onToggleEnabled, onSt
 
 function Metric({ icon, label, value, tone, onClick }: any) {
   return (
-    <button type="button" className={`info-box shadow-sm metric-${tone} metric-button`} onClick={onClick}>
+    <button type="button" className={`info-box shadow-sm metric-${tone} metric-button soft-accent ${accentTone(tone)}`} onClick={onClick}>
       <span className="info-box-icon">{icon}</span>
       <div className="info-box-content">
         <span className="info-box-text">{label}</span>
@@ -203,6 +203,8 @@ const heroDescription = (counts: Record<string, number>) =>
       : "Certificate, service, and login checks are currently inside their expected operating range.";
 
 const statusMark = (status: string) => ({ OK: "OK", WARNING: "!", CRITICAL: "X", DOWN: "X", PAUSED: "II", UNKNOWN: "?" }[status] ?? "?");
+
+const accentTone = (tone: string) => tone === "success" ? "success" : tone === "warning" ? "warning" : tone === "danger" ? "danger" : "info";
 
 const groupMonitors = (monitors: Monitor[]) => {
   const buckets = new Map<string, Monitor[]>();

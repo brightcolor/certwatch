@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.12.5 - 2026-06-04
+
+- Split the monitor form into mobile-friendly steps for Basics, Checks, Alerts, and Advanced settings.
+- Added a thin Bootstrap 5.3 soft-UI design layer with Inter, tabular numbers, rounded cards, tinted status pills, subtle glows, and left accent bars.
+- Added Bootstrap Icons and used them in the new monitor form step navigation and summary pills.
+- Reduced hard-coded dashboard/status colors in favor of Bootstrap CSS variables and `rgba(var(--bs-*-rgb), ...)` tints.
+- Refined dashboard hero, KPI cards, status pills, and monitor status marks to match the new flat SaaS dashboard style.
+
 ## 0.12.4 - 2026-05-31
 
 - Improved label/tag entry with stable chips, blur/tab commit behavior, text mode, quick suggestions, and clear/remove actions.

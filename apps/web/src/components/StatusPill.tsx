@@ -8,5 +8,10 @@ const labels: Record<string, string> = {
 };
 
 export function StatusPill({ status }: { status: string }) {
-  return <span className={`status status-${status.toLowerCase()}`}>{labels[status] ?? status}</span>;
+  return <span className={`status soft-pill ${toneFor(status)} status-${status.toLowerCase()}`}>{labels[status] ?? status}</span>;
 }
+
+const toneFor = (status: string) =>
+  status === "OK" ? "success" :
+    status === "WARNING" ? "warning" :
+      status === "CRITICAL" || status === "DOWN" ? "danger" : "info";
