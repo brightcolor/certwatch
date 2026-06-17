@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.4 - 2026-06-18
+
+- Required admin-level users to add an incident comment when acknowledging incidents and store that comment in the incident timeline.
+
 ## 0.13.3 - 2026-06-18
 
 - Made monitor detail information panels more compact with finer row spacing and smaller certificate metadata typography.

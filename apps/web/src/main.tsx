@@ -454,7 +454,7 @@ function App() {
           onToggleEnabled={() => setMonitorEnabled(selectedMonitor, !selectedMonitor.enabled)}
           onDelete={() => deleteMonitor(selectedMonitor.id)}
           onSslLabs={() => triggerSslLabs(selectedMonitor)}
-          onAck={async (id: string, assignee: string) => { await api.request(`/incidents/${id}/ack`, { method: "POST", body: JSON.stringify({ assignee }) }); await loadMonitorData(selectedMonitor.id); }}
+          onAck={async (id: string, assignee: string, comment: string) => { await api.request(`/incidents/${id}/ack`, { method: "POST", body: JSON.stringify({ assignee, comment }) }); await loadMonitorData(selectedMonitor.id); }}
           onNote={async (id: string, text: string) => { await api.request(`/incidents/${id}/notes`, { method: "POST", body: JSON.stringify({ text }) }); await loadMonitorData(selectedMonitor.id); }}
         />
       ) : (

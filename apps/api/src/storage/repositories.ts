@@ -510,8 +510,11 @@ export const incidents = {
     db.prepare("INSERT INTO incidents VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(incident.id, incident.monitorId, incident.status, incident.severity, incident.message, incident.startedAt, incident.resolvedAt, incident.acknowledgedAt, incident.acknowledgedBy, incident.assignee, JSON.stringify(incident.notes));
     return incident;
   },
-  acknowledge(incidentId: string, userEmail: string, assignee?: string | null): Incident | null {
+  acknowledge(incidentId: string, userEmail: string, assignee?: string | null, comment?: string | null): Incident | null {
     db.prepare("UPDATE incidents SET acknowledged_at = ?, acknowledged_by = ?, assignee = COALESCE(?, assignee) WHERE id = ?").run(nowIso(), userEmail, assignee ?? null, incidentId);
+    return comment?.trim() ? this.addNote(incidentId, userEmail, comment.trim()) : this.get(incidentId);
+  },
+  get(incidentId: string): Incident | null {
     const row = db.prepare("SELECT * FROM incidents WHERE id = ?").get(incidentId);
     return row ? rowToIncident(row) : null;
   },

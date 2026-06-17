@@ -16,7 +16,7 @@ type MonitorDetailProps = {
   onToggleEnabled: () => void;
   onDelete: () => void;
   onSslLabs: () => Promise<any>;
-  onAck: (id: string, assignee: string) => Promise<void>;
+  onAck: (id: string, assignee: string, comment: string) => Promise<void>;
   onNote: (id: string, text: string) => Promise<void>;
 };
 
@@ -102,9 +102,9 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
         </div>
         {incidents[0] && !incidents[0].resolvedAt && <div className="grid two">
           <label>Assignee<input value={assignee} onChange={(e) => setAssignee(e.target.value)} placeholder="Team or person" /></label>
-          <button onClick={() => onAck(incidents[0].id, assignee)}>Acknowledge latest</button>
-          <label>Note<input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What happened?" /></label>
-          <button onClick={async () => { await onNote(incidents[0].id, note); setNote(""); }}>Add note</button>
+          <label>Required comment<input required value={note} onChange={(e) => setNote(e.target.value)} placeholder="What happened and what was checked?" /></label>
+          <button disabled={!note.trim()} onClick={async () => { await onAck(incidents[0].id, assignee, note); setNote(""); }}>Acknowledge with comment</button>
+          <button disabled={!note.trim()} onClick={async () => { await onNote(incidents[0].id, note); setNote(""); }}>Add note</button>
         </div>}
         {incidents[0]?.notes?.length > 0 && <div className="stack-list">{incidents[0].notes.map((item) => <div key={item.id}><strong>{item.author}</strong><span>{item.text}</span><small>{dateTime(item.createdAt)}</small></div>)}</div>}
       </Panel>

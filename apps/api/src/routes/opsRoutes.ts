@@ -131,9 +131,13 @@ opsRoutes.get("/deliveries", (_req, res) => res.json(deliveries.list()));
 opsRoutes.get("/reports/availability", (req, res) => res.json(availabilityReport(req.currentTenant!.id, Number(req.query.days ?? 30))));
 
 opsRoutes.post("/incidents/:id/ack", (req, res) => {
-  const parsed = z.object({ assignee: z.string().max(120).optional().nullable() }).safeParse(req.body ?? {});
+  const parsed = z.object({
+    assignee: z.string().max(120).optional().nullable(),
+    comment: z.string().trim().max(2000).optional()
+  }).safeParse(req.body ?? {});
   if (!parsed.success) return res.status(400).json({ error: "Invalid acknowledgement." });
-  const incident = incidents.acknowledge(req.params.id, req.user!.email, parsed.data.assignee);
+  if (adminMustComment(req) && !parsed.data.comment) return res.status(400).json({ error: "Admins must add a comment when acknowledging incidents." });
+  const incident = incidents.acknowledge(req.params.id, req.user!.email, parsed.data.assignee, parsed.data.comment);
   if (!incident) return res.status(404).json({ error: "Incident not found." });
   res.json(incident);
 });
@@ -152,6 +156,9 @@ const saveSetting = (req: any, res: any, key: string, schema: z.ZodTypeAny) => {
   appSettings.set(key, parsed.data, req.currentTenant.id);
   res.json(parsed.data);
 };
+
+const adminMustComment = (req: any) =>
+  req.user?.role === "super_admin" || req.user?.role === "admin" || req.tenantRole === "owner" || req.tenantRole === "admin";
 
 const maintenanceSchema = z.object({
   windows: z.array(z.object({
