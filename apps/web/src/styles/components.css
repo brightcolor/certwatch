@@ -35,6 +35,10 @@
   padding-bottom: 0;
 }
 
+.panel:has(> .info) {
+  gap: .55rem;
+}
+
 .toolbar-panel {
   grid-template-columns: minmax(180px, 1fr) minmax(280px, 420px);
   align-items: center;
@@ -199,14 +203,16 @@
 .info {
   display: grid;
   grid-template-columns: 150px minmax(0, 1fr) auto;
-  gap: .75rem;
+  gap: .6rem .75rem;
   align-items: center;
   border-top: 1px solid var(--bs-border-color);
-  padding: .75rem 0 0;
+  padding: .5rem 0 0;
+  line-height: 1.35;
 }
 
 .info strong {
   word-break: break-word;
+  line-height: 1.35;
 }
 
 .invite-url,

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.1 - 2026-06-17
+
+- Reduced monitor detail information row height while keeping long certificate values readable and safely wrapped.
+
 ## 0.13.0 - 2026-06-04
 
 - Rebuilt the auth entry point around Passport Local while keeping secure HTTP-only API sessions and CSRF protection.
