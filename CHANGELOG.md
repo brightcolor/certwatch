@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.3 - 2026-06-18
+
+- Made monitor detail information panels more compact with finer row spacing and smaller certificate metadata typography.
+
 ## 0.13.2 - 2026-06-18
 
 - Updated Nodemailer to clear the runtime dependency audit failure in CI.
