@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.2 - 2026-06-18
+
+- Updated Nodemailer to clear the runtime dependency audit failure in CI.
+
 ## 0.13.1 - 2026-06-17
 
 - Reduced monitor detail information row height while keeping long certificate values readable and safely wrapped.

@@ -1,6 +1,6 @@
 {
   "name": "@crtwatch/api",
-  "version": "0.13.1",
+  "version": "0.13.2",
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
@@ -16,7 +16,7 @@
     "express": "^4.19.2",
     "helmet": "^7.1.0",
     "morgan": "^1.10.0",
-    "nodemailer": "^8.0.7",
+    "nodemailer": "^9.0.1",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12",
     "passport-local": "^1.0.0",
