@@ -36,6 +36,7 @@
 }
 
 .panel:has(> .info) {
+  align-content: start;
   gap: .35rem;
   padding: .85rem 1rem;
 }
@@ -224,6 +225,86 @@
   font-size: .92rem;
   word-break: break-word;
   line-height: 1.25;
+}
+
+.ca-mark {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  margin-top: .65rem;
+  border: 1px solid rgba(var(--bs-secondary-rgb), .24);
+  border-radius: var(--bs-border-radius);
+  background: rgba(var(--bs-secondary-rgb), .08);
+  padding: .75rem;
+}
+
+.ca-mark > div:last-child {
+  display: grid;
+  gap: .1rem;
+  min-width: 0;
+}
+
+.ca-mark span {
+  color: var(--bs-secondary-color);
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.ca-mark strong {
+  color: var(--bs-emphasis-color);
+  font-size: .94rem;
+  font-weight: 600;
+}
+
+.ca-logo {
+  display: grid;
+  flex: 0 0 auto;
+  width: 4.4rem;
+  min-height: 3.2rem;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: calc(var(--bs-border-radius) * .8);
+  color: var(--bs-secondary-color);
+  background: rgba(var(--bs-secondary-rgb), .1);
+}
+
+.ca-logo strong {
+  color: currentColor;
+  font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: .78rem;
+  letter-spacing: .02em;
+}
+
+.ca-success {
+  border-color: rgba(var(--bs-success-rgb), .28);
+  background: rgba(var(--bs-success-rgb), .08);
+}
+
+.ca-success .ca-logo {
+  color: var(--bs-success);
+  background: rgba(var(--bs-success-rgb), .14);
+}
+
+.ca-info {
+  border-color: rgba(var(--bs-info-rgb), .3);
+  background: rgba(var(--bs-info-rgb), .08);
+}
+
+.ca-info .ca-logo {
+  color: var(--bs-info);
+  background: rgba(var(--bs-info-rgb), .14);
+}
+
+.ca-warning {
+  border-color: rgba(var(--bs-warning-rgb), .34);
+  background: rgba(var(--bs-warning-rgb), .08);
+}
+
+.ca-warning .ca-logo {
+  color: var(--bs-warning);
+  background: rgba(var(--bs-warning-rgb), .14);
 }
 
 .invite-url,

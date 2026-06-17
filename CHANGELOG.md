@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.5 - 2026-06-18
+
+- Matched certificate detail row spacing with the TLS panel and added a compact certificate authority mark to use the recovered panel space.
+
 ## 0.13.4 - 2026-06-18
 
 - Required admin-level users to add an incident comment when acknowledging incidents and store that comment in the incident timeline.

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Copy } from "lucide-react";
 import type { CheckResult, Incident, Monitor } from "../api/client";
+import { CertificateAuthorityMark } from "../components/CertificateAuthorityMark";
 import { StatusPill } from "../components/StatusPill";
 import { certificateUnavailableMessage, collectsCertificate } from "../utils/monitorTypes";
 import { formatDateTime } from "../utils/date";
@@ -77,6 +78,7 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
             <Info label="Valid Until" value={dateTime(latest?.validUntil)} />
             <Info label="Days Remaining" value={latest?.daysRemaining?.toString()} />
             <Info label="SANs" value={latest?.subjectAltNames.join(", ")} />
+            <CertificateAuthorityMark issuer={latest?.issuer} />
           </Panel>
           <ResultPanel latest={latest} title="TLS" />
         </div> : <div className="grid two">
