@@ -261,13 +261,20 @@
 .ca-logo {
   display: grid;
   flex: 0 0 auto;
-  width: 4.4rem;
+  width: 5.4rem;
   min-height: 3.2rem;
   place-items: center;
   border: 1px solid currentColor;
   border-radius: calc(var(--bs-border-radius) * .8);
   color: var(--bs-secondary-color);
   background: rgba(var(--bs-secondary-rgb), .1);
+}
+
+.ca-logo img {
+  display: block;
+  max-width: 4.35rem;
+  max-height: 2rem;
+  object-fit: contain;
 }
 
 .ca-logo strong {

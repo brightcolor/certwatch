@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.6 - 2026-06-18
+
+- Moved the certificate authority mark to the top of the certificate detail panel.
+- Added local Wikimedia-sourced CA logo assets for supported issuers with a safe initials fallback.
+
 ## 0.13.5 - 2026-06-18
 
 - Matched certificate detail row spacing with the TLS panel and added a compact certificate authority mark to use the recovered panel space.

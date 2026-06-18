@@ -70,6 +70,7 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
       </div>
       {hasCertificateDetails ? <div className="grid two">
           <Panel title="Certificate">
+            <CertificateAuthorityMark issuer={latest?.issuer} />
             <Info label="Common Name" value={latest?.commonName} />
             <Info label="Issuer" value={latest?.issuer} />
             <Info label="Serial Number" value={latest?.serialNumber} />
@@ -78,7 +79,6 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
             <Info label="Valid Until" value={dateTime(latest?.validUntil)} />
             <Info label="Days Remaining" value={latest?.daysRemaining?.toString()} />
             <Info label="SANs" value={latest?.subjectAltNames.join(", ")} />
-            <CertificateAuthorityMark issuer={latest?.issuer} />
           </Panel>
           <ResultPanel latest={latest} title="TLS" />
         </div> : <div className="grid two">
