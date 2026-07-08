@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.7 - 2026-07-08
+
+- Added an optimization backlog documenting scheduler, storage, and UI polling improvement opportunities.
+- Debounced SQLite persistence so writes no longer rewrite the whole database file on every statement, and flush pending writes on shutdown.
+- Added missing indexes for the scheduler's due-monitor scan and check-result history lookups.
+
 ## 0.13.6 - 2026-06-18
 
 - Moved the certificate authority mark to the top of the certificate detail panel.
