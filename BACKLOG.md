@@ -54,6 +54,33 @@ section. Check items off as they're addressed.
       `useAsyncData`-style hook. Worth consolidating once the polling scope above
       is fixed.
 
+## Feature Ideas
+
+- [ ] **Audit log viewer** — `audit_log` is written on every team/membership/invite
+      action (`apps/api/src/routes/systemRoutes.ts`, via `auditLogs.record(...)`)
+      but there is no `GET /api/audit-log` route and no UI page to view it. The
+      data exists and is currently invisible to admins. Highest-value gap found:
+      real security/compliance data with zero way to read it back.
+- [ ] **Two-factor authentication (TOTP/WebAuthn) for login** — no 2FA exists
+      anywhere in `apps/api/src/auth/*`; for a tool that holds decrypted
+      credentials/secrets and controls alerting for production TLS infra, this is
+      a meaningful gap for anyone exposing it beyond a trusted network.
+- [ ] **OIDC / LDAP / reverse-proxy-auth integrations** — already listed as a TODO
+      in the README; relevant once used in orgs with existing SSO.
+- [ ] **Full quiet-hours and maintenance-window enforcement** — already listed as
+      a TODO in the README; current enforcement is described as partial.
+- [ ] **Renewal-automation hooks** — crt.watch already tracks exact expiry dates;
+      an optional webhook/script trigger fired N days before expiry (distinct
+      from the existing alert notification) would let it kick off a renewal
+      process instead of only reporting the problem.
+- [ ] **CT-watch domain grouping** — Certificate Transparency watch is configured
+      per domain; grouping related domains/wildcards would cut down on repeated
+      noisy findings across many subdomains of the same root domain.
+
+~~API token management~~ — already implemented (`GET/POST/DELETE /api/api-tokens`
+in `apps/api/src/routes/opsRoutes.ts:117-126` plus an Operations page UI). The
+README TODO list is stale on this point.
+
 ## Confirmed non-issues / clarifications
 
 - No Certificate Authority (CA) CRUD exists. `CertificateAuthorityMark.tsx` is a
