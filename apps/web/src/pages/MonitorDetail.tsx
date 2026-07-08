@@ -49,20 +49,22 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
   return (
     <section className="content">
       <div className="detail-hero">
-        <button className="btn btn-outline-secondary btn-sm" onClick={onBack}>Back</button>
         <div className="detail-head">
-          <div>
-            <StatusPill status={monitor.lastStatus} />
-            <h2>{monitor.name}</h2>
-            <p>{monitor.host}:{monitor.port} - {monitor.type}</p>
-            <small>{monitor.tags.join(", ") || "unlabeled"}</small>
+          <div className="detail-identity">
+            <button className="btn btn-outline-secondary btn-sm detail-back" onClick={onBack}>Back</button>
+            <div>
+              <div className="detail-title"><h2>{monitor.name}</h2><StatusPill status={monitor.lastStatus} /></div>
+              <p>{monitor.host}:{monitor.port} · {monitor.type}</p>
+              <small>{monitor.tags.join(", ") || "unlabeled"}</small>
+            </div>
           </div>
-          <div className="actions">
+          <div className="actions detail-actions">
             <button className="btn btn-primary" disabled={!monitor.enabled} onClick={onCheck}>Check now</button>
             {canTriggerSslLabs && <button className="btn btn-outline-secondary" disabled={sslLabsState.busy} onClick={triggerSslLabs}>SSL Labs</button>}
             <button className={`btn ${monitor.enabled ? "btn-outline-warning warning" : "btn-success success"}`} onClick={onToggleEnabled}>{monitor.enabled ? "Pause" : "Resume"}</button>
             <button className="btn btn-outline-secondary" onClick={onClone}><Copy size={16} /> Clone</button>
             <button className="btn btn-outline-secondary" onClick={onEdit}>Edit</button>
+            <span className="action-divider" aria-hidden="true" />
             <button className="btn btn-outline-danger danger" onClick={() => { if (confirm(`Delete monitor "${monitor.name}"?`)) onDelete(); }}>Delete</button>
           </div>
         </div>

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.13.9 - 2026-07-08
+
+- Reworked the dashboard layout: compact health hero with status icon, slimmer metric cards, a column header row in list view, and properly aligned certificate columns with readable day/date/TLS spacing.
+- Fixed clipped monitor messages, problem chips, group badges, tag chips, and ghost buttons that were losing against the global button style and rendering with wrong colors or center-clipped text.
+- Calmed secondary actions: monitor row icons and detail-page Pause/Resume are now neutral with color on hover, and Delete is separated by a divider from the other detail actions.
+- Monitor rows are keyboard-accessible (focusable, Enter/Space opens the monitor) with a visible focus ring.
+- Global polish: themed thin scrollbars, unified panel headers, centered empty states, refined toast, sidebar active accent bar, content-sized panel buttons, and a 2-column metric grid plus wrapping hero badges on small screens.
+
 ## 0.13.8 - 2026-07-08
 
 - Added TOTP-based two-factor authentication: users can enable it from Profile (QR-free manual key entry, confirmation code, one-time backup codes), and login now requires a second step when 2FA is active.

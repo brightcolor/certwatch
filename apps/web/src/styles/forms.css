@@ -124,18 +124,38 @@
   display: inline-flex;
   align-items: center;
   gap: .35rem;
-  min-height: 1.75rem;
+  min-height: 1.75rem !important;
   border-radius: 999px;
   font-size: .75rem;
   font-weight: 600;
-  border-color: rgba(var(--bs-primary-rgb), .4);
-  background: rgba(var(--bs-primary-rgb), .18);
-  color: var(--bs-emphasis-color);
-  padding: .25rem .65rem;
+  border: 1px solid rgba(var(--bs-primary-rgb), .35) !important;
+  background: rgba(var(--bs-primary-rgb), .12) !important;
+  color: var(--bs-emphasis-color) !important;
+  padding: .25rem .65rem !important;
+  box-shadow: none !important;
+}
+
+.tag-chip:hover {
+  border-color: rgba(var(--bs-danger-rgb), .5) !important;
+  background: rgba(var(--bs-danger-rgb), .1) !important;
+  filter: none !important;
 }
 
 .tag-chip span {
   opacity: .7;
+}
+
+button.tag-suggestion {
+  background: var(--bs-tertiary-bg) !important;
+  border: 1px solid var(--bs-border-color) !important;
+  color: var(--bs-body-color) !important;
+  box-shadow: none !important;
+}
+
+button.tag-suggestion:hover {
+  border-color: rgba(var(--bs-primary-rgb), .5) !important;
+  background: rgba(var(--bs-primary-rgb), .1) !important;
+  filter: none !important;
 }
 
 .tag-actions,

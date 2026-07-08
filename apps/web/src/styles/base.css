@@ -105,6 +105,32 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--bs-secondary-color-rgb), .35) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(var(--bs-secondary-color-rgb), .35);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--bs-secondary-color-rgb), .55);
+  background-clip: padding-box;
+}
+
 ::selection {
   background: rgba(var(--bs-primary-rgb), .32);
 }
@@ -192,16 +218,16 @@ button:not(.btn):not(.nav-link):not(.brand-link):not(.dropdown-item):not(.list-g
 
 button.ghost,
 button.icon {
-  border-color: var(--bs-border-color);
-  background: var(--bs-body-bg);
-  color: var(--bs-body-color);
-  box-shadow: none;
+  border-color: var(--bs-border-color) !important;
+  background: var(--bs-body-bg) !important;
+  color: var(--bs-body-color) !important;
+  box-shadow: none !important;
 }
 
 button.ghost:hover,
 button.icon:hover {
-  background: var(--bs-tertiary-bg);
-  filter: none;
+  background: var(--bs-tertiary-bg) !important;
+  filter: none !important;
 }
 
 button.danger {
