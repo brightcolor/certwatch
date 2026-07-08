@@ -18,6 +18,7 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
   const [backups, setBackups] = useState<any[]>([]);
   const [tokens, setTokens] = useState<any[]>([]);
   const [deliveries, setDeliveries] = useState<any[]>([]);
+  const [auditLog, setAuditLog] = useState<any[]>([]);
   const [tokenResult, setTokenResult] = useState("");
   const [route, setRoute] = useState({ name: "", tags: [] as string[], window: "daily 22:00-23:00" });
   const [page, setPage] = useState({ slug: "", title: "", description: "", logoUrl: "", tags: [] as string[], hideHostnames: false });
@@ -25,7 +26,7 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
   const [tokenScope, setTokenScope] = useState("read");
 
   const load = async () => {
-    const [m, t, ssl, s, d, b, backupList, tokenList, deliveryList] = await Promise.all([
+    const [m, t, ssl, s, d, b, backupList, tokenList, deliveryList, auditList] = await Promise.all([
       api.request<any>("/settings/maintenance"),
       api.request<any>("/settings/tls-policy"),
       api.request<any>("/settings/ssl-labs"),
@@ -34,9 +35,10 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
       api.request<any>("/settings/backups"),
       api.request<any[]>("/backups"),
       api.request<any[]>("/api-tokens").catch(() => []),
-      api.request<any[]>("/deliveries")
+      api.request<any[]>("/deliveries"),
+      api.request<any[]>("/audit-log").catch(() => [])
     ]);
-    setMaintenance(m); setTlsPolicy(t); setSslLabs(ssl); setStatusPages(s); setDiscovery(d); setBackupSettings(b); setBackups(backupList); setTokens(tokenList); setDeliveries(deliveryList);
+    setMaintenance(m); setTlsPolicy(t); setSslLabs(ssl); setStatusPages(s); setDiscovery(d); setBackupSettings(b); setBackups(backupList); setTokens(tokenList); setDeliveries(deliveryList); setAuditLog(auditList);
   };
   useEffect(() => { void load(); }, [liveRefreshKey]);
 
@@ -177,9 +179,19 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
           {tokens.map((item) => <Row key={item.id} title={item.name} detail={`created ${dateTime(item.createdAt)}${item.lastUsedAt ? ` - used ${dateTime(item.lastUsedAt)}` : ""}`} onDelete={async () => { await api.request(`/api-tokens/${item.id}`, { method: "DELETE" }); await load(); }} />)}
         </div>
       </div>
-      <div className="panel">
-        <h3>Notification delivery log</h3>
-        <div className="stack-list">{deliveries.slice(0, 25).map((item) => <div key={item.id}><strong>{item.deliveryStatus}</strong><span>{item.channelName} / {item.provider}</span><small>{item.message}{item.error ? ` - ${item.error}` : ""}</small></div>)}</div>
+      <div className="grid two">
+        <div className="panel">
+          <h3>Notification delivery log</h3>
+          <div className="stack-list">{deliveries.slice(0, 25).map((item) => <div key={item.id}><strong>{item.deliveryStatus}</strong><span>{item.channelName} / {item.provider}</span><small>{item.message}{item.error ? ` - ${item.error}` : ""}</small></div>)}</div>
+        </div>
+        <div className="panel">
+          <h3>Audit log</h3>
+          <p className="muted">Organization and team management actions, most recent first.</p>
+          <div className="stack-list">
+            {auditLog.length === 0 && <p className="muted">No audit entries yet.</p>}
+            {auditLog.map((item) => <div key={item.id}><strong>{item.action}</strong><span>{item.actorEmail ?? "system"}</span><small>{dateTime(item.createdAt)}</small></div>)}
+          </div>
+        </div>
       </div>
     </section>
   );

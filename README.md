@@ -71,6 +71,8 @@ This stack keeps the application easy to self-host while still supporting real T
 - Availability reports with check counts, incident counts, availability percentage, and MTTR
 - Scheduled SQLite database backups with UI download and retention controls
 - Passport-based local user login with bcrypt password hashes, secure sessions, CSRF token header, first-run admin setup, organization self-registration, and optional GitHub OAuth strategy configuration
+- Optional TOTP-based two-factor authentication per user, set up from the Profile page with one-time backup codes and enforced as a second login step
+- Audit log for organization and team management actions, viewable by owners and admins on the Operations page
 - Admin-only user management with visible validation for password length and duplicate email addresses
 - Organization roles for `owner`, `admin`, `member`, and `viewer`; existing self-hosted installs are migrated into a default organization and default team
 - Encrypted storage for monitor login secrets, SMTP settings, and notification provider secrets using `SESSION_SECRET`
@@ -228,6 +230,7 @@ All API routes require login session authentication except `/api/auth/login`.
 - `GET /api/reports/availability`
 - `GET /api/deliveries`
 - `GET /api/api-tokens`
+- `GET /api/audit-log`
 - `GET /api/settings/ct-watch`
 - `PUT /api/settings/ct-watch`
 - `GET /api/settings/maintenance`

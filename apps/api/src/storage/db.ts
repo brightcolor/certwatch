@@ -118,7 +118,10 @@ export const migrate = () => {
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL,
       created_at TEXT NOT NULL,
-      impersonator_user_id TEXT
+      impersonator_user_id TEXT,
+      mfa_secret TEXT,
+      mfa_enabled INTEGER NOT NULL DEFAULT 0,
+      mfa_backup_codes_json TEXT NOT NULL DEFAULT '[]'
     );
     CREATE TABLE IF NOT EXISTS sessions (
       token TEXT PRIMARY KEY,
@@ -365,7 +368,10 @@ export const migrate = () => {
     "ALTER TABLE audit_log ADD COLUMN tenant_id TEXT;",
     "ALTER TABLE audit_log ADD COLUMN team_id TEXT;",
     "ALTER TABLE audit_log ADD COLUMN target_user_id TEXT;",
-    "ALTER TABLE audit_log ADD COLUMN metadata_json TEXT NOT NULL DEFAULT '{}';"
+    "ALTER TABLE audit_log ADD COLUMN metadata_json TEXT NOT NULL DEFAULT '{}';",
+    "ALTER TABLE users ADD COLUMN mfa_secret TEXT;",
+    "ALTER TABLE users ADD COLUMN mfa_enabled INTEGER NOT NULL DEFAULT 0;",
+    "ALTER TABLE users ADD COLUMN mfa_backup_codes_json TEXT NOT NULL DEFAULT '[]';"
   ]);
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_tenant_memberships_tenant ON tenant_memberships(tenant_id);
@@ -383,6 +389,7 @@ export const migrate = () => {
     CREATE INDEX IF NOT EXISTS idx_team_memberships_status ON team_memberships(status);
     CREATE INDEX IF NOT EXISTS idx_monitors_due ON monitors(enabled, next_check_at);
     CREATE INDEX IF NOT EXISTS idx_check_results_monitor_checked_at ON check_results(monitor_id, checked_at);
+    CREATE INDEX IF NOT EXISTS idx_audit_log_tenant_created ON audit_log(tenant_id, created_at);
   `);
   try {
     db.exec("ALTER TABLE sessions ADD COLUMN impersonator_user_id TEXT;");
@@ -590,7 +597,8 @@ export const rowToUser = (row: any): User => ({
   email: row.email,
   passwordHash: row.password_hash,
   role: row.role,
-  createdAt: row.created_at
+  createdAt: row.created_at,
+  mfaEnabled: Boolean(row.mfa_enabled)
 });
 
 export const rowToIncident = (row: any): Incident => ({

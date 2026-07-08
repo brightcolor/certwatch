@@ -437,6 +437,7 @@ function App() {
           tenants={tenants}
           onChangePassword={(data: any) => api.request("/auth/change-password", { method: "POST", body: JSON.stringify(data) })}
           onLogout={logout}
+          onMfaChanged={async () => setUser((await api.request<any>("/auth/me")).user)}
         />
       ) : page === "operations" ? (
         <Operations liveRefreshKey={liveRefreshKey} />

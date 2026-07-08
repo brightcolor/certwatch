@@ -151,6 +151,7 @@ export interface User {
   passwordHash: string;
   role: UserRole;
   createdAt: string;
+  mfaEnabled: boolean;
 }
 
 export type UserRole = "super_admin" | "admin" | "viewer";

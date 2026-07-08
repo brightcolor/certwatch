@@ -13,6 +13,8 @@ export function Login({ setupRequired, registrationEnabled, onLogin, onBack, onR
   const [confirm, setConfirm] = useState("");
   const [organizationName, setOrganizationName] = useState("Default organization");
   const [error, setError] = useState("");
+  const [mfaToken, setMfaToken] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -23,12 +25,44 @@ export function Login({ setupRequired, registrationEnabled, onLogin, onBack, onR
     }
     try {
       const result = await api.request<any>(setupRequired ? "/auth/setup" : "/auth/login", { method: "POST", body: JSON.stringify({ email, password, organizationName }) });
+      if (result.mfaRequired) {
+        setMfaToken(result.mfaToken);
+        return;
+      }
       api.setCsrf(result.csrfToken);
       onLogin(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed.");
     }
   };
+
+  const submitMfa = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError("");
+    try {
+      const result = await api.request<any>("/auth/mfa/verify-login", { method: "POST", body: JSON.stringify({ mfaToken, code: mfaCode }) });
+      api.setCsrf(result.csrfToken);
+      onLogin(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Verification failed.");
+    }
+  };
+
+  if (mfaToken) {
+    return (
+      <main className="login">
+        <form onSubmit={submitMfa} className="login-panel">
+          <span className="eyebrow">crt.watch</span>
+          <h1>Two-factor authentication</h1>
+          <p className="muted">Enter the 6-digit code from your authenticator app, or a backup code.</p>
+          <label>Code<input autoFocus value={mfaCode} onChange={(e) => setMfaCode(e.target.value)} placeholder="123456" /></label>
+          {error && <p className="error">{error}</p>}
+          <button type="submit">Verify</button>
+          <button className="ghost" type="button" onClick={() => { setMfaToken(""); setMfaCode(""); setError(""); }}>Back to sign in</button>
+        </form>
+      </main>
+    );
+  }
 
   return (
     <main className="login">

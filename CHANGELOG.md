@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.8 - 2026-07-08
+
+- Added TOTP-based two-factor authentication: users can enable it from Profile (QR-free manual key entry, confirmation code, one-time backup codes), and login now requires a second step when 2FA is active.
+- Added an audit log viewer: `GET /api/audit-log` (owner/admin only) plus a new panel on the Operations page showing organization and team management actions.
+- Fixed the API dev server picking up an inherited `PORT` environment variable and silently binding to the Vite port instead of 8080; `dev:api` now pins `PORT=8080` explicitly via `cross-env`.
+
 ## 0.13.7 - 2026-07-08
 
 - Added an optimization backlog documenting scheduler, storage, and UI polling improvement opportunities.

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { api } from "../api/client";
 
-export function Profile({ user, tenants, onChangePassword, onLogout }: any) {
+export function Profile({ user, tenants, onChangePassword, onLogout, onMfaChanged }: any) {
   const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [message, setMessage] = useState("");
   const submit = async (event: FormEvent) => {
@@ -38,7 +39,88 @@ export function Profile({ user, tenants, onChangePassword, onLogout }: any) {
           <button className="btn btn-success success" type="submit">Save password</button>
         </form>
       </div>
+      <MfaPanel user={user} onMfaChanged={onMfaChanged} />
     </section>
+  );
+}
+
+function MfaPanel({ user, onMfaChanged }: any) {
+  const [setup, setSetup] = useState<{ secret: string; otpauthUrl: string } | null>(null);
+  const [code, setCode] = useState("");
+  const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
+  const [disablePassword, setDisablePassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  const startSetup = async () => {
+    setError(""); setMessage(""); setBackupCodes(null);
+    const result = await api.request<any>("/auth/mfa/setup", { method: "POST", body: "{}" });
+    setSetup(result);
+  };
+
+  const confirmSetup = async (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    try {
+      const result = await api.request<any>("/auth/mfa/enable", { method: "POST", body: JSON.stringify({ code }) });
+      setBackupCodes(result.backupCodes);
+      setSetup(null);
+      setCode("");
+      onMfaChanged?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Verification failed.");
+    }
+  };
+
+  const disable = async (event: FormEvent) => {
+    event.preventDefault();
+    setError(""); setMessage("");
+    try {
+      await api.request("/auth/mfa/disable", { method: "POST", body: JSON.stringify({ password: disablePassword }) });
+      setDisablePassword("");
+      setMessage("Two-factor authentication disabled.");
+      onMfaChanged?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not disable two-factor authentication.");
+    }
+  };
+
+  return (
+    <div className="panel">
+      <h3>Two-factor authentication</h3>
+      {backupCodes ? (
+        <div className="callout callout-info">
+          <strong>Two-factor authentication is enabled.</strong>
+          <p>Save these backup codes somewhere safe. Each can be used once if you lose access to your authenticator app.</p>
+          <pre>{backupCodes.join("\n")}</pre>
+        </div>
+      ) : user?.mfaEnabled ? (
+        <form onSubmit={disable}>
+          <p className="muted">Two-factor authentication is currently enabled for your account.</p>
+          <label>Current password<input type="password" autoComplete="current-password" value={disablePassword} onChange={(e) => setDisablePassword(e.target.value)} required /></label>
+          {error && <p className="error">{error}</p>}
+          {message && <p className="success">{message}</p>}
+          <button className="btn btn-outline-danger danger" type="submit">Disable two-factor authentication</button>
+        </form>
+      ) : setup ? (
+        <form onSubmit={confirmSetup}>
+          <p className="muted">Scan this key with your authenticator app (Google Authenticator, Authy, 1Password, ...), or enter it manually.</p>
+          <label>Secret key<input readOnly value={setup.secret} onFocus={(e) => e.currentTarget.select()} /></label>
+          <label>Setup URI<input readOnly value={setup.otpauthUrl} onFocus={(e) => e.currentTarget.select()} /></label>
+          <label>6-digit code<input autoFocus value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" required /></label>
+          {error && <p className="error">{error}</p>}
+          <div className="actions">
+            <button className="btn btn-success success" type="submit">Confirm and enable</button>
+            <button className="ghost" type="button" onClick={() => setSetup(null)}>Cancel</button>
+          </div>
+        </form>
+      ) : (
+        <>
+          <p className="muted">Add an authenticator app as a second sign-in factor.</p>
+          <button className="btn btn-success success" type="button" onClick={startSetup}>Enable two-factor authentication</button>
+        </>
+      )}
+    </div>
   );
 }
 

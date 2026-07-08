@@ -5,16 +5,16 @@ section. Check items off as they're addressed.
 
 ## Backend / Flow
 
-- [ ] **Full DB export+rewrite on every write** — `db.exec`/`.run()` calls
+- [x] **Full DB export+rewrite on every write** — `db.exec`/`.run()` calls
       `fs.writeFileSync(sqlite.export())` synchronously on *every single* statement
       (`apps/api/src/storage/db.ts:15,20,34`). With many monitors this rewrites the
       whole SQLite file on disk for each insert/update — the single biggest
-      bottleneck at scale. Fix: debounce/batch persistence (e.g. write once per
-      scheduler tick or on a short timer) instead of per statement.
-- [ ] **Missing indexes** — no index on `monitors(enabled, next_check_at)` (used by
+      bottleneck at scale. Fixed in v0.13.7: writes are now debounced (250ms) and
+      flushed on SIGINT/SIGTERM.
+- [x] **Missing indexes** — no index on `monitors(enabled, next_check_at)` (used by
       the due-monitor scan every 30s) or on `check_results(monitor_id, checked_at)`
-      (used by `results.list/listRecent/consecutiveFailureStartedAt`). Fix: add
-      `CREATE INDEX IF NOT EXISTS` for both.
+      (used by `results.list/listRecent/consecutiveFailureStartedAt`). Fixed in
+      v0.13.7.
 - [ ] **N+1 queries per scheduler tick** — `apps/api/src/scheduler/scheduler.ts:59-73`
       queries `results.list(monitor.id, 1)`, looks up open incidents twice
       (once directly, once again inside `incidents.sync`), and loads
@@ -56,15 +56,15 @@ section. Check items off as they're addressed.
 
 ## Feature Ideas
 
-- [ ] **Audit log viewer** — `audit_log` is written on every team/membership/invite
+- [x] **Audit log viewer** — `audit_log` is written on every team/membership/invite
       action (`apps/api/src/routes/systemRoutes.ts`, via `auditLogs.record(...)`)
-      but there is no `GET /api/audit-log` route and no UI page to view it. The
-      data exists and is currently invisible to admins. Highest-value gap found:
-      real security/compliance data with zero way to read it back.
-- [ ] **Two-factor authentication (TOTP/WebAuthn) for login** — no 2FA exists
-      anywhere in `apps/api/src/auth/*`; for a tool that holds decrypted
-      credentials/secrets and controls alerting for production TLS infra, this is
-      a meaningful gap for anyone exposing it beyond a trusted network.
+      but there is no `GET /api/audit-log` route and no UI page to view it. Fixed
+      in v0.13.8: `GET /api/audit-log` (owner/admin only) plus an "Audit log" panel
+      on the Operations page.
+- [x] **Two-factor authentication (TOTP) for login** — no 2FA existed anywhere in
+      `apps/api/src/auth/*`. Fixed in v0.13.8: TOTP-based 2FA (RFC 6238, no external
+      dependency) with backup codes, set up from Profile and enforced as a second
+      login step. WebAuthn is not implemented.
 - [ ] **OIDC / LDAP / reverse-proxy-auth integrations** — already listed as a TODO
       in the README; relevant once used in orgs with existing SSO.
 - [ ] **Full quiet-hours and maintenance-window enforcement** — already listed as

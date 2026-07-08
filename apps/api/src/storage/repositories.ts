@@ -24,7 +24,7 @@ export const users = {
   },
   create(email: string, passwordHash: string, role: UserRole): User {
     const createdAt = nowIso();
-    const user = { id: id(), email: email.toLowerCase(), passwordHash, role, createdAt };
+    const user = { id: id(), email: email.toLowerCase(), passwordHash, role, createdAt, mfaEnabled: false };
     db.prepare("INSERT INTO users (id, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?)").run(user.id, user.email, user.passwordHash, user.role, user.createdAt);
     return user;
   },
@@ -34,6 +34,26 @@ export const users = {
   },
   delete(userId: string) {
     db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+  },
+  getMfaSecret(userId: string): string | null {
+    const row = db.prepare("SELECT mfa_secret FROM users WHERE id = ?").get(userId) as { mfa_secret?: string | null } | undefined;
+    return row?.mfa_secret ?? null;
+  },
+  setPendingMfaSecret(userId: string, encryptedSecret: string) {
+    db.prepare("UPDATE users SET mfa_secret = ?, mfa_enabled = 0, mfa_backup_codes_json = '[]' WHERE id = ?").run(encryptedSecret, userId);
+  },
+  enableMfa(userId: string, backupCodeHashes: string[]) {
+    db.prepare("UPDATE users SET mfa_enabled = 1, mfa_backup_codes_json = ? WHERE id = ?").run(JSON.stringify(backupCodeHashes), userId);
+  },
+  disableMfa(userId: string) {
+    db.prepare("UPDATE users SET mfa_enabled = 0, mfa_secret = NULL, mfa_backup_codes_json = '[]' WHERE id = ?").run(userId);
+  },
+  consumeMfaBackupCode(userId: string, codeHash: string): boolean {
+    const row = db.prepare("SELECT mfa_backup_codes_json FROM users WHERE id = ?").get(userId) as { mfa_backup_codes_json?: string } | undefined;
+    const codes: string[] = row?.mfa_backup_codes_json ? JSON.parse(row.mfa_backup_codes_json) : [];
+    if (!codes.includes(codeHash)) return false;
+    db.prepare("UPDATE users SET mfa_backup_codes_json = ? WHERE id = ?").run(JSON.stringify(codes.filter((entry) => entry !== codeHash)), userId);
+    return true;
   }
 };
 

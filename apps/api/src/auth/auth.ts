@@ -129,7 +129,7 @@ export const clearSessionCookie = (req: Request, res: Response) => {
   res.clearCookie(cookieName);
 };
 
-export const publicUser = (user: AppUser) => ({ id: user.id, email: user.email, role: user.role });
+export const publicUser = (user: AppUser) => ({ id: user.id, email: user.email, role: user.role, mfaEnabled: user.mfaEnabled });
 
 export const createPlainApiToken = () => `cw_${randomToken(32)}`;
 export const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");

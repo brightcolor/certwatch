@@ -4,7 +4,7 @@ import { createBackup, backupPath, deleteBackup, listBackups } from "../backup/b
 import { createPlainApiToken, hashToken, requireAdmin, requireTenantRole } from "../auth/auth.js";
 import { discoverMonitors } from "../checks/discovery.js";
 import { buildManualSslLabsResult, normalizeSslLabsHost, runManualSslLabsAssessment } from "../checks/sslLabsManual.js";
-import { apiTokens, appSettings, deliveries, incidents, monitors, results, tenants } from "../storage/repositories.js";
+import { apiTokens, appSettings, auditLogs, deliveries, incidents, monitors, results, tenants, users } from "../storage/repositories.js";
 import { id } from "../utils/id.js";
 import { monitorInputSchema, monitorTypes } from "./monitorSchemas.js";
 import type { DiscoveredMonitor, Monitor } from "../types.js";
@@ -128,6 +128,10 @@ opsRoutes.delete("/api-tokens/:id", requireAdmin, (req, res) => {
 });
 
 opsRoutes.get("/deliveries", (_req, res) => res.json(deliveries.list()));
+opsRoutes.get("/audit-log", requireTenantRole("owner", "admin"), (req, res) => {
+  const entries = auditLogs.list(req.currentTenant!.id, Number(req.query.limit ?? 100));
+  res.json(entries.map((entry) => ({ ...entry, actorEmail: entry.actorUserId ? (users.findById(entry.actorUserId)?.email ?? null) : null })));
+});
 opsRoutes.get("/reports/availability", (req, res) => res.json(availabilityReport(req.currentTenant!.id, Number(req.query.days ?? 30))));
 
 opsRoutes.post("/incidents/:id/ack", (req, res) => {
