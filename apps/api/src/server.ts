@@ -7,7 +7,7 @@ import morgan from "morgan";
 import { env } from "./config/env.js";
 import { attachSession } from "./auth/auth.js";
 import { configurePassport } from "./auth/passport.js";
-import { migrate } from "./storage/db.js";
+import { db, migrate } from "./storage/db.js";
 import { apiRoutes } from "./routes/index.js";
 import { publicRoutes } from "./routes/publicRoutes.js";
 import { metricsHandler } from "./routes/metrics.js";
@@ -43,3 +43,10 @@ app.listen(env.port, () => {
   console.log(`crt.watch listening on ${env.port}`);
   startScheduler();
 });
+
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.on(signal, () => {
+    db.flush();
+    process.exit(0);
+  });
+}

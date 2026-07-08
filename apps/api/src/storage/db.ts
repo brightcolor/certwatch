@@ -12,7 +12,24 @@ const SQL = await initSqlJs();
 const initial = fs.existsSync(env.databasePath) ? fs.readFileSync(env.databasePath) : undefined;
 const sqlite = new SQL.Database(initial);
 
-const persist = () => fs.writeFileSync(env.databasePath, Buffer.from(sqlite.export()));
+const persistNow = () => fs.writeFileSync(env.databasePath, Buffer.from(sqlite.export()));
+
+const PERSIST_DEBOUNCE_MS = 250;
+let persistTimer: NodeJS.Timeout | null = null;
+let persistPending = false;
+
+const persist = () => {
+  persistPending = true;
+  if (persistTimer) return;
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    if (persistPending) {
+      persistPending = false;
+      persistNow();
+    }
+  }, PERSIST_DEBOUNCE_MS);
+  persistTimer.unref?.();
+};
 
 export const db = {
   exec(sql: string) {
@@ -21,6 +38,17 @@ export const db = {
   },
   prepare(sql: string) {
     return new StatementWrapper(sqlite, sql);
+  },
+  /** Forces any pending debounced write to disk immediately, e.g. before process exit. */
+  flush() {
+    if (persistTimer) {
+      clearTimeout(persistTimer);
+      persistTimer = null;
+    }
+    if (persistPending) {
+      persistPending = false;
+      persistNow();
+    }
   }
 };
 
@@ -353,6 +381,8 @@ export const migrate = () => {
     CREATE INDEX IF NOT EXISTS idx_team_memberships_user ON team_memberships(user_id);
     CREATE INDEX IF NOT EXISTS idx_team_memberships_role ON team_memberships(role);
     CREATE INDEX IF NOT EXISTS idx_team_memberships_status ON team_memberships(status);
+    CREATE INDEX IF NOT EXISTS idx_monitors_due ON monitors(enabled, next_check_at);
+    CREATE INDEX IF NOT EXISTS idx_check_results_monitor_checked_at ON check_results(monitor_id, checked_at);
   `);
   try {
     db.exec("ALTER TABLE sessions ADD COLUMN impersonator_user_id TEXT;");
