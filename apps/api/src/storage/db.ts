@@ -12,7 +12,22 @@ const SQL = await initSqlJs();
 const initial = fs.existsSync(env.databasePath) ? fs.readFileSync(env.databasePath) : undefined;
 const sqlite = new SQL.Database(initial);
 
-const persistNow = () => fs.writeFileSync(env.databasePath, Buffer.from(sqlite.export()));
+// Write to a temp file and rename over the target so a crash or OOM kill
+// mid-write can never leave a truncated/empty database behind. A plain
+// writeFileSync truncates the target first, which wiped a production DB
+// when the process was OOM-killed during persist.
+const persistNow = () => {
+  const data = Buffer.from(sqlite.export());
+  const tmpPath = `${env.databasePath}.tmp`;
+  const fd = fs.openSync(tmpPath, "w");
+  try {
+    fs.writeSync(fd, data);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+  fs.renameSync(tmpPath, env.databasePath);
+};
 
 const PERSIST_DEBOUNCE_MS = 250;
 let persistTimer: NodeJS.Timeout | null = null;
@@ -473,6 +488,21 @@ export const migrate = () => {
     }
   }
   ensureDefaultTeams();
+  snapshotLastGoodDatabase();
+};
+
+// Keep a copy of the last database that contained at least one user next to
+// the live file. A fresh or wiped database never overwrites the snapshot, so
+// after an accidental wipe the previous state can be restored from
+// `<databasePath>.boot-bak`.
+const snapshotLastGoodDatabase = () => {
+  if (!initial?.length) return;
+  try {
+    const row = db.prepare("SELECT COUNT(*) AS count FROM users").get() as { count?: number } | undefined;
+    if (Number(row?.count ?? 0) > 0) fs.writeFileSync(`${env.databasePath}.boot-bak`, initial);
+  } catch {
+    // Snapshotting is best-effort and must never block startup.
+  }
 };
 
 const addColumns = (statements: string[]) => {

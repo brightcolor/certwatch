@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.10 - 2026-07-17
+
+- Fixed a data-loss bug: the SQLite file was rewritten in place on every persist, so an OOM kill or crash mid-write could truncate it to an empty file and the next start would silently create a fresh database. Persistence now writes to a temp file with fsync and renames it atomically over the target.
+- Added a last-known-good snapshot: on startup, a database that contains at least one user is copied to `<databasePath>.boot-bak`; a wiped or fresh database never overwrites the snapshot, so the previous state stays restorable.
+
 ## 0.13.9 - 2026-07-08
 
 - Reworked the dashboard layout: compact health hero with status icon, slimmer metric cards, a column header row in list view, and properly aligned certificate columns with readable day/date/TLS spacing.
