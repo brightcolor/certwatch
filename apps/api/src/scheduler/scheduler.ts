@@ -2,7 +2,7 @@ import { env } from "../config/env.js";
 import { alerts, appSettings, channels, deliveries, incidents, monitors, results, subscriptions, tenants } from "../storage/repositories.js";
 import { dispatchAlerts, dispatchStatusSubscriptions } from "../notifications/service.js";
 import { discoverMonitors } from "../checks/discovery.js";
-import { createBackup } from "../backup/backupService.js";
+import { createAutoBackup, createBackup, newestAutoBackupAt } from "../backup/backupService.js";
 import { runMonitorCheck } from "../checks/monitorRunner.js";
 
 let running = false;
@@ -18,6 +18,7 @@ export const startScheduler = () => {
       runRetentionIfDue();
       await runDiscoveryIfDue();
       runBackupIfDue();
+      runAutoBackupIfDue();
     } finally {
       running = false;
     }
@@ -41,6 +42,18 @@ const runBackupIfDue = () => {
     if (!settings.enabled || !elapsed(settings.lastRunAt, settings.intervalHours)) continue;
     createBackup(settings);
     appSettings.set("backups", { ...settings, lastRunAt: new Date().toISOString() }, tenant.id);
+  }
+};
+
+// Always-on safety net: unlike the tenant-configured backups above, this
+// schedule lives in env config and the backup directory itself, so it keeps
+// working even when the database (and the settings stored in it) is lost.
+const runAutoBackupIfDue = () => {
+  if (!env.autoBackupEnabled || env.autoBackupIntervalHours <= 0) return;
+  try {
+    if (elapsed(newestAutoBackupAt(), env.autoBackupIntervalHours)) createAutoBackup(env.autoBackupKeep);
+  } catch (error) {
+    console.error("Automatic backup failed:", error instanceof Error ? error.message : error);
   }
 };
 

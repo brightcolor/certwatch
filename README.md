@@ -380,6 +380,8 @@ SQLite data is stored in the host bind mount configured by `DATA_DIR` and mounte
 
 The Operations page can also create and retain full SQLite backup files inside `/data/backups`. These backups can be downloaded from the UI and are controlled by a keep-count retention setting.
 
+Independently of those tenant-configured backups, crt.watch always writes an automatic safety-net backup (`crtwatch-auto-*.sqlite` in `/data/backups`). It is controlled by environment variables instead of database-stored settings, so it keeps working even if the database is lost or replaced: `AUTO_BACKUP_ENABLED` (default `true`), `AUTO_BACKUP_INTERVAL_HOURS` (default `24`), and `AUTO_BACKUP_KEEP` (default `14`). Automatic backups appear in the Operations backup list like any other backup.
+
 ## Updates
 
 ```bash

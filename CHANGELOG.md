@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.11 - 2026-07-17
+
+- Added an always-on automatic safety-net backup (`crtwatch-auto-*.sqlite` in `/data/backups`) controlled by `AUTO_BACKUP_ENABLED`, `AUTO_BACKUP_INTERVAL_HOURS`, and `AUTO_BACKUP_KEEP` environment variables instead of database-stored settings, so backups keep running even after a database loss.
+- Backup files are now written via temp file + rename so a crash mid-copy cannot leave a truncated backup, and automatic backups show up in the Operations backup list alongside manual ones with separate retention.
+
 ## 0.13.10 - 2026-07-17
 
 - Fixed a data-loss bug: the SQLite file was rewritten in place on every persist, so an OOM kill or crash mid-write could truncate it to an empty file and the next start would silently create a fresh database. Persistence now writes to a temp file with fsync and renames it atomically over the target.
