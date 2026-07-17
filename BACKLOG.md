@@ -38,14 +38,15 @@ section. Check items off as they're addressed.
       `results.listRecent(monitor.id, 10)` right after the fresh result was
       already inserted; could compose in memory instead of a second DB round-trip.
 
-- [ ] **Replace sql.js with better-sqlite3** — sql.js keeps the whole database in
+- [x] **Replace sql.js with better-sqlite3** — sql.js keeps the whole database in
       WASM memory and `sqlite.export()` copies it in full on every persist. On the
       3.7GB swayy.de host this OOM-killed the node process repeatedly once the DB
       had grown (365-day default retention, hourly checks, dns/chain JSON blobs),
-      which is what triggered the 2026-07-17 production data wipe. better-sqlite3
-      writes pages to disk incrementally and would remove both the memory ceiling
-      and the full-file persist. Consider lowering the default
-      `checkResultsDays` retention (365 → 90) at the same time.
+      which is what triggered the 2026-07-17 production data wipe. Done in
+      v0.14.0: better-sqlite3 with WAL mode, prepared-statement cache, and
+      checkpoint-before-backup. Memory usage no longer scales with database size,
+      so the retention default was left at 365 days to avoid silently pruning
+      existing installs.
 
 ## UI / UX
 

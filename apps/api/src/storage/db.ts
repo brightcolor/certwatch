@@ -1,129 +1,94 @@
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import initSqlJs, { Database as SqlJsDatabase, SqlValue } from "sql.js";
+import Database from "better-sqlite3";
 import { env } from "../config/env.js";
 import type { ApiToken, AuditLogEntry, CheckResult, Incident, Monitor, NotificationChannel, NotificationDelivery, StatusSubscription, Team, TeamMembership, Tenant, TenantInvite, TenantMembership, User, UserAlertSettings } from "../types.js";
 import { DEFAULT_TENANT_ID } from "../types.js";
 import { decryptConfigSecrets } from "../utils/secrets.js";
 
 fs.mkdirSync(path.dirname(env.databasePath), { recursive: true });
-const SQL = await initSqlJs();
-const initial = fs.existsSync(env.databasePath) ? fs.readFileSync(env.databasePath) : undefined;
-const sqlite = new SQL.Database(initial);
+const sqlite = new Database(env.databasePath);
+sqlite.pragma("journal_mode = WAL");
+sqlite.pragma("synchronous = NORMAL");
+sqlite.pragma("busy_timeout = 5000");
 
-// Write to a temp file and rename over the target so a crash or OOM kill
-// mid-write can never leave a truncated/empty database behind. A plain
-// writeFileSync truncates the target first, which wiped a production DB
-// when the process was OOM-killed during persist.
-const persistNow = () => {
-  const data = Buffer.from(sqlite.export());
-  const tmpPath = `${env.databasePath}.tmp`;
-  const fd = fs.openSync(tmpPath, "w");
-  try {
-    fs.writeSync(fd, data);
-    fs.fsyncSync(fd);
-  } finally {
-    fs.closeSync(fd);
+const statements = new Map<string, Database.Statement>();
+const prepared = (sql: string) => {
+  let statement = statements.get(sql);
+  if (!statement) {
+    statement = sqlite.prepare(sql);
+    statements.set(sql, statement);
   }
-  fs.renameSync(tmpPath, env.databasePath);
-};
-
-const PERSIST_DEBOUNCE_MS = 250;
-let persistTimer: NodeJS.Timeout | null = null;
-let persistPending = false;
-
-const persist = () => {
-  persistPending = true;
-  if (persistTimer) return;
-  persistTimer = setTimeout(() => {
-    persistTimer = null;
-    if (persistPending) {
-      persistPending = false;
-      persistNow();
-    }
-  }, PERSIST_DEBOUNCE_MS);
-  persistTimer.unref?.();
+  return statement;
 };
 
 export const db = {
   exec(sql: string) {
     sqlite.exec(sql);
-    persist();
   },
   prepare(sql: string) {
-    return new StatementWrapper(sqlite, sql);
+    return new StatementWrapper(sql);
   },
-  /** Forces any pending debounced write to disk immediately, e.g. before process exit. */
+  /** Checkpoints the WAL into the main database file, e.g. before copies or shutdown. */
   flush() {
-    if (persistTimer) {
-      clearTimeout(persistTimer);
-      persistTimer = null;
-    }
-    if (persistPending) {
-      persistPending = false;
-      persistNow();
+    try {
+      sqlite.pragma("wal_checkpoint(TRUNCATE)");
+    } catch {
+      // Best effort: a busy checkpoint retries on the next flush.
     }
   }
 };
 
 class StatementWrapper {
-  constructor(private readonly database: SqlJsDatabase, private readonly sql: string) {}
+  constructor(private readonly sql: string) {}
 
   run(...params: unknown[]) {
-    const statement = this.database.prepare(this.sql);
-    try {
-      statement.run(bindParams(params));
-      persist();
-    } finally {
-      statement.free();
-    }
+    prepared(this.sql).run(...bindParams(this.sql, params));
   }
 
   get(...params: unknown[]) {
-    const statement = this.database.prepare(this.sql);
-    try {
-      statement.bind(bindParams(params));
-      if (!statement.step()) return undefined;
-      return statement.getAsObject();
-    } finally {
-      statement.free();
-    }
+    return prepared(this.sql).get(...bindParams(this.sql, params)) as Record<string, unknown> | undefined;
   }
 
   all(...params: unknown[]) {
-    const statement = this.database.prepare(this.sql);
-    const rows = [];
-    try {
-      statement.bind(bindParams(params));
-      while (statement.step()) rows.push(statement.getAsObject());
-      return rows;
-    } finally {
-      statement.free();
-    }
+    return prepared(this.sql).all(...bindParams(this.sql, params)) as Record<string, unknown>[];
   }
 }
 
-const bindParams = (params: unknown[]) => {
+// better-sqlite3 requires the bound object to contain exactly the named
+// parameters used in the SQL. Callers often spread wider objects (extra keys)
+// or omit optional fields (missing keys), which sql.js tolerated, so the
+// object is trimmed to the parameter names parsed from the statement and
+// missing values become NULL.
+const namedParamCache = new Map<string, string[]>();
+const namedParams = (sql: string) => {
+  let names = namedParamCache.get(sql);
+  if (!names) {
+    const withoutLiterals = sql.replace(/'(?:[^']|'')*'/g, "");
+    names = [...new Set([...withoutLiterals.matchAll(/[@:$]([a-zA-Z_][a-zA-Z0-9_]*)/g)].map((match) => match[1]))];
+    namedParamCache.set(sql, names);
+  }
+  return names;
+};
+
+const bindParams = (sql: string, params: unknown[]) => {
   if (params.length === 1 && isPlainObject(params[0])) {
-    return Object.fromEntries(Object.entries(params[0]).flatMap(([key, value]) => [
-      [`@${key}`, normalizeValue(value)],
-      [`:${key}`, normalizeValue(value)],
-      [`$${key}`, normalizeValue(value)]
-    ]));
+    const source = params[0];
+    return [Object.fromEntries(namedParams(sql).map((name) => [name, normalizeValue(source[name])]))];
   }
   return params.map(normalizeValue);
 };
 
-const normalizeValue = (value: unknown): SqlValue => {
+const normalizeValue = (value: unknown) => {
   if (value === undefined) return null;
   if (typeof value === "boolean") return value ? 1 : 0;
-  if (typeof value === "string" || typeof value === "number" || value === null) return value;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "bigint" || value === null || Buffer.isBuffer(value)) return value;
   return JSON.stringify(value);
 };
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value && typeof value === "object" && !Array.isArray(value));
+  Boolean(value && typeof value === "object" && !Array.isArray(value) && !Buffer.isBuffer(value));
 
 export const migrate = () => {
   db.exec(`
@@ -496,10 +461,13 @@ export const migrate = () => {
 // after an accidental wipe the previous state can be restored from
 // `<databasePath>.boot-bak`.
 const snapshotLastGoodDatabase = () => {
-  if (!initial?.length) return;
   try {
     const row = db.prepare("SELECT COUNT(*) AS count FROM users").get() as { count?: number } | undefined;
-    if (Number(row?.count ?? 0) > 0) fs.writeFileSync(`${env.databasePath}.boot-bak`, initial);
+    if (Number(row?.count ?? 0) === 0) return;
+    db.flush();
+    const tmp = `${env.databasePath}.boot-bak.tmp`;
+    fs.copyFileSync(env.databasePath, tmp);
+    fs.renameSync(tmp, `${env.databasePath}.boot-bak`);
   } catch {
     // Snapshotting is best-effort and must never block startup.
   }

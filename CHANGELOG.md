@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.14.0 - 2026-07-17
+
+- Replaced sql.js with better-sqlite3: the database no longer lives fully in process memory and writes go to disk incrementally in WAL mode, so memory usage stays flat regardless of database size and the OOM-kill class of failures is gone. Existing SQLite files are opened in place with no migration needed.
+- Statements are prepared once and cached; named parameters are trimmed to what each statement declares, and missing optional values bind as NULL.
+- Backups and the boot snapshot checkpoint the WAL first so copies always contain the latest commits.
+- The container now runs with a 384MB Node heap limit so garbage collection engages well below the container memory cap.
+
 ## 0.13.11 - 2026-07-17
 
 - Added an always-on automatic safety-net backup (`crtwatch-auto-*.sqlite` in `/data/backups`) controlled by `AUTO_BACKUP_ENABLED`, `AUTO_BACKUP_INTERVAL_HOURS`, and `AUTO_BACKUP_KEEP` environment variables instead of database-stored settings, so backups keep running even after a database loss.

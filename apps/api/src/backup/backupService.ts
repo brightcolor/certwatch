@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { env } from "../config/env.js";
+import { db } from "../storage/db.js";
 import type { BackupSettings } from "../types.js";
 
 const backupDir = path.join(path.dirname(env.databasePath), "backups");
@@ -45,10 +46,12 @@ export const deleteBackup = (name: string) => {
   if (fs.existsSync(target)) fs.unlinkSync(target);
 };
 
-// Copy via temp file + rename so a crash mid-copy never leaves a truncated
-// file that looks like a valid backup.
+// Checkpoint the WAL first so the copied main file contains all recent
+// commits, then copy via temp file + rename so a crash mid-copy never leaves
+// a truncated file that looks like a valid backup.
 const writeBackupFile = (name: string) => {
   fs.mkdirSync(backupDir, { recursive: true });
+  db.flush();
   const target = path.join(backupDir, name);
   const tmp = `${target}.tmp`;
   fs.copyFileSync(env.databasePath, tmp);
