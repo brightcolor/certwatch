@@ -3,6 +3,7 @@ services:
     image: ghcr.io/brightcolor/crt-watch:latest
     container_name: crt-watch
     restart: unless-stopped
+    mem_limit: 768m
     environment:
       - "NODE_ENV=${NODE_ENV:-production}"
       - "TZ=${TZ:-Europe/Berlin}"
