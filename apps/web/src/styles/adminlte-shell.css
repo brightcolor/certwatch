@@ -51,7 +51,10 @@
   background: var(--bs-secondary-bg) !important;
 }
 
-:root[data-theme="dark"] .crtwatch-adminlte .app-header,
+:root[data-theme="dark"] .crtwatch-adminlte .app-header {
+  background: rgba(var(--bs-body-bg-rgb), .82) !important;
+}
+
 :root[data-theme="dark"] .crtwatch-adminlte .app-footer {
   background: var(--bs-body-bg) !important;
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.1 - 2026-07-25
+
+- Added a motion and depth polish layer: consistent eased transitions and press feedback on all interactive elements, page and modal entrance animations, floating dropdown menus, springier metric-card hover, and a sliding sidebar active indicator.
+- The fixed header is now translucent with a backdrop blur in both themes, dark-mode cards get a machined top edge highlight, theme switches blend smoothly, and the login page has a quiet primary-tinted spotlight.
+- All animations and transitions respect the user's reduced-motion preference.
+
 ## 0.14.0 - 2026-07-17
 
 - Replaced sql.js with better-sqlite3: the database no longer lives fully in process memory and writes go to disk incrementally in WAL mode, so memory usage stays flat regardless of database size and the OOM-kill class of failures is gone. Existing SQLite files are opened in place with no migration needed.
