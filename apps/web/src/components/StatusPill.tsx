@@ -1,3 +1,5 @@
+import { humanize } from "../utils/labels";
+
 const labels: Record<string, string> = {
   OK: "Ok",
   WARNING: "Warning",
@@ -8,10 +10,6 @@ const labels: Record<string, string> = {
 };
 
 export function StatusPill({ status }: { status: string }) {
-  return <span className={`status soft-pill ${toneFor(status)} status-${status.toLowerCase()}`}>{labels[status] ?? status}</span>;
+  const key = status.toLowerCase();
+  return <span className={`status status-${key}`}>{labels[status] ?? humanize(status)}</span>;
 }
-
-const toneFor = (status: string) =>
-  status === "OK" ? "success" :
-    status === "WARNING" ? "warning" :
-      status === "CRITICAL" || status === "DOWN" ? "danger" : "info";

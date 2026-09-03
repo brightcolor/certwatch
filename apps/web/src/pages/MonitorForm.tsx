@@ -254,7 +254,7 @@ function FormSteps({ active, onChange }: { active: MonitorFormStep; onChange: (s
 }
 
 function FormSection({ title, children }: { title: string; children: ReactNode }) {
-  return <div className="form-section soft-section"><h3>{title}</h3><div className="grid two">{children}</div></div>;
+  return <div className="form-section inset"><h3>{title}</h3><div className="grid two">{children}</div></div>;
 }
 
 const usesHttpConfig = (type: string) => type === "http" || type === "http_login";

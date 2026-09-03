@@ -35,7 +35,7 @@ export function BulkImport({ onImport, onDiscover, onAcceptDiscovery, onRestore 
     <section className="content">
       <div className="grid two">
         <div className="panel">
-          <h3>Bulk import</h3>
+          <h3>Import from a list</h3>
           <label>Targets<textarea value={text} onChange={(e) => setText(e.target.value)} /></label>
           <button className="btn btn-primary" onClick={async () => setResult(await onImport(text))}>Import monitors</button>
           {result && <p className="muted">Imported {result.imported} monitors. {result.errors?.length ? `${result.errors.length} lines failed.` : "No errors."}</p>}

@@ -3,6 +3,7 @@ import { api } from "../api/client";
 import { TagInput } from "../components/TagInput";
 import { MaintenanceWindowBuilder } from "../components/MaintenanceWindowBuilder";
 import { formatDateTime } from "../utils/date";
+import { humanize } from "../utils/labels";
 
 export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) {
   const [maintenance, setMaintenance] = useState<any>({ windows: [] });
@@ -138,8 +139,6 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
             {sslLabsTriggerResult?.assessment && <div className="callout callout-info"><strong>{sslLabsSummary(sslLabsTriggerResult.assessment)}</strong><p>{(sslLabsTriggerResult.assessment.sslLabsFindings ?? []).join(" ") || "No SSL Labs findings returned."}</p></div>}
           </div>
         </div>
-      </div>
-      <div className="grid two">
         <div className="panel">
           <h3>Status pages</h3>
           <label>Slug<input value={page.slug} onChange={(e) => setPage((current) => ({ ...current, slug: e.target.value.toLowerCase() }))} placeholder="public-prod" /></label>
@@ -160,8 +159,6 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
           {!!(discovery.suggestions ?? []).length && <button className="btn btn-outline-secondary" onClick={() => importDiscovery()}>Accept all found monitors</button>}
           <div className="stack-list">{(discovery.suggestions ?? []).slice(0, 12).map((item: any) => <div key={`${item.host}-${item.port}-${item.type}`}><strong>{item.name}</strong><span>{item.host}:{item.port}</span><small>{item.type} - {item.tags.join(", ")}</small><button className="btn btn-outline-secondary btn-sm" onClick={() => importDiscovery([item])}>Accept</button></div>)}</div>
         </div>
-      </div>
-      <div className="grid two">
         <div className="panel">
           <h3>Database backups</h3>
           <label><input type="checkbox" checked={backupSettings.enabled} onChange={(e) => setBackupSettings({ ...backupSettings, enabled: e.target.checked })} /> Scheduled backups</label>
@@ -178,11 +175,16 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
           {tokenResult && <label>New token<input readOnly value={tokenResult} onFocus={(e) => e.currentTarget.select()} /></label>}
           {tokens.map((item) => <Row key={item.id} title={item.name} detail={`created ${dateTime(item.createdAt)}${item.lastUsedAt ? ` - used ${dateTime(item.lastUsedAt)}` : ""}`} onDelete={async () => { await api.request(`/api-tokens/${item.id}`, { method: "DELETE" }); await load(); }} />)}
         </div>
-      </div>
-      <div className="grid two">
         <div className="panel">
           <h3>Notification delivery log</h3>
-          <div className="stack-list">{deliveries.slice(0, 25).map((item) => <div key={item.id}><strong>{item.deliveryStatus}</strong><span>{item.channelName} / {item.provider}</span><small>{item.message}{item.error ? ` - ${item.error}` : ""}</small></div>)}</div>
+          <div className="log-list">{deliveries.slice(0, 25).map((item) => (
+            <div className="log-entry" key={item.id}>
+              <span className={`pill ${item.deliveryStatus === "sent" ? "pass" : "fail"}`}>{humanize(item.deliveryStatus)}</span>
+              <strong>{item.channelName}</strong>
+              <span className="muted">{humanize(item.provider)}</span>
+              <small>{item.error || item.message}</small>
+            </div>
+          ))}</div>
         </div>
         <div className="panel">
           <h3>Audit log</h3>

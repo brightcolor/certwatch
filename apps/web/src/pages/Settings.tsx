@@ -74,8 +74,6 @@ export function Settings(props: any) {
             <button className="btn btn-primary" onClick={() => props.onSavePersonalAlerts(personalForm)}>Save my alerts</button>
           </>}
         </div>
-      </div>
-      <div className="grid two">
         <div className="panel">
           <h3>Alert policy</h3>
           {alertForm && <>
@@ -114,8 +112,6 @@ export function Settings(props: any) {
             <button className="btn btn-primary" onClick={() => props.onSaveSmtp(smtpForm)}>Save SMTP settings</button>
           </>}
         </div>
-      </div>
-      <div className="grid two">
         <div className="panel">
           <h3>Retention</h3>
           {retentionForm && <>
@@ -133,8 +129,6 @@ export function Settings(props: any) {
             {ctResult && <p className="muted">{ctResult.changes?.length ? `${ctResult.changes.length} CT changes found.` : "No CT changes found."}</p>}
           </>}
         </div>
-      </div>
-      <div className="grid two">
         <div className="panel">
           <h3>Notification routing</h3>
           <label>Name<input value={routeForm.name} onChange={(e) => setRouteForm({ ...routeForm, name: e.target.value })} /></label>
@@ -150,8 +144,6 @@ export function Settings(props: any) {
           {(subscriptions ?? []).map((item: any) => <div className="channel" key={item.id}><strong>{item.tags.join(" + ") || "all"}</strong><span>{item.type} - {item.enabled ? "active" : "pending opt-in"} - {item.target}</span><button className="btn btn-outline-danger" onClick={() => props.onDeleteSubscription(item.id)}>Delete</button></div>)}
           {!(subscriptions ?? []).length && <span className="muted">No public status page subscriptions yet.</span>}
         </div>
-      </div>
-      <div className="grid two">
         <div className="panel">
           <h3>Add notification provider</h3>
           <label>Name<input value={channel.name} onChange={(e) => setChannel({ ...channel, name: e.target.value })} /></label>

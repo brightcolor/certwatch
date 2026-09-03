@@ -102,7 +102,6 @@
 .datetime-builder,
 .member-picker,
 .embed-card,
-.soft-section,
 .form-steps {
   border: 1px solid var(--bs-border-color);
   border-radius: var(--radius);
@@ -115,7 +114,6 @@
 
 .pill,
 .status,
-.soft-pill,
 .grade-pill,
 .role-pill,
 .nav-badge,
@@ -124,7 +122,9 @@
 .tag-chip,
 .tag-suggestion {
   display: inline-flex;
-  width: fit-content;
+  width: max-content;
+  max-width: 100%;
+  flex: 0 0 auto;
   align-items: center;
   justify-self: start;
   justify-content: center;
@@ -154,7 +154,9 @@
 .pill.pass, .status-ok, .grade-a, .grade-b { --tone: var(--bs-success); --tone-rgb: var(--bs-success-rgb); }
 .pill.warn, .status-warning, .grade-c, .grade-d, .role-admin { --tone: var(--bs-warning); --tone-rgb: var(--bs-warning-rgb); }
 .pill.fail, .status-critical, .status-down, .grade-e, .grade-f, .role-owner { --tone: var(--bs-danger); --tone-rgb: var(--bs-danger-rgb); }
-.pill.info, .status-paused, .status-unknown, .role-member { --tone: var(--bs-info); --tone-rgb: var(--bs-info-rgb); }
+.pill.info, .status-paused, .status-unknown, .status-acknowledged, .role-member { --tone: var(--bs-info); --tone-rgb: var(--bs-info-rgb); }
+.status-open { --tone: var(--bs-warning); --tone-rgb: var(--bs-warning-rgb); }
+.status-resolved { --tone: var(--bs-success); --tone-rgb: var(--bs-success-rgb); }
 .pill.na, .role-viewer { --tone: var(--bs-secondary-color); --tone-rgb: var(--bs-secondary-color-rgb); }
 .pill.accent { --tone: var(--accent-text); --tone-rgb: var(--bs-primary-rgb); }
 
@@ -180,6 +182,7 @@
 .status-mark {
   display: inline-flex;
   justify-self: start;
+  flex: 0 0 auto;
   width: 1.6rem;
   height: 1.6rem;
   min-height: 0;
@@ -238,6 +241,12 @@
   font-weight: 800;
   letter-spacing: .08em;
   text-transform: uppercase;
+}
+
+/* A sentence under the page title, before the first panel. */
+.page-intro {
+  margin-top: -.25rem;
+  color: var(--bs-secondary-color);
 }
 
 /* --- Layout helpers ------------------------------------------------------ */
@@ -384,16 +393,42 @@
 
 /* --- Generic list rows --------------------------------------------------- */
 
+/* --- Tables --------------------------------------------------------------
+   A table sets its own column widths through --cols. Identifying columns take
+   the room; numeric columns are narrow, right-aligned and tabular so values
+   line up digit under digit.                                               */
+
+.table {
+  --cols: minmax(0, 1fr);
+  overflow-x: auto;
+}
+
 .row {
   display: grid;
-  grid-template-columns: 110px 1.2fr 1fr 1fr 1.5fr 100px;
+  grid-template-columns: var(--cols);
   gap: .75rem;
   align-items: center;
   border-bottom: 1px solid var(--bs-border-color);
   background: transparent;
-  padding: .7rem 1rem;
-  cursor: pointer;
+  padding: .65rem 1rem;
   transition: background .15s var(--ease);
+}
+
+.row > * {
+  min-width: 0;
+}
+
+/* Numeric cells sit at the right edge of their column. */
+.row > .num,
+.row.head > .num {
+  justify-self: end;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.row strong {
+  color: var(--bs-emphasis-color);
+  font-weight: 600;
 }
 
 .row:hover {
@@ -480,26 +515,27 @@
   min-width: 0;
 }
 
-/* Chain and DNS entries: name, value, source. */
+/* Chain, DNS and rollup entries: an optional status marker, a name, a value,
+   and a source. Pills keep their own size — only the text cells share the row. */
 .stack-list {
   display: grid;
 }
 
 .stack-list > div {
   justify-content: flex-start;
-  gap: .3rem 1rem;
+  gap: .3rem .85rem;
 }
 
-.stack-list > div > strong {
-  flex: 1 1 12rem;
+.stack-list > div > strong:not(.pill):not(.status) {
+  flex: 1 1 11rem;
   color: var(--bs-emphasis-color);
   font-size: var(--text-body);
   font-weight: 600;
   overflow-wrap: anywhere;
 }
 
-.stack-list > div > span {
-  flex: 1 1 10rem;
+.stack-list > div > span:not(.pill):not(.status) {
+  flex: 1 1 9rem;
   color: var(--bs-secondary-color);
   font-size: var(--text-sm);
   overflow-wrap: anywhere;
@@ -512,8 +548,68 @@
   text-align: right;
 }
 
-.row span,
-.row small,
+/* The last text cell in a row sits at the right edge. */
+.stack-list > div > span:not(.pill):not(.status):last-child {
+  flex: 0 1 auto;
+  margin-left: auto;
+  text-align: right;
+}
+
+/* A log: state, target, provider on one line, the message below it. */
+.log-list {
+  display: grid;
+}
+
+.log-entry {
+  display: grid;
+  grid-template-columns: auto minmax(0, auto) minmax(0, 1fr);
+  gap: .2rem .6rem;
+  align-items: center;
+  border-top: 1px solid var(--bs-border-color);
+  padding: .6rem 0 0;
+}
+
+.log-entry:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.log-entry strong {
+  color: var(--bs-emphasis-color);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.log-entry > span:nth-child(3) {
+  font-size: var(--text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.log-entry small {
+  grid-column: 2 / -1;
+  color: var(--bs-secondary-color);
+  overflow-wrap: anywhere;
+}
+
+/* A stack row that opens something reacts to the pointer like a list row. */
+.stack-row {
+  margin-inline: -.35rem;
+  border-radius: var(--radius);
+  padding-inline: .35rem;
+  cursor: pointer;
+  transition: background .15s var(--ease);
+}
+
+.stack-row:hover,
+.stack-row:focus-visible {
+  background: rgba(var(--bs-secondary-color-rgb), var(--tint-faint));
+}
+
+.row > span,
 .group-row strong,
 .group-row span,
 .group-row small,
@@ -541,7 +637,7 @@
 .row small {
   display: block;
   margin-top: .2rem;
-  white-space: nowrap;
+  color: var(--bs-secondary-color);
 }
 
 /* --- Empty states -------------------------------------------------------- */

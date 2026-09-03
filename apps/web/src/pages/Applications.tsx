@@ -11,13 +11,8 @@ export function Applications({ monitors, onSelect }: { monitors: Monitor[]; onSe
 
   return (
     <section className="content">
-      <div className="section-head">
-        <div>
-          <h2>Applications</h2>
-          <p className="muted">Labels group related checks into application rollups, status pages, and badges.</p>
-        </div>
-      </div>
-      <div className="grid two">
+      <p className="page-intro">Labels group related checks into application rollups, status pages, and badges.</p>
+      <div className="flow">
         {!groups.length && <div className="panel empty-state"><h3>No applications yet</h3><p className="muted">Add labels to monitors to create application rollups automatically.</p></div>}
         {groups.map((group) => {
           const status = rollup(group.monitors);
@@ -28,11 +23,11 @@ export function Applications({ monitors, onSelect }: { monitors: Monitor[]; onSe
           return (
             <div className="panel" key={group.tag}>
               <div className="detail-head">
-                <div><h3>{group.tag}</h3><small>{group.monitors.length} checks</small></div>
+                <div><h3>{group.tag}</h3><small>{group.monitors.length} {group.monitors.length === 1 ? "check" : "checks"}</small></div>
                 <StatusPill status={status} />
               </div>
               <div className="stack-list">
-                {group.monitors.map((monitor) => <div key={monitor.id} onClick={() => onSelect(monitor.id)}><StatusPill status={monitor.lastStatus} /><span>{monitor.name}</span><span>{monitor.host}:{monitor.port}</span></div>)}
+                {group.monitors.map((monitor) => <div className="stack-row" role="button" tabIndex={0} key={monitor.id} onClick={() => onSelect(monitor.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onSelect(monitor.id); } }}><StatusPill status={monitor.lastStatus} /><strong>{monitor.name}</strong><span>{monitor.host}:{monitor.port}</span></div>)}
               </div>
               <EmbedRow label="Status" value={statusUrl} />
               <EmbedRow label="Badge" value={badgeUrl} />

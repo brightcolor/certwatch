@@ -72,7 +72,7 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
             <button className="btn btn-outline-secondary" onClick={onClone}><Copy size={16} /> Clone</button>
             <button className="btn btn-outline-secondary" onClick={onEdit}>Edit</button>
             <span className="action-divider" aria-hidden="true" />
-            <button className="btn btn-outline-danger danger" onClick={() => { if (confirm(`Delete monitor "${monitor.name}"?`)) onDelete(); }}>Delete</button>
+            <button className="btn btn-outline-danger" onClick={() => { if (confirm(`Delete monitor "${monitor.name}"?`)) onDelete(); }}>Delete</button>
           </div>
         </div>
         {sslLabsState.message && <p className="muted">{sslLabsState.message}</p>}

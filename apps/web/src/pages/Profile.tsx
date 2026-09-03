@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { api } from "../api/client";
+import { humanize } from "../utils/labels";
 
 export function Profile({ user, tenants, onChangePassword, onLogout, onMfaChanged }: any) {
   const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
@@ -22,12 +23,12 @@ export function Profile({ user, tenants, onChangePassword, onLogout, onMfaChange
     <section className="content">
       <div className="grid two">
         <div className="panel">
-          <h3>Profile</h3>
+          <h3>Account</h3>
           <Info label="Email" value={user?.email} />
-          <Info label="Platform role" value={user?.role} />
-          <Info label="Organizations" value={(tenants ?? []).map((item: any) => `${item.tenant.name} (${item.role})`).join(", ")} />
+          <Info label="Platform role" value={humanize(user?.role)} />
+          <Info label="Organizations" value={(tenants ?? []).map((item: any) => `${item.tenant.name} (${humanize(item.role)})`).join(", ")} />
           <div className="actions">
-            <button className="btn btn-outline-danger danger" type="button" onClick={onLogout}>Log out</button>
+            <button className="btn btn-outline-secondary" type="button" onClick={onLogout}>Log out</button>
           </div>
         </div>
         <form className="panel" onSubmit={submit}>
@@ -100,7 +101,7 @@ function MfaPanel({ user, onMfaChanged }: any) {
           <label>Current password<input type="password" autoComplete="current-password" value={disablePassword} onChange={(e) => setDisablePassword(e.target.value)} required /></label>
           {error && <p className="error">{error}</p>}
           {message && <p className="form-note success">{message}</p>}
-          <button className="btn btn-outline-danger danger" type="submit">Disable two-factor authentication</button>
+          <button className="btn btn-outline-danger" type="submit">Disable two-factor authentication</button>
         </form>
       ) : setup ? (
         <form onSubmit={confirmSetup}>

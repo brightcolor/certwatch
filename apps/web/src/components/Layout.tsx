@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Activity, BarChart3, Bell, Boxes, Download, LogOut, Menu, Plus, Search, Settings, UserCircle, Users, Upload } from "lucide-react";
 import type { Monitor } from "../api/client";
+import { humanize } from "../utils/labels";
 
 const navItems = [
   { page: "dashboard", label: "Dashboard", icon: Activity },
@@ -96,7 +97,7 @@ export function Layout({ children, page, pageTitle, onNew, theme, themeMode, set
               {profileOpen && <div className="profile-menu card shadow">
                 <div className="card-header">
                   <strong>{user?.email}</strong>
-                  <small>{user?.role}</small>
+                  <small>{humanize(user?.role)}</small>
                 </div>
                 <div className="list-group list-group-flush">
                   <button className="list-group-item list-group-item-action" type="button" onClick={() => { setProfileOpen(false); onProfile?.(); }}><UserCircle size={16} /> Profile</button>
@@ -196,7 +197,7 @@ const titleFor = (page: string) => ({
   reports: "Reports",
   users: "Users",
   tenants: "Organizations",
-  import: "Bulk Import",
+  import: "Import",
   applications: "Applications",
   profile: "Profile"
 }[page] ?? "Dashboard");

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.15.1 - 2026-09-03
+
+- Rebuilt the availability report as a real table. The monitor name had a fixed 110px column while a single-digit count had the widest one, so names wrapped onto three lines and were clipped on top of that. Columns now size to what they hold, and numbers are right-aligned and tabular so they line up digit under digit.
+- Fixed status pills stretching across a whole column: `StatusPill` emitted `info` as a tone name, which collided with `.info`, the label/value row layout class, and pills inherited a `flex` rule meant for text cells. A pill is now sized by its content and never grows.
+- Settings, Operations and Organizations were built as a sequence of separate two-column blocks. Each block balanced its own height, so a block with an odd number of panels left a hole beside it. Each page is now one flow that fills both columns continuously.
+- Stored values no longer reach the interface raw: `super_admin`, `tenant_visible` and `active` are now written out as words, through one shared label helper that falls back to sentence case for anything unlisted.
+- Incident states carry their own colours (open amber, acknowledged blue, resolved green) instead of falling through to grey.
+- The notification delivery log is laid out as a log: state, channel and provider on one line, the error below it, rather than an error right-aligned into whatever space was left.
+- Colour follows meaning in the remaining places it did not: logging out, cancelling an edit and archiving a team are no longer red, and a team's slug is no longer coloured as if it were a role.
+- Page titles no longer repeat the first panel heading below them, and rollup rows in Applications are keyboard-reachable with a visible hover state.
+
 ## 0.15.0 - 2026-09-03
 
 - Rebuilt the interface on one design token layer (`theme.css`): four corner radii instead of sixteen, five status tint values instead of thirty-three, and one control height shared by buttons, inputs and selects. The `soft-ui`, `polish` and `status` stylesheets that each corrected the previous layer are gone, and with them 157 `!important` declarations.
