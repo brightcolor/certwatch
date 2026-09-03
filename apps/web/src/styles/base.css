@@ -337,7 +337,8 @@ input[type="time"] {
 }
 
 textarea {
-  min-height: 88px;
+  min-height: 5.5rem;
+  height: auto;
   padding-top: .5rem;
   resize: vertical;
 }

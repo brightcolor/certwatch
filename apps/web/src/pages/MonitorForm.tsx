@@ -219,7 +219,7 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
         {activeStep === "advanced" && <>
           <FormSection title="Maintenance">
             <MaintenanceWindowBuilder onUse={appendMaintenanceWindow} buttonLabel="Append range" />
-            <label>Maintenance windows<textarea value={form.maintenanceWindows ?? ""} placeholder="daily 22:00-23:00&#10;mon-fri 01:00-02:00&#10;2026-06-01T20:00:00/2026-06-01T22:00:00" onChange={(e) => set("maintenanceWindows", e.target.value)} /></label>
+            <label>Maintenance windows<textarea rows={4} value={form.maintenanceWindows ?? ""} placeholder="daily 22:00-23:00&#10;mon-fri 01:00-02:00&#10;2026-06-01T20:00:00/2026-06-01T22:00:00" onChange={(e) => set("maintenanceWindows", e.target.value)} /></label>
           </FormSection>
           <label>Notes<textarea value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value)} /></label>
         </>}

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.16.2 - 2026-09-03
+
+- Removed the scrollbar from the sidebar. Its inner wrapper reserved `100vh` minus the brand row, a fixed subtraction that stopped being correct the moment the workspace switcher was added below it: the content ran 57 px past the viewport and produced a scrollbar with nothing worth scrolling to. Brand and switcher now keep their height and the navigation takes what is left, so it scrolls only when it genuinely does not fit — and then only the navigation, with the brand staying put.
+- The maintenance window field shows all three example formats in its placeholder. It was two lines tall while the placeholder was three, so the third example was cut off.
+
 ## 0.16.1 - 2026-09-03
 
 - Pinned `qs` to 6.16.0 through a root override to clear GHSA-x5fp-wj9c-mxmx and GHSA-4mjr-xmp4-gh2g. Express 4.22.2 and body-parser both require `qs` as `~6.15.1`, and the advisories cover that entire line, so no Express 4 release can resolve them on its own. `npm audit --omit=dev` reports no findings again.
