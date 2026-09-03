@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.17.0 - 2026-09-03
+
+- Made the project findable. The repository had no description, no homepage and no topics — the three fields GitHub search ranks on. It now carries all three, along with a README opening that says what the tool does in one sentence, badges for release, CI, container image and licence, and a line naming every protocol and check it covers.
+- Added the metadata a link needs to describe itself: page description, canonical URL, Open Graph and Twitter card tags, and JSON-LD describing the project as a SoftwareApplication. Sharing the URL now produces a preview card instead of a bare link.
+- Added a 1200×630 preview image built from the product mark and the palette, plus `robots.txt` and `sitemap.xml`.
+- The page carries a `<noscript>` summary of what crt.watch checks, so crawlers that do not run JavaScript see the product rather than an empty div.
+- The browser tab names the page you are on (`Operations · crt.watch`) instead of repeating the marketing title in every tab.
+
 ## 0.16.2 - 2026-09-03
 
 - Removed the scrollbar from the sidebar. Its inner wrapper reserved `100vh` minus the brand row, a fixed subtraction that stopped being correct the moment the workspace switcher was added below it: the content ran 57 px past the viewport and produced a scrollbar with nothing worth scrolling to. Brand and switcher now keep their height and the navigation takes what is left, so it scrolls only when it genuinely does not fit — and then only the navigation, with the brand staying put.

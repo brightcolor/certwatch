@@ -34,6 +34,11 @@ export function Layout({ children, page, pageTitle, onNew, theme, themeMode, set
   }, [monitors, search]);
 
   useEffect(() => {
+    const name = pageTitle || titleFor(page);
+    document.title = `${name} · crt.watch`;
+  }, [page, pageTitle]);
+
+  useEffect(() => {
     if (!statusOpen && !profileOpen && !workspaceOpen) return;
     const close = (event: MouseEvent) => {
       if ((event.target as HTMLElement).closest(".status-dropdown, .profile-dropdown, .workspace")) return;

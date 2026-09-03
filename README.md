@@ -2,9 +2,31 @@
   <img src="assets/crt.watch-logo.svg" alt="crt.watch logo" width="720">
 </p>
 
-# crt.watch
+# crt.watch — self-hosted SSL/TLS certificate and service monitoring
 
-crt.watch is a self-hosted monitoring service for SSL/TLS certificates, TLS service configuration, and lightweight service health checks. It is intentionally similar in operating style to Uptime Kuma, but focused on certificate expiry, hostname mismatches, certificate chain issues, STARTTLS services, protocol availability, and alert deduplication.
+<p align="center">
+  <a href="https://github.com/brightcolor/crt.watch/releases"><img alt="Latest release" src="https://img.shields.io/github/v/tag/brightcolor/crt.watch?label=release&sort=semver"></a>
+  <a href="https://github.com/brightcolor/crt.watch/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/brightcolor/crt.watch/ci.yml?branch=main&label=ci"></a>
+  <a href="https://github.com/brightcolor/crt.watch/pkgs/container/crt-watch"><img alt="Container image" src="https://img.shields.io/badge/image-ghcr.io-2496ed?logo=docker&logoColor=white"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/brightcolor/crt.watch"></a>
+  <img alt="Self-hosted" src="https://img.shields.io/badge/self--hosted-single%20container-6366f1">
+</p>
+
+**Know a certificate is expiring before a customer tells you.** crt.watch watches TLS
+certificates, the services behind them, and the logins that depend on them — expiry
+windows, chain problems, hostname mismatches, weak protocols, STARTTLS on mail
+servers, DNS drift, and SSL Labs grades — then alerts you through email, chat or
+webhooks well before anything breaks.
+
+One Docker container, SQLite on disk, no external dependencies. Similar in operating
+style to Uptime Kuma, but built around certificates rather than HTTP status codes.
+
+[**Live instance**](https://crt.watch) · [Quick start](#quick-start) · [Features](#features) · [REST API](#rest-api) · [Prometheus](#prometheus)
+
+**What it checks:** SSL/TLS certificate expiry · certificate chains and trust · hostname
+and SAN mismatches · TLS protocol versions and cipher suites · STARTTLS on SMTP, IMAP,
+POP3 and FTP · implicit TLS on SMTPS, IMAPS, POP3S, LDAPS and FTPS · HTTP and HTTPS
+endpoints · SSH banners · service logins · DNS resolution drift · SSL Labs assessments
 
 The codebase is deliberately simple and compact. It also shows the signs of a fast AI-assisted build, so review the security and operational defaults before exposing it beyond a trusted network.
 

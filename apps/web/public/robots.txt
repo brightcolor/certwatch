@@ -1,0 +1,8 @@
+# crt.watch
+# The operator interface needs a session; only the public surface is worth crawling.
+
+User-agent: *
+Disallow: /api/
+Allow: /
+
+Sitemap: https://crt.watch/sitemap.xml

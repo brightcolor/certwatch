@@ -1,0 +1,50 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="glow" cx="18%" cy="42%" r="62%">
+      <stop offset="0%" stop-color="#6366f1" stop-opacity=".22"/>
+      <stop offset="55%" stop-color="#6366f1" stop-opacity=".07"/>
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="#1e1f22"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <rect x="0" y="0" width="8" height="630" fill="#6366f1"/>
+
+  <g transform="translate(96 150)">
+    <rect width="88" height="88" rx="20" fill="#6366f1" fill-opacity=".16"/>
+    <g transform="translate(20 20) scale(2)">
+      <path d="M12 2.2 20 5.2v6.1c0 4.9-3.3 8.1-8 9.5-4.7-1.4-8-4.6-8-9.5V5.2l8-3Z"
+            fill="#a0a2f7" fill-opacity=".18" stroke="#a0a2f7" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="m8.4 11.7 2.4 2.4 4.8-5.2" stroke="#a0a2f7" stroke-width="1.9"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </g>
+
+  <text x="212" y="212" fill="#f2f3f5" font-family="Segoe UI, Inter, Helvetica, Arial, sans-serif"
+        font-size="66" font-weight="800" letter-spacing="-2">crt.watch</text>
+
+  <text x="96" y="330" fill="#f2f3f5" font-family="Segoe UI, Inter, Helvetica, Arial, sans-serif"
+        font-size="46" font-weight="700" letter-spacing="-1">Know a certificate is expiring</text>
+  <text x="96" y="386" fill="#f2f3f5" font-family="Segoe UI, Inter, Helvetica, Arial, sans-serif"
+        font-size="46" font-weight="700" letter-spacing="-1">before a customer tells you.</text>
+
+  <text x="96" y="446" fill="#b5bac1" font-family="Segoe UI, Inter, Helvetica, Arial, sans-serif"
+        font-size="26" font-weight="400">Self-hosted TLS certificate and service monitoring · one container</text>
+
+  <g transform="translate(96 500)" font-family="Segoe UI, Inter, Helvetica, Arial, sans-serif" font-size="22" font-weight="700">
+    <g>
+      <rect width="196" height="46" rx="23" fill="#55bc76" fill-opacity=".14" stroke="#55bc76" stroke-opacity=".32"/>
+      <text x="26" y="30" fill="#55bc76">74 days · valid</text>
+    </g>
+    <g transform="translate(214 0)">
+      <rect width="216" height="46" rx="23" fill="#e0a63a" fill-opacity=".14" stroke="#e0a63a" stroke-opacity=".32"/>
+      <text x="26" y="30" fill="#e0a63a">21 days · expiring</text>
+    </g>
+    <g transform="translate(448 0)">
+      <rect width="186" height="46" rx="23" fill="#f38b8b" fill-opacity=".14" stroke="#f38b8b" stroke-opacity=".32"/>
+      <text x="26" y="30" fill="#f38b8b">4 days · critical</text>
+    </g>
+  </g>
+
+</svg>
