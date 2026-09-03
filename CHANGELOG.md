@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.16.1 - 2026-09-03
+
+- Pinned `qs` to 6.16.0 through a root override to clear GHSA-x5fp-wj9c-mxmx and GHSA-4mjr-xmp4-gh2g. Express 4.22.2 and body-parser both require `qs` as `~6.15.1`, and the advisories cover that entire line, so no Express 4 release can resolve them on its own. `npm audit --omit=dev` reports no findings again.
+
 ## 0.16.0 - 2026-09-03
 
 - The product has a mark of its own. A shield with a certificate check now appears in the sidebar, on the sign-in and registration cards, on the public front page, and as the browser icon, replacing a generic activity glyph and a favicon that showed an unrelated green circle.
