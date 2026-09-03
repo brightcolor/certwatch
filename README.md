@@ -36,7 +36,7 @@ The codebase is deliberately simple and compact. It also shows the signs of a fa
 - Frontend: React with Vite, Bootstrap 5.3/AdminLTE, Bootstrap Icons, and a design token layer that defines every radius, tint, control size and type step in one place
 - Database: SQLite via better-sqlite3 (WAL mode, incremental page writes) through a small repository layer, with a structure that can later be adapted for PostgreSQL
 - Worker: in-process scheduler with bounded concurrent checks
-- Rendering: the public front page is rendered on the server so crawlers and first-time visitors receive content, not an empty div; everything behind a session stays a client-rendered SPA
+- Addresses: the public surface lives at the root (`/`, `/login`, `/register`), the application under `/app`; the front page is rendered on the server so crawlers and first-time visitors receive content, not an empty div
 - Deployment: one Docker image served on port `8080`
 
 This stack keeps the application easy to self-host while still supporting real TLS checks, background jobs, API endpoints, and a modern UI.

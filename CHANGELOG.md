@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.19.0 - 2026-09-03
+
+- Split the product into a public surface and an application, by address. The front page, sign-in and registration live at `/`, `/login` and `/register`; everything that needs a session lives under `/app`. Previously all of it shared one URL and the screen was chosen by internal state, so a link never said what it opened.
+- Pages now have addresses: `/app/reports`, `/app/operations`, `/app/monitors/<id>`. A link opens what it names, the back button walks the pages you actually visited, and the browser tab carries the page name.
+- The server sends each visitor to the half they belong in: a signed-in visitor asking for `/` or `/login` lands on `/app`, and a signed-out visitor asking for `/app` is sent to sign in. Query parameters survive the redirect, so an invite link keeps its token.
+- Invite links now point at `/register` instead of the root, so an invited person lands on the form that accepts them rather than on the marketing page for a moment.
+- `robots.txt` excludes `/app`, which is now possible without excluding the front page along with it.
+- Fixed the browser tab keeping the last page name after signing out. The effect lived in the application shell, which stops rendering at that moment.
+
 ## 0.18.0 - 2026-09-03
 
 - The public front page is now rendered on the server. A crawler that does not execute JavaScript — and a visitor on a slow connection — receives the page itself rather than an empty div, and the response carries the configuration the client would otherwise have fetched, so its first render matches the markup and React hydrates instead of rebuilding.

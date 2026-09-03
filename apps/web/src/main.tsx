@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot, hydrateRoot } from "react-dom/client";
 import { api, Monitor, CheckResult, Incident, StatusSubscription, Team, TeamMembership, TenantInvite, TenantMembership, UserAlertSettings } from "./api/client";
-import { Layout } from "./components/Layout";
+import { Layout, pageTitles } from "./components/Layout";
 import { Dashboard } from "./pages/Dashboard";
 import { FrontPage } from "./pages/FrontPage";
 import { Login } from "./pages/Login";
@@ -19,6 +19,7 @@ import { Profile } from "./pages/Profile";
 import { BootScreen } from "./components/Skeleton";
 import { useLiveRefresh } from "./hooks/useLiveRefresh";
 import { applyStatusFavicon } from "./utils/favicon";
+import { APP_PREFIX, parseRoute, pathForPage, pathForView } from "./utils/routes";
 import "./styles/app.css";
 
 /* When the server rendered the front page, it inlines the same configuration
@@ -39,6 +40,8 @@ const resolveTheme = (mode: string) => {
   if (mode === "auto") return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   return mode === "bright" ? "light" : "dark";
 };
+
+const initialRoute = parseRoute(window.location.pathname);
 
 function App() {
   const [user, setUser] = useState<any>(null);
@@ -66,12 +69,12 @@ function App() {
   const [platformSettings, setPlatformSettings] = useState<any>({ publicRegistrationEnabled: true });
   const [impersonator, setImpersonator] = useState<any>(null);
   const [version, setVersion] = useState("");
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(() => initialRoute.selected);
   const [results, setResults] = useState<CheckResult[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [editing, setEditing] = useState<Monitor | null | "new">(null);
   const [query, setQuery] = useState("");
-  const [page, setPage] = useState("dashboard");
+  const [page, setPage] = useState(initialRoute.page);
   const [themeMode, setThemeMode] = useState(initialThemeMode);
   const [resolvedTheme, setResolvedTheme] = useState(resolveTheme(initialThemeMode));
   const [liveRefreshKey, setLiveRefreshKey] = useState(0);
@@ -81,7 +84,12 @@ function App() {
     publicRegistrationEnabled: boot?.publicRegistrationEnabled ?? true
   });
   const [inviteToken] = useState(() => new URLSearchParams(window.location.search).get("invite"));
-  const [authMode, setAuthMode] = useState<"front" | "login" | "register">(() => inviteToken ? "register" : boot?.setupRequired ? "login" : "front");
+  const [authMode, setAuthMode] = useState<"front" | "login" | "register">(() => {
+    if (inviteToken) return "register";
+    if (boot?.setupRequired) return "login";
+    if (initialRoute.view === "app") return "login";
+    return initialRoute.view === "front" ? "front" : initialRoute.view;
+  });
 
   useEffect(() => {
     const apply = () => {
@@ -118,21 +126,42 @@ function App() {
   useEffect(() => { if (user && tenantId) void refresh(); }, [user, tenantId]);
   useEffect(() => { if (selected) void loadMonitorData(selected); }, [selected]);
   useEffect(() => applyStatusFavicon(stats), [stats]);
+
+  /* The tab names the page you are on while you work, and carries the product
+     line while signed out — where it is also what a search result shows. */
   useEffect(() => {
-    if (!user) return;
-    if (!window.history.state?.crtwatch) window.history.replaceState({ crtwatch: true, page: "dashboard", selected: null }, "");
+    const marketing = "crt.watch — self-hosted TLS certificate & service monitoring";
+    if (!user) {
+      document.title = marketing;
+      return;
+    }
+    const name = (selected && monitors.find((item: Monitor) => item.id === selected)?.name) || pageTitles[page] || "Dashboard";
+    document.title = `${name} · crt.watch`;
+  }, [user, page, selected, monitors]);
+  useEffect(() => {
     const onPopState = () => {
-      const state = window.history.state?.crtwatch ? window.history.state : { page: "dashboard", selected: null };
-      setPage(state.page ?? "dashboard");
-      setSelected(state.selected ?? null);
-      if (!state.selected) {
+      const route = parseRoute(window.location.pathname);
+      setPage(route.page);
+      setSelected(route.selected);
+      if (!route.selected) {
         setResults([]);
         setIncidents([]);
       }
+      if (route.view !== "app") setAuthMode(route.view === "front" ? "front" : route.view);
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [user]);
+  }, []);
+
+  /* A signed-in visitor belongs under /app, a signed-out one at the root. The
+     server redirects too; this keeps the address honest after a login or
+     logout that happened without a page load. */
+  useEffect(() => {
+    if (!booted) return;
+    const route = parseRoute(window.location.pathname);
+    if (user && route.view !== "app") window.history.replaceState(null, "", pathForPage(page, selected));
+    if (!user && route.view === "app") window.history.replaceState(null, "", pathForView(authMode));
+  }, [booted, user]);
   const refresh = async () => {
     const [monitorData, statusData, channelData] = await Promise.all([
       api.request<Monitor[]>("/monitors"),
@@ -307,7 +336,9 @@ function App() {
     setStats({});
     setPage("dashboard");
     setSelected(null);
-    setAuthMode(publicConfig.frontPageEnabled ? "front" : "login");
+    const mode = publicConfig.frontPageEnabled ? "front" : "login";
+    setAuthMode(mode);
+    window.history.replaceState(null, "", pathForView(mode));
   };
   const triggerSslLabs = async (monitor: Monitor) => {
     setToast("SSL Labs assessment started");
@@ -324,11 +355,15 @@ function App() {
       setResults([]);
       setIncidents([]);
     }
-    window.history.pushState({ crtwatch: true, page: nextPage, selected: nextSelected }, "");
+    window.history.pushState(null, "", pathForPage(nextPage, nextSelected));
   };
   const backToOverview = () => {
-    if (window.history.state?.crtwatch && window.history.state.selected) window.history.back();
+    if (parseRoute(window.location.pathname).selected) window.history.back();
     else navigate("dashboard");
+  };
+  const showAuth = (mode: "front" | "login" | "register") => {
+    setAuthMode(mode);
+    window.history.pushState(null, "", pathForView(mode));
   };
   const finishLogin = (result: any) => {
     api.setCsrf(result.csrfToken);
@@ -336,21 +371,21 @@ function App() {
     setUser(result.user);
     setImpersonator(result.impersonator ?? null);
     setSetupRequired(false);
-    if (inviteToken) window.history.replaceState(window.history.state, "", window.location.pathname);
+    window.history.replaceState(null, "", APP_PREFIX);
   };
 
   if (!booted) return <BootScreen />;
   if (!user && setupRequired) return <Login setupRequired registrationEnabled={false} onLogin={finishLogin} />;
-  if (!user && authMode === "register") return <Register inviteToken={inviteToken} onBack={() => setAuthMode("login")} onLogin={finishLogin} />;
+  if (!user && authMode === "register") return <Register inviteToken={inviteToken} onBack={() => showAuth("login")} onLogin={finishLogin} />;
   if (!user && publicConfig.frontPageEnabled && authMode === "front") {
-    return <FrontPage setupRequired={setupRequired} registrationEnabled={publicConfig.publicRegistrationEnabled} onAuth={() => setAuthMode("login")} onRegister={() => setAuthMode("register")} />;
+    return <FrontPage setupRequired={setupRequired} registrationEnabled={publicConfig.publicRegistrationEnabled} onAuth={() => showAuth("login")} onRegister={() => showAuth("register")} />;
   }
   if (!user) {
     return <Login
       setupRequired={false}
       registrationEnabled={publicConfig.publicRegistrationEnabled}
-      onBack={publicConfig.frontPageEnabled ? () => setAuthMode("front") : undefined}
-      onRegister={() => setAuthMode("register")}
+      onBack={publicConfig.frontPageEnabled ? () => showAuth("front") : undefined}
+      onRegister={() => showAuth("register")}
       onLogin={finishLogin}
     />;
   }

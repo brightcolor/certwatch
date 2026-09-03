@@ -34,15 +34,38 @@ const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const webDist = path.resolve(currentDir, "../../web/dist");
 app.use(express.static(webDist, { index: false }));
 
-/* Visitors without a session get the front page rendered into the document, so
-   crawlers and first-time readers see the content instead of an empty div.
-   Signed-in visitors get the plain shell as before. */
+/* Two halves, split by address.
+
+     /            front page, rendered here so crawlers see it
+     /login       sign in
+     /register    create an organization
+     /app/…       the application, behind a session
+
+   Sending each visitor to the half they belong in keeps a shared link honest:
+   /app opens the application or asks you to sign in first, and never shows a
+   marketing page to somebody who is already working. */
+const APP_PREFIX = "/app";
+const isAppPath = (value: string) => value === APP_PREFIX || value.startsWith(`${APP_PREFIX}/`);
+const isAuthPath = (value: string) => value === "/login" || value === "/register";
+
 app.get("*", (req, res) => {
-  // Only the root is rendered: it is the address that gets shared and indexed.
-  // Every other path is the same single-page app and would otherwise offer
-  // search engines the same content under any URL.
-  const document = req.path === "/" ? renderFrontPageDocument(Boolean(req.user)) : null;
-  if (document) return res.type("html").send(document);
+  const signedIn = Boolean(req.user);
+  const requestPath = req.path.replace(/\/+$/, "") || "/";
+
+  // An invite carries its token in the query; keep it on any redirect.
+  const query = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
+
+  if (signedIn && (requestPath === "/" || isAuthPath(requestPath))) return res.redirect(302, APP_PREFIX);
+  if (!signedIn && isAppPath(requestPath)) {
+    const target = env.frontPageEnabled ? "/login" : "/";
+    return res.redirect(302, `${target}${query}`);
+  }
+
+  if (requestPath === "/") {
+    const document = renderFrontPageDocument(signedIn);
+    if (document) return res.type("html").send(document);
+  }
+
   res.sendFile(path.join(webDist, "index.html"));
 });
 

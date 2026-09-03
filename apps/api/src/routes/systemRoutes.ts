@@ -461,7 +461,7 @@ const publicInvite = (invite: any) => ({
   teamRole: invite.teamRole,
   expiresAt: invite.expiresAt,
   createdAt: invite.createdAt,
-  inviteUrl: isRawInviteToken(invite.token) ? `${env.baseUrl.replace(/\/$/, "")}/?invite=${encodeURIComponent(invite.token)}` : ""
+  inviteUrl: isRawInviteToken(invite.token) ? `${env.baseUrl.replace(/\/$/, "")}/register?invite=${encodeURIComponent(invite.token)}` : ""
 });
 
 const canAssignRole = (req: any, role: string) => role !== "owner" || req.tenantRole === "owner";

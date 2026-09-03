@@ -1,8 +1,9 @@
 # crt.watch
-# The operator interface needs a session; only the public surface is worth crawling.
+# The application needs a session; only the public surface is worth crawling.
 
 User-agent: *
 Disallow: /api/
+Disallow: /app
 Allow: /
 
 Sitemap: https://crt.watch/sitemap.xml
