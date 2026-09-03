@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api } from "../api/client";
+import { BrandMark } from "../components/BrandMark";
 
 export function Login({ setupRequired, registrationEnabled, onLogin, onBack, onRegister }: {
   setupRequired: boolean;
@@ -52,7 +53,7 @@ export function Login({ setupRequired, registrationEnabled, onLogin, onBack, onR
     return (
       <main className="login">
         <form onSubmit={submitMfa} className="login-panel">
-          <span className="eyebrow">crt.watch</span>
+          <span className="brand-line"><BrandMark size={18} /> crt.watch</span>
           <h1>Two-factor authentication</h1>
           <p className="muted">Enter the 6-digit code from your authenticator app, or a backup code.</p>
           <label>Code<input autoFocus value={mfaCode} onChange={(e) => setMfaCode(e.target.value)} placeholder="123456" /></label>
@@ -67,7 +68,7 @@ export function Login({ setupRequired, registrationEnabled, onLogin, onBack, onR
   return (
     <main className="login">
       <form onSubmit={submit} className="login-panel">
-        <span className="eyebrow">crt.watch</span>
+        <span className="brand-line"><BrandMark size={18} /> crt.watch</span>
         <h1>{setupRequired ? "Create admin" : "Sign in"}</h1>
         {setupRequired && <p className="muted">Create the first administrator account for this crt.watch instance.</p>}
         <label>Email<input value={email} onChange={(e) => setEmail(e.target.value)} /></label>

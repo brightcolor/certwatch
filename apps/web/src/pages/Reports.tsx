@@ -25,7 +25,7 @@ export function Reports({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) {
           <span className="num">Incidents</span>
           <span className="num">MTTR</span>
         </div>
-        {!rows.length && <div className="empty-row"><strong>No checks in this period</strong><span className="muted">Availability is calculated from recorded check results. Pick a longer period or wait for the next scheduled run.</span></div>}
+        {!rows.length && <div className="empty-row"><strong>Nothing recorded in this period</strong><span className="muted">Availability comes from stored check results. Pick a longer period, or wait for the next scheduled run.</span></div>}
         {rows.map((row) => (
           <div className="row" key={row.monitorId}>
             <span><strong>{row.name}</strong></span>

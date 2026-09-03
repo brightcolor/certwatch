@@ -640,6 +640,165 @@
   color: var(--bs-secondary-color);
 }
 
+/* --- Empty and loading states --------------------------------------------
+   The first thing a new organization sees. It names what belongs here and
+   offers the action that fills it.                                         */
+
+.empty-panel {
+  display: grid;
+  justify-items: center;
+  gap: .5rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bs-card-bg);
+  padding: 3rem 1.5rem;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.empty-mark {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  border-radius: var(--radius-lg);
+  background: rgba(var(--bs-primary-rgb), var(--tint-solid));
+  color: var(--accent-text);
+}
+
+.empty-panel strong {
+  color: var(--bs-emphasis-color);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -.01em;
+}
+
+.empty-panel p {
+  max-width: 34rem;
+  color: var(--bs-secondary-color);
+  line-height: 1.5;
+}
+
+.empty-panel .actions {
+  justify-content: center;
+  margin-top: .3rem;
+}
+
+.empty-panel small {
+  color: var(--bs-secondary-color);
+  font-size: var(--text-xs);
+}
+
+/* --- Skeletons ----------------------------------------------------------- */
+
+.skeleton {
+  display: grid;
+  gap: .85rem;
+}
+
+@keyframes shimmer {
+  from { opacity: .45; }
+  to { opacity: .85; }
+}
+
+.skeleton span,
+.skeleton-ring,
+.skeleton-mark {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: rgba(var(--bs-secondary-color-rgb), var(--tint-solid));
+  animation: shimmer 1.1s var(--ease) infinite alternate;
+}
+
+.skeleton-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bs-card-bg);
+  padding: 1rem 1.15rem;
+}
+
+.skeleton-ring {
+  width: 108px;
+  height: 108px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.skeleton-lines {
+  display: grid;
+  flex: 1 1 auto;
+  gap: .55rem;
+}
+
+.skeleton-lines span {
+  height: .85rem;
+}
+
+.skeleton-list {
+  overflow: hidden;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bs-card-bg);
+}
+
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  border-bottom: 1px solid var(--bs-border-color);
+  padding: .8rem 1rem;
+}
+
+.skeleton-row:last-child {
+  border-bottom: 0;
+}
+
+.skeleton-row span {
+  height: .7rem;
+}
+
+.skeleton-mark {
+  width: 1.6rem;
+  height: 1.6rem;
+  flex: 0 0 auto;
+}
+
+/* --- Boot screen --------------------------------------------------------- */
+
+.boot {
+  display: grid;
+  justify-items: center;
+  gap: .8rem;
+}
+
+.boot-mark {
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 2px solid rgba(var(--bs-primary-rgb), .25);
+  border-top-color: var(--bs-primary);
+  border-radius: 50%;
+  animation: boot-spin .7s linear infinite;
+}
+
+@keyframes boot-spin {
+  to { transform: rotate(360deg); }
+}
+
+.boot-label {
+  color: var(--bs-secondary-color);
+  font-size: var(--text-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-mark {
+    animation: none;
+    border-top-color: rgba(var(--bs-primary-rgb), .25);
+  }
+}
+
 /* --- Empty states -------------------------------------------------------- */
 
 .empty-row,
@@ -985,8 +1144,19 @@
   font-size: 1.3rem;
 }
 
-.login-panel > .eyebrow {
-  margin-bottom: -.5rem;
+.login-panel > .brand-line {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  margin-bottom: -.35rem;
+  color: var(--bs-secondary-color);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+
+.login-panel > .brand-line svg {
+  color: var(--accent-text);
 }
 
 .error { color: var(--bs-danger); }

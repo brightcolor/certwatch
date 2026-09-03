@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api } from "../api/client";
+import { BrandMark } from "../components/BrandMark";
 
 export function Register({ inviteToken, onLogin, onBack }: { inviteToken?: string | null; onLogin: (result: any) => void; onBack: () => void }) {
   const [form, setForm] = useState({ email: "", password: "", confirm: "", organizationName: "" });
@@ -30,7 +31,7 @@ export function Register({ inviteToken, onLogin, onBack }: { inviteToken?: strin
   return (
     <main className="login">
       <form onSubmit={submit} className="login-panel">
-        <span className="eyebrow">crt.watch</span>
+        <span className="brand-line"><BrandMark size={18} /> crt.watch</span>
         <h1>{invited ? "Join organization" : "Create organization"}</h1>
         <p className="muted">
           {invited ? "Create your account to accept this organization invitation." : "Create a user account and an isolated organization."}

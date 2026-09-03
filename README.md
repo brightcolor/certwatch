@@ -23,6 +23,7 @@ This stack keeps the application easy to self-host while still supporting real T
 - Dashboard with OK, warning, critical, down, paused, and unknown status counts
 - Public frontpage that explains crt.watch before operators sign in, controlled by `FRONT_PAGE_ENABLED`
 - Dark, colorful dashboard with a contextual health header, grouped checklist rows, color-coded multi-select status filters, and monitor cloning
+- Workspace switcher in the sidebar showing the current organization and team, every organization you belong to with your role, and how much of the plan's monitor allowance is used
 - Collapsible AdminLTE sidebar that can shrink to icon-only navigation while keeping labels available on hover
 - Live-refreshing UI views that update visible status, monitor details, operations, reports, users, organizations, and settings without a manual reload
 - Dashboard problem chips that show certificate, TLS, DNS, SSL Labs, and service issues directly in the monitor overview

@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { Activity, BarChart3, Bell, Boxes, Download, LogOut, Menu, Plus, Search, Settings, UserCircle, Users, Upload } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Activity, BarChart3, Bell, Boxes, Check, ChevronsUpDown, Download, LogOut, Menu, Plus, Search, Settings, UserCircle, Users, Upload } from "lucide-react";
+import { BrandMark } from "./BrandMark";
 import type { Monitor } from "../api/client";
 import { humanize } from "../utils/labels";
 
@@ -18,9 +19,12 @@ export function Layout({ children, page, pageTitle, onNew, theme, themeMode, set
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [search, setSearch] = useState("");
   const critical = (stats.critical ?? 0) + (stats.down ?? 0);
+  const currentTenant = tenants.find((item: any) => item.tenantId === tenantId) ?? tenants[0];
+  const currentTeam = teams.find((item: any) => item.id === teamId);
   const matches = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return [];
@@ -28,6 +32,28 @@ export function Layout({ children, page, pageTitle, onNew, theme, themeMode, set
       .filter((monitor: Monitor) => [monitor.name, monitor.host, monitor.type, monitor.tags.join(" ")].join(" ").toLowerCase().includes(term))
       .slice(0, 8);
   }, [monitors, search]);
+
+  useEffect(() => {
+    if (!statusOpen && !profileOpen && !workspaceOpen) return;
+    const close = (event: MouseEvent) => {
+      if ((event.target as HTMLElement).closest(".status-dropdown, .profile-dropdown, .workspace")) return;
+      setStatusOpen(false);
+      setProfileOpen(false);
+      setWorkspaceOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setStatusOpen(false);
+      setProfileOpen(false);
+      setWorkspaceOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [statusOpen, profileOpen, workspaceOpen]);
 
   const navigate = (nextPage: string) => {
     setSidebarOpen(false);
@@ -67,41 +93,47 @@ export function Layout({ children, page, pageTitle, onNew, theme, themeMode, set
               </div>
             )}
           </form>
-          <div className="navbar-nav ms-auto align-items-center gap-2">
-            {impersonator && <button className="btn btn-warning btn-sm" type="button" onClick={onStopImpersonation} title={`Impersonating ${user?.email}`}>
+          <div className="header-actions">
+            {impersonator && <button className="btn btn-outline-warning btn-sm" type="button" onClick={onStopImpersonation} title={`Signed in as ${user?.email}`}>
               Stop impersonation
             </button>}
-            {tenants.length > 1 && <select className="form-select form-select-sm tenant-select" value={tenantId ?? ""} onChange={(event) => onTenant?.(event.target.value)} aria-label="Organization">
-              {tenants.map((item: any) => <option key={item.tenantId} value={item.tenantId}>{item.tenant.name}</option>)}
-            </select>}
-            {teams.length > 0 && <select className="form-select form-select-sm tenant-select" value={teamId ?? ""} onChange={(event) => onTeam?.(event.target.value)} aria-label="Team">
-              {teams.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}
-            </select>}
             <div className="nav-item status-dropdown">
-              <button className="btn btn-outline-secondary btn-sm position-relative" type="button" onClick={() => setStatusOpen((current) => !current)} aria-expanded={statusOpen}>
+              <button className="btn btn-outline-secondary btn-sm btn-icon header-bell" type="button" onClick={() => setStatusOpen((current) => !current)} aria-expanded={statusOpen} aria-label="Operations status" title="Operations status">
                 <Bell size={16} />
-                {critical > 0 && <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">{critical}</span>}
+                {critical > 0 && <span className="bell-count">{critical}</span>}
               </button>
-              {statusOpen && <StatusMenu stats={stats} onPage={navigate} />}
+              {statusOpen && <StatusMenu stats={stats} onPage={(next: string) => { setStatusOpen(false); navigate(next); }} />}
             </div>
-            <select className="form-select form-select-sm theme-select" value={themeMode ?? "dark"} onChange={(event) => setThemeMode?.(event.target.value)} aria-label="Color mode" title="Color mode">
-              <option value="dark">Dark</option>
-              <option value="bright">Bright</option>
-              <option value="auto">System</option>
-            </select>
-            <button className="btn btn-primary btn-sm" type="button" onClick={onNew}><Plus size={16} /> Monitor</button>
+            <button className="btn btn-primary btn-sm" type="button" onClick={onNew}><Plus size={16} /> New monitor</button>
             <div className="nav-item profile-dropdown">
-              <button className="btn btn-outline-secondary btn-sm profile-button" type="button" onClick={() => setProfileOpen((current) => !current)} aria-expanded={profileOpen} title={user?.email ?? "Profile"}>
-                <UserCircle size={16} /><span>{shortEmail(user?.email)}</span>
+              <button className="avatar-button" type="button" onClick={() => setProfileOpen((current) => !current)} aria-expanded={profileOpen} aria-label={user?.email ?? "Account"} title={user?.email ?? "Account"}>
+                <span className="avatar">{initials(user?.email)}</span>
               </button>
-              {profileOpen && <div className="profile-menu card shadow">
-                <div className="card-header">
-                  <strong>{user?.email}</strong>
-                  <small>{humanize(user?.role)}</small>
+              {profileOpen && <div className="profile-menu">
+                <div className="menu-head">
+                  <span className="avatar avatar-lg">{initials(user?.email)}</span>
+                  <div>
+                    <strong>{user?.email}</strong>
+                    <small>{humanize(user?.role)}</small>
+                  </div>
                 </div>
-                <div className="list-group list-group-flush">
-                  <button className="list-group-item list-group-item-action" type="button" onClick={() => { setProfileOpen(false); onProfile?.(); }}><UserCircle size={16} /> Profile</button>
-                  <button className="list-group-item list-group-item-action text-danger" type="button" onClick={() => { setProfileOpen(false); onLogout?.(); }}><LogOut size={16} /> Log out</button>
+                <div className="menu-section">
+                  <span className="section-label">Appearance</span>
+                  <div className="segmented" role="group" aria-label="Color mode">
+                    {themeOptions.map((option) => (
+                      <button
+                        type="button"
+                        className={themeMode === option.value ? "active" : ""}
+                        key={option.value}
+                        aria-pressed={themeMode === option.value}
+                        onClick={() => setThemeMode?.(option.value)}
+                      >{option.label}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="menu-list">
+                  <button type="button" onClick={() => { setProfileOpen(false); onProfile?.(); }}><UserCircle size={16} /> Account settings</button>
+                  <button type="button" onClick={() => { setProfileOpen(false); onLogout?.(); }}><LogOut size={16} /> Log out</button>
                 </div>
               </div>}
             </div>
@@ -111,9 +143,71 @@ export function Layout({ children, page, pageTitle, onNew, theme, themeMode, set
       <aside className="app-sidebar">
         <div className="sidebar-brand">
           <button className="brand-link" type="button" onClick={() => navigate("dashboard")} title="crt.watch">
-            <span className="brand-image"><Activity size={18} /></span>
-            <span className="brand-text fw-semibold">crt.watch</span>
+            <span className="brand-image"><BrandMark size={19} /></span>
+            <span className="brand-text">crt.watch</span>
           </button>
+        </div>
+        <div className="workspace">
+          <button
+            className="workspace-button"
+            type="button"
+            onClick={() => setWorkspaceOpen((current) => !current)}
+            aria-expanded={workspaceOpen}
+            title={currentTenant?.tenant?.name ?? "Workspace"}
+          >
+            <span className="workspace-mark">{initials(currentTenant?.tenant?.name)}</span>
+            <span className="workspace-copy">
+              <strong>{currentTenant?.tenant?.name ?? "Workspace"}</strong>
+              <small>{currentTeam?.name ?? humanize(currentTenant?.role)}</small>
+            </span>
+            <ChevronsUpDown size={14} className="workspace-chevron" />
+          </button>
+          {workspaceOpen && <div className="workspace-menu">
+            <div className="menu-section">
+              <span className="section-label">Organization</span>
+              <div className="menu-list">
+                {tenants.map((item: any) => (
+                  <button
+                    type="button"
+                    className={item.tenantId === tenantId ? "active" : ""}
+                    key={item.tenantId}
+                    onClick={() => { setWorkspaceOpen(false); onTenant?.(item.tenantId); }}
+                  >
+                    <span className="workspace-mark sm">{initials(item.tenant.name)}</span>
+                    <span className="menu-copy"><strong>{item.tenant.name}</strong><small>{humanize(item.role)}</small></span>
+                    {item.tenantId === tenantId && <Check size={15} />}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {teams.length > 0 && <div className="menu-section">
+              <span className="section-label">Team</span>
+              <div className="menu-list">
+                {teams.map((item: any) => (
+                  <button
+                    type="button"
+                    className={item.id === teamId ? "active" : ""}
+                    key={item.id}
+                    onClick={() => { setWorkspaceOpen(false); onTeam?.(item.id); }}
+                  >
+                    <span className="menu-copy"><strong>{item.name}</strong></span>
+                    {item.id === teamId && <Check size={15} />}
+                  </button>
+                ))}
+              </div>
+            </div>}
+            {currentTenant?.tenant && <div className="workspace-usage">
+              <div className="usage-head">
+                <span>{humanize(currentTenant.tenant.plan)} plan</span>
+                <span className="num">{monitors.length} / {currentTenant.tenant.monitorLimit ?? "-"}</span>
+              </div>
+              <div className="usage-meter"><i style={{ width: `${usageShare(monitors.length, currentTenant.tenant.monitorLimit)}%` }} /></div>
+              <small>monitors used</small>
+            </div>}
+            <div className="menu-list">
+              <button type="button" onClick={() => { setWorkspaceOpen(false); navigate("tenants"); }}><Settings size={15} /> Manage organizations</button>
+            </div>
+          </div>}
         </div>
         <div className="sidebar-wrapper">
           <nav className="mt-2">
@@ -202,7 +296,21 @@ const titleFor = (page: string) => ({
   profile: "Profile"
 }[page] ?? "Dashboard");
 
-const shortEmail = (email?: string) => {
-  if (!email) return "Profile";
-  return email.length > 24 ? `${email.slice(0, 21)}...` : email;
+const themeOptions = [
+  { value: "dark", label: "Dark" },
+  { value: "bright", label: "Bright" },
+  { value: "auto", label: "System" }
+];
+
+/* Two letters stand in for an avatar: the first letters of a name, or the
+   first two of an email's local part. */
+const initials = (value?: string) => {
+  if (!value) return "?";
+  const name = value.split("@")[0].replace(/[._-]+/g, " ").trim();
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
 };
+
+const usageShare = (used: number, limit?: number) =>
+  limit && limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;

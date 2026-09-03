@@ -1,5 +1,7 @@
 import type { Monitor } from "../api/client";
+import { Boxes } from "lucide-react";
 import { StatusPill } from "../components/StatusPill";
+import { EmptyState } from "../components/EmptyState";
 
 export function Applications({ monitors, onSelect }: { monitors: Monitor[]; onSelect: (id: string) => void }) {
   const groups = Array.from(new Set(monitors.flatMap((monitor) => monitor.tags))).sort().map((tag) => ({
@@ -13,7 +15,12 @@ export function Applications({ monitors, onSelect }: { monitors: Monitor[]; onSe
     <section className="content">
       <p className="page-intro">Labels group related checks into application rollups, status pages, and badges.</p>
       <div className="flow">
-        {!groups.length && <div className="panel empty-state"><h3>No applications yet</h3><p className="muted">Add labels to monitors to create application rollups automatically.</p></div>}
+        {!groups.length && <EmptyState
+          icon={<Boxes size={24} />}
+          title="Group your checks into applications"
+          text="Give monitors a label such as production or mail, and crt.watch rolls them up here with a shared status page and badges you can embed."
+          hint="Labels are set on each monitor, and a monitor can carry several."
+        />}
         {groups.map((group) => {
           const status = rollup(group.monitors);
           const key = encodeURIComponent(group.tag);

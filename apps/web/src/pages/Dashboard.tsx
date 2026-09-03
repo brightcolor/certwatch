@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
-import { Check, CircleHelp, Copy, HeartPulse, Pause, PauseCircle, Play, RefreshCw, Search, ShieldCheck, Siren, TriangleAlert, Unplug, X } from "lucide-react";
+import { Check, CircleHelp, Copy, HeartPulse, Pause, PauseCircle, Play, Plus, RefreshCw, Search, ShieldCheck, Siren, TriangleAlert, Unplug, X } from "lucide-react";
+import { EmptyState } from "../components/EmptyState";
+import { Skeleton } from "../components/Skeleton";
 import type { Monitor } from "../api/client";
 import { collectsCertificate } from "../utils/monitorTypes";
 import { formatDate } from "../utils/date";
 
-export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck, onClone, onToggleEnabled }: any) {
+export function Dashboard({ monitors, loaded, stats, query, setQuery, onSelect, onCheck, onClone, onToggleEnabled, onNew }: any) {
   const [viewMode, setViewMode] = useState<"grouped" | "list">("list");
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [issueFilters, setIssueFilters] = useState<string[]>([]);
@@ -27,6 +29,24 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
     setIssueFilters((current) => current.includes(issue) ? current.filter((item) => item !== issue) : [...current, issue]);
   };
   const toggleExpandedIssues = (monitorId: string) => setExpandedIssueMonitor((current) => current === monitorId ? null : monitorId);
+
+  if (!loaded) {
+    return <section className="content"><Skeleton /></section>;
+  }
+
+  if (!monitors.length) {
+    return (
+      <section className="content">
+        <EmptyState
+          icon={<ShieldCheck size={24} />}
+          title="Add your first check"
+          text="Point crt.watch at a hostname and it starts watching the certificate, the service behind it, and the login if you need one. You get told before anything expires."
+          action={<button className="btn btn-primary" type="button" onClick={onNew}><Plus size={16} /> New monitor</button>}
+          hint="Have a list already? Import several at once from the Import page."
+        />
+      </section>
+    );
+  }
 
   return (
     <section className="content">
@@ -84,7 +104,7 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
         </div>}
       </div>
       <div className="monitor-checklist">
-        {!filtered.length && <div className="empty-row"><strong>No monitors found</strong><span className="muted">Create a monitor to start checking certificates, services, or logins.</span></div>}
+        {!filtered.length && <div className="empty-row"><strong>Nothing matches these filters</strong><span className="muted">Clear the search or pick a different status to see the rest of your checks.</span></div>}
         {viewMode === "list" && filtered.length > 0 && (
           <div className="monitor-list-head" aria-hidden="true">
             <span />

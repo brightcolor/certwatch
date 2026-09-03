@@ -1,5 +1,6 @@
-import { Activity, ArrowRight, Bell, Github, LockKeyhole, Radar, Server, ShieldCheck } from "lucide-react";
+import { ArrowRight, Bell, Github, LockKeyhole, Radar, Server, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
+import { BrandMark } from "../components/BrandMark";
 
 const githubUrl = "https://github.com/brightcolor/crt.watch";
 
@@ -15,7 +16,7 @@ export function FrontPage({ setupRequired, registrationEnabled, onAuth, onRegist
     <main className="frontpage">
       <header className="frontpage-nav">
         <a className="frontpage-brand" href="#top" aria-label="crt.watch home">
-          <span><Activity size={18} /></span>
+          <span><BrandMark size={19} /></span>
           <strong>crt.watch</strong>
         </a>
         <nav aria-label="Public navigation">

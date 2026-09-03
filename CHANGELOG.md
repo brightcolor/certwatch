@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.16.0 - 2026-09-03
+
+- The product has a mark of its own. A shield with a certificate check now appears in the sidebar, on the sign-in and registration cards, on the public front page, and as the browser icon, replacing a generic activity glyph and a favicon that showed an unrelated green circle.
+- Replaced the two unlabelled dropdowns in the header with one workspace switcher in the sidebar: the current organization with its initials, the active team, every organization you belong to with your role in each, and how much of the plan's monitor allowance is used.
+- The header is down to what an operator needs while working: search, an alert bell that carries the critical count, one primary action, and an account avatar. Colour mode moved into the account menu, where a personal preference belongs.
+- Menus behave like menus: they close on an outside click and on Escape.
+- An organization with no monitors now gets a first-run screen that says what a check does and offers the one action that starts it, instead of a health ring reporting "100 % healthy" about nothing and three rows of zero counters.
+- Added a loading state. Without it, an account with hundreds of monitors saw the first-run screen flash by while the first request was still in flight.
+- Applications and Reports explain what fills them when they are empty, and distinguish "nothing here yet" from "nothing matches your filters".
+
 ## 0.15.1 - 2026-09-03
 
 - Rebuilt the availability report as a real table. The monitor name had a fixed 110px column while a single-digit count had the widest one, so names wrapped onto three lines and were clipped on top of that. Columns now size to what they hold, and numbers are right-aligned and tabular so they line up digit under digit.

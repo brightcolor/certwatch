@@ -16,6 +16,7 @@ import { Operations } from "./pages/Operations";
 import { Reports } from "./pages/Reports";
 import { TenantsPage } from "./pages/Tenants";
 import { Profile } from "./pages/Profile";
+import { BootScreen } from "./components/Skeleton";
 import { useLiveRefresh } from "./hooks/useLiveRefresh";
 import { applyStatusFavicon } from "./utils/favicon";
 import "./styles/app.css";
@@ -37,6 +38,7 @@ function App() {
   const [setupRequired, setSetupRequired] = useState(false);
   const [booted, setBooted] = useState(false);
   const [monitors, setMonitors] = useState<Monitor[]>([]);
+  const [monitorsLoaded, setMonitorsLoaded] = useState(false);
   const [stats, setStats] = useState<any>({});
   const [channels, setChannels] = useState<any[]>([]);
   const [alerting, setAlerting] = useState<any>(null);
@@ -136,6 +138,7 @@ function App() {
       api.request<StatusSubscription[]>("/subscriptions")
     ]);
     setMonitors(monitorData);
+    setMonitorsLoaded(true);
     setStats(statusData);
     setChannels(channelData);
     setAlerting(alertingData);
@@ -326,7 +329,7 @@ function App() {
     if (inviteToken) window.history.replaceState(window.history.state, "", window.location.pathname);
   };
 
-  if (!booted) return <main className="login"><div className="login-panel"><span className="eyebrow">crt.watch</span><h1>Loading</h1></div></main>;
+  if (!booted) return <BootScreen />;
   if (!user && setupRequired) return <Login setupRequired registrationEnabled={false} onLogin={finishLogin} />;
   if (!user && authMode === "register") return <Register inviteToken={inviteToken} onBack={() => setAuthMode("login")} onLogin={finishLogin} />;
   if (!user && publicConfig.frontPageEnabled && authMode === "front") {
@@ -460,7 +463,7 @@ function App() {
           onNote={async (id: string, text: string) => { await api.request(`/incidents/${id}/notes`, { method: "POST", body: JSON.stringify({ text }) }); await loadMonitorData(selectedMonitor.id); }}
         />
       ) : (
-        <Dashboard monitors={monitors} stats={stats} query={query} setQuery={setQuery} onSelect={(id: string) => navigate("dashboard", id)} onCheck={checkNow} onClone={cloneMonitor} onToggleEnabled={(monitor: Monitor) => setMonitorEnabled(monitor, !monitor.enabled)} />
+        <Dashboard monitors={monitors} loaded={monitorsLoaded} stats={stats} query={query} setQuery={setQuery} onSelect={(id: string) => navigate("dashboard", id)} onCheck={checkNow} onClone={cloneMonitor} onToggleEnabled={(monitor: Monitor) => setMonitorEnabled(monitor, !monitor.enabled)} onNew={() => setEditing("new")} />
       )}
       {editing && <MonitorForm channels={channels} monitor={editing === "new" ? null : editing} onCancel={() => setEditing(null)} onSave={saveMonitor} onSaveAndCheck={saveAndCheck} />}
     </Layout>
