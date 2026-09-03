@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.15.0 - 2026-09-03
+
+- Rebuilt the interface on one design token layer (`theme.css`): four corner radii instead of sixteen, five status tint values instead of thirty-three, and one control height shared by buttons, inputs and selects. The `soft-ui`, `polish` and `status` stylesheets that each corrected the previous layer are gone, and with them 157 `!important` declarations.
+- Unified twelve competing chip and badge classes into one pill shape and one status square, both taking their colour from a single `--tone` carrier, so a status reads the same in a list row, a filter, a group header and a detail panel.
+- Buttons now speak one language. Bare `<button>` elements are no longer styled, so nothing has to override anything: an action is the accent button, a neutral outline, or a status outline. Green stopped meaning "save" — it only reports health — and red is reserved for actions that destroy something, so Cancel, Close and Impersonate became neutral.
+- Replaced the dashboard's three separate counter rows, which showed the same monitors under different labels and occasionally different numbers, with one hero: a ring for the share of healthy checks, a one-line verdict, and four counters that double as filters. Counters and filter chips now read from the same source.
+- Certificate lifetime is set apart wherever it appears, with a meter that shows the remaining days against that monitor's own warning threshold, so "41 days" reads as comfortable or urgent without doing the arithmetic.
+- Monitor groups take the colour of their worst member in the header, and the detail header carries the monitor's status as a left accent.
+- Rows in narrow panels now wrap onto more lines instead of squeezing names, selects and buttons into unreadable widths; settings pages flow their panels into both columns instead of leaving one half empty.
+- Fixed the sidebar rendering near-invisible light-grey labels on a light background in bright mode, a navigation counter that sat on top of its own label, DNS entries overlapping their values, a page title that read "Dashboard" while a monitor was open, and a sidebar surface that stopped halfway down long pages.
+- Copyable values (badge URLs, embed snippets, invite links) wrap instead of trailing off into an ellipsis.
+- Every status colour is now chosen so that text in that colour clears WCAG AA against its own tinted pill in both themes, and the accent carries separate values for tint, text and filled surfaces for the same reason.
+- Interface wording follows one rule: sentence case throughout, navigation labels match page titles ("Alerts" no longer opens "Notification Channels"), and the settings page no longer names the admin template it is built on.
+
 ## 0.14.1 - 2026-07-25
 
 - Added a motion and depth polish layer: consistent eased transitions and press feedback on all interactive elements, page and modal entrance animations, floating dropdown menus, springier metric-card hover, and a sliding sidebar active indicator.

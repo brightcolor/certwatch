@@ -346,6 +346,7 @@ function App() {
   return (
     <Layout
       page={page}
+      pageTitle={selectedMonitor?.name}
       onPage={(nextPage: string) => navigate(nextPage)}
       onNew={() => setEditing("new")}
       theme={resolvedTheme}

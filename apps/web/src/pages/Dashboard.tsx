@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Copy, HeartPulse, Pause, Play, RefreshCw, Search, ShieldCheck, Siren, TimerReset, TriangleAlert } from "lucide-react";
+import { Check, CircleHelp, Copy, HeartPulse, Pause, PauseCircle, Play, RefreshCw, Search, ShieldCheck, Siren, TriangleAlert, Unplug, X } from "lucide-react";
 import type { Monitor } from "../api/client";
 import { collectsCertificate } from "../utils/monitorTypes";
 import { formatDate } from "../utils/date";
@@ -16,6 +16,7 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
   );
   const groups = useMemo(() => groupMonitors(filtered), [filtered]);
   const statusCounts = useMemo(() => countStatuses(monitors), [monitors]);
+  const summaryCounts = useMemo(() => summaryFrom(statusCounts), [statusCounts]);
   const allSelected = statusFilters.length === 0;
 
   const toggleStatus = (status: string) => {
@@ -29,38 +30,40 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
 
   return (
     <section className="content">
-      <div className={`dashboard-hero soft-glow hero-${heroTone(statusCounts)}`}>
-        <div className="hero-copy">
-          <span className="hero-mark" aria-hidden="true">{heroIcon(statusCounts)}</span>
-          <div>
-            <h2>{heroTitle(statusCounts)}</h2>
-            <p>{heroDescription(statusCounts)}</p>
+      <div className={`status-hero tone-${heroTone(statusCounts)}`}>
+        <div className="health-ring" style={{ "--share": `${healthShare(statusCounts)}%` } as any} role="img" aria-label={`${healthShare(statusCounts)} percent of checks healthy`}>
+          <div className="health-ring-inner">
+            <span className="health-ring-value">{healthShare(statusCounts)}</span>
+            <span className="health-ring-sub">% healthy</span>
           </div>
         </div>
-        <div className="hero-badges">
-          <button type="button" className="filter-chip filter-ok active" onClick={() => setOnlyStatuses(["OK"])}>OK {statusCounts.OK ?? 0}</button>
-          <button type="button" className="filter-chip filter-warning active" onClick={() => setOnlyStatuses(["WARNING"])}>Warnings {statusCounts.WARNING ?? 0}</button>
-          <button type="button" className="filter-chip filter-critical active" onClick={() => setOnlyStatuses(["CRITICAL", "DOWN"])}>Critical {(statusCounts.CRITICAL ?? 0) + (statusCounts.DOWN ?? 0)}</button>
-          <button type="button" className="filter-chip filter-unknown active" onClick={() => setOnlyStatuses(["PAUSED", "UNKNOWN"])}>Other {(statusCounts.PAUSED ?? 0) + (statusCounts.UNKNOWN ?? 0)}</button>
+        <div className="hero-copy">
+          <h2>{heroTitle(statusCounts)}</h2>
+          <p>{heroDescription(statusCounts)}</p>
         </div>
-      </div>
-      <div className="metrics dashboard-facts">
-        <Metric icon={<ShieldCheck />} label="Valid" value={stats.ok ?? 0} tone="success" onClick={() => setOnlyStatuses(["OK"])} />
-        <Metric icon={<TriangleAlert />} label="Expiring soon" value={stats.warning ?? 0} tone="warning" onClick={() => setOnlyStatuses(["WARNING"])} />
-        <Metric icon={<Siren />} label="Critical" value={(stats.critical ?? 0) + (stats.down ?? 0)} tone="danger" onClick={() => setOnlyStatuses(["CRITICAL", "DOWN"])} />
-        <Metric icon={<TimerReset />} label="Paused" value={stats.paused ?? 0} tone="secondary" onClick={() => setOnlyStatuses(["PAUSED"])} />
+        <div className="stats-bar">
+          {summaryCounts.map((item) => (
+            <button
+              type="button"
+              className={`stat-item tone-${item.tone}${item.value ? "" : " is-zero"}${sameSelection(statusFilters, item.statuses) ? " active" : ""}`}
+              key={item.label}
+              aria-pressed={sameSelection(statusFilters, item.statuses)}
+              onClick={() => setOnlyStatuses(item.statuses)}
+            >
+              <span className="stat-icon" aria-hidden="true">{item.icon}</span>
+              <span className="stat-value">{item.value}</span>
+              <span className="stat-label">{item.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
       <div className="panel toolbar-panel">
         <div>
           <h3>Monitors</h3>
           <p className="muted">{filtered.length} of {monitors.length} checks visible</p>
         </div>
-        <div className="toolbar"><Search size={18} /><input placeholder="Search name, host, label, owner" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
+        <div className="toolbar"><Search size={16} /><input placeholder="Search name, host, label, owner" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
         <div className="dashboard-controls">
-          <div className="btn-group btn-group-sm" role="group" aria-label="Dashboard view">
-            <button type="button" className={`btn ${viewMode === "grouped" ? "btn-secondary" : "btn-outline-secondary"}`} onClick={() => setViewMode("grouped")}>Grouped</button>
-            <button type="button" className={`btn ${viewMode === "list" ? "btn-secondary" : "btn-outline-secondary"}`} onClick={() => setViewMode("list")}>List</button>
-          </div>
           <div className="status-filter" aria-label="Status filters">
             <button type="button" className={`filter-chip filter-all ${allSelected ? "active" : ""}`} onClick={() => setStatusFilters([])}>All</button>
             {statusOptions.map((item) => (
@@ -68,6 +71,10 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
                 {item.label}<span>{statusCounts[item.status] ?? 0}</span>
               </button>
             ))}
+          </div>
+          <div className="btn-group btn-group-sm" role="group" aria-label="Dashboard view">
+            <button type="button" className={`btn ${viewMode === "grouped" ? "btn-secondary" : "btn-outline-secondary"}`} onClick={() => setViewMode("grouped")}>Grouped</button>
+            <button type="button" className={`btn ${viewMode === "list" ? "btn-secondary" : "btn-outline-secondary"}`} onClick={() => setViewMode("list")}>List</button>
           </div>
         </div>
         {!!issueFilters.length && <div className="issue-filter-bar">
@@ -89,13 +96,17 @@ export function Dashboard({ monitors, stats, query, setQuery, onSelect, onCheck,
         )}
         {viewMode === "grouped" ? groups.map((group) => (
           <section className="monitor-group" key={group.name}>
-            <div className="monitor-group-head">
+            <div className={`monitor-group-head tone-${group.status.toLowerCase()}`}>
               <div>
                 <h3>{group.name}</h3>
                 <p>{group.summary}</p>
               </div>
               <div className="group-badges">
-                {statusOptions.slice(0, 4).map((item) => <button type="button" className={`mini-count mini-${item.status.toLowerCase()}`} key={item.status} onClick={() => setOnlyStatuses([item.status])}><b>{item.short}</b>{group.counts[item.status] ?? 0}</button>)}
+                {statusOptions.slice(0, 4).filter((item) => group.counts[item.status]).map((item) => (
+                  <button type="button" className={`mini-count mini-${item.status.toLowerCase()}`} key={item.status} title={item.label} onClick={() => setOnlyStatuses([item.status])}>
+                    {group.counts[item.status]} {item.label.toLowerCase()}
+                  </button>
+                ))}
               </div>
             </div>
             {group.monitors.map((monitor: Monitor) => <MonitorRow monitor={monitor} onSelect={onSelect} onCheck={onCheck} onClone={onClone} onToggleEnabled={onToggleEnabled} onStatus={toggleStatus} onIssue={toggleIssue} onMoreIssues={toggleExpandedIssues} issueFilters={issueFilters} expandedIssues={expandedIssueMonitor === monitor.id} key={monitor.id} />)}
@@ -124,9 +135,13 @@ function MonitorRow({ monitor, onSelect, onCheck, onClone, onToggleEnabled, onSt
         <ProblemBadges monitor={monitor} onIssue={onIssue} onMoreIssues={onMoreIssues} issueFilters={issueFilters} expanded={expandedIssues} />
       </div>
       <div className="monitor-target"><strong>{monitor.host}:{monitor.port}</strong><small>{monitor.type} - {monitor.tags.join(", ") || "unlabeled"}</small></div>
-      <div className="monitor-cert"><span className="cert-line"><strong>{certificateSummary(monitor)}</strong><small>{certificateDetail(monitor)}</small>{gradePill(monitor)}{sslLabsPill(monitor)}</span></div>
+      <div className={`monitor-cert tone-${monitor.lastStatus.toLowerCase()}`}>
+        <span className="cert-line"><strong>{certificateSummary(monitor)}</strong>{gradePill(monitor)}{sslLabsPill(monitor)}</span>
+        <LifetimeMeter monitor={monitor} />
+        <small>{certificateDetail(monitor)}</small>
+      </div>
       <div className="monitor-actions">
-        <button className={`btn btn-sm monitor-action ${monitor.enabled ? "btn-outline-warning warning" : "btn-success success"}`} title={monitor.enabled ? "Pause monitor" : "Resume monitor"} aria-label={`${monitor.enabled ? "Pause" : "Resume"} ${monitor.name}`} onClick={(e) => { e.stopPropagation(); onToggleEnabled(monitor); }}>{monitor.enabled ? <Pause size={14} /> : <Play size={14} />}</button>
+        <button className="btn btn-sm btn-outline-secondary monitor-action" title={monitor.enabled ? "Pause monitor" : "Resume monitor"} aria-label={`${monitor.enabled ? "Pause" : "Resume"} ${monitor.name}`} onClick={(e) => { e.stopPropagation(); onToggleEnabled(monitor); }}>{monitor.enabled ? <Pause size={14} /> : <Play size={14} />}</button>
         <button className="btn btn-sm btn-outline-secondary monitor-action" disabled={!monitor.enabled} title={monitor.enabled ? "Check now" : "Resume before running checks"} aria-label={`Check ${monitor.name} now`} onClick={(e) => { e.stopPropagation(); onCheck(monitor.id); }}><RefreshCw size={14} /></button>
         <button className="btn btn-sm btn-outline-secondary monitor-action" title="Clone monitor" aria-label={`Clone ${monitor.name}`} onClick={(e) => { e.stopPropagation(); onClone(monitor.id); }}><Copy size={14} /></button>
       </div>
@@ -134,16 +149,36 @@ function MonitorRow({ monitor, onSelect, onCheck, onClone, onToggleEnabled, onSt
   );
 }
 
-function Metric({ icon, label, value, tone, onClick }: any) {
-  return (
-    <button type="button" className={`info-box shadow-sm metric-${tone} metric-button soft-accent ${accentTone(tone)}`} onClick={onClick}>
-      <span className="info-box-icon">{icon}</span>
-      <div className="info-box-content">
-        <span className="info-box-text">{label}</span>
-        <span className="info-box-number">{value}</span>
-      </div>
-    </button>
-  );
+/* The strip counters and the filter chips read the same source, so the same
+   monitor is never counted differently in two places on one screen. */
+const summaryFrom = (counts: Record<string, number>) => [
+  { label: "Valid", tone: "ok", statuses: ["OK"], value: counts.OK ?? 0, icon: <ShieldCheck size={15} /> },
+  { label: "Expiring soon", tone: "warning", statuses: ["WARNING"], value: counts.WARNING ?? 0, icon: <TriangleAlert size={15} /> },
+  { label: "Critical", tone: "critical", statuses: ["CRITICAL", "DOWN"], value: (counts.CRITICAL ?? 0) + (counts.DOWN ?? 0), icon: <Siren size={15} /> },
+  { label: "Paused", tone: "paused", statuses: ["PAUSED", "UNKNOWN"], value: (counts.PAUSED ?? 0) + (counts.UNKNOWN ?? 0), icon: <PauseCircle size={15} /> }
+];
+
+/* The ring shows the share of checks that are currently fine. Paused and
+   never-checked monitors count as neither healthy nor broken, so they are left
+   out of the denominator rather than dragging the number down. */
+const healthShare = (counts: Record<string, number>) => {
+  const ok = counts.OK ?? 0;
+  const rated = ok + (counts.WARNING ?? 0) + (counts.CRITICAL ?? 0) + (counts.DOWN ?? 0);
+  return rated ? Math.round((ok / rated) * 100) : 100;
+};
+
+const sameSelection = (current: string[], statuses: string[]) =>
+  current.length === statuses.length && statuses.every((status) => current.includes(status));
+
+/* Days left only mean something next to the thresholds this monitor was given.
+   The bar fills against three times the warning window, so the same "41 days"
+   reads as comfortable on a yearly certificate and tight on a short one. */
+function LifetimeMeter({ monitor }: { monitor: Monitor }) {
+  const days = monitor.latestResult?.daysRemaining;
+  if (!collectsCertificate(monitor.type, monitor.config, monitor.port) || days === null || days === undefined) return null;
+  const span = Math.max(monitor.warningDays || 30, 1) * 3;
+  const fill = Math.max(0, Math.min(1, days / span));
+  return <span className="lifetime-meter" style={{ "--fill": `${Math.round(fill * 100)}%` } as any} aria-hidden="true"><i /></span>;
 }
 
 const certificateSummary = (monitor: Monitor) => {
@@ -174,7 +209,9 @@ function ProblemBadges({ monitor, onIssue, onMoreIssues, issueFilters, expanded 
   );
 }
 
-const problemSummary = (monitor: Monitor) => [...new Set([
+const problemSummary = (monitor: Monitor) => problemsOf(monitor).filter((problem) => problem !== resultReason(monitor));
+
+const problemsOf = (monitor: Monitor) => [...new Set([
   ...(monitor.latestResult?.problems ?? []),
   ...(monitor.latestResult?.tlsGradeReasons ?? []).map((item) => `TLS grade: ${item.reason} (-${item.points})`),
   ...(monitor.latestResult?.sslLabsFindings ?? []),
@@ -189,7 +226,7 @@ const resultReason = (monitor: Monitor) => {
   return monitor.latestResult?.problems?.[0] ?? "No detailed reason was recorded for this status.";
 };
 
-const issueTexts = (monitor: Monitor) => [...new Set([resultReason(monitor), ...problemSummary(monitor)].filter(Boolean))];
+const issueTexts = (monitor: Monitor) => [...new Set([resultReason(monitor), ...problemsOf(monitor)].filter(Boolean))];
 
 const problemTone = (status: string) =>
   status === "WARNING" ? "warning" :
@@ -223,9 +260,15 @@ const heroDescription = (counts: Record<string, number>) =>
       ? "The platform is operating, but some checks are approaching thresholds or changed state."
       : "Certificate, service, and login checks are currently inside their expected operating range.";
 
-const statusMark = (status: string) => ({ OK: "OK", WARNING: "!", CRITICAL: "X", DOWN: "X", PAUSED: "II", UNKNOWN: "?" }[status] ?? "?");
+const statusMark = (status: string) => ({
+  OK: <Check size={14} strokeWidth={3} />,
+  WARNING: <TriangleAlert size={13} />,
+  CRITICAL: <X size={14} strokeWidth={3} />,
+  DOWN: <Unplug size={13} />,
+  PAUSED: <Pause size={13} />,
+  UNKNOWN: <CircleHelp size={13} />
+}[status] ?? <CircleHelp size={13} />);
 
-const accentTone = (tone: string) => tone === "success" ? "success" : tone === "warning" ? "warning" : tone === "danger" ? "danger" : "info";
 
 const groupMonitors = (monitors: Monitor[]) => {
   const buckets = new Map<string, Monitor[]>();
@@ -246,7 +289,5 @@ const rollupStatus = (monitors: Monitor[]) =>
   monitors.map((monitor) => monitor.lastStatus).sort((a, b) => statusRank(b) - statusRank(a))[0] ?? "UNKNOWN";
 
 const statusRank = (status: string) => ({ DOWN: 5, CRITICAL: 4, WARNING: 3, UNKNOWN: 2, PAUSED: 1, OK: 0 }[status] ?? 2);
-const summaryFor = (monitors: Monitor[]) => {
-  const counts = monitors.reduce<Record<string, number>>((acc, monitor) => ({ ...acc, [monitor.lastStatus]: (acc[monitor.lastStatus] ?? 0) + 1 }), {});
-  return [`${counts.OK ?? 0} OK`, `${counts.WARNING ?? 0} warning`, `${(counts.CRITICAL ?? 0) + (counts.DOWN ?? 0)} critical/down`].join(" - ");
-};
+const summaryFor = (monitors: Monitor[]) =>
+  `${monitors.length} ${monitors.length === 1 ? "check" : "checks"}`;

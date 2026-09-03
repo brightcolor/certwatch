@@ -62,7 +62,7 @@ export function TenantsPage({ tenants, members, invites, teams, teamMembers, onC
 
   return (
     <section className="content">
-      <div className="grid two">
+      <div className="flow">
         <div className="panel">
           <h3>Organization</h3>
           {current ? <>
@@ -78,7 +78,7 @@ export function TenantsPage({ tenants, members, invites, teams, teamMembers, onC
           <h3>Create organization</h3>
           <p className="muted">Organizations isolate monitors, providers, settings, teams, and members.</p>
           <label>Name<input value={tenantName} onChange={(event) => setTenantName(event.target.value)} /></label>
-          <button className="success">Create organization</button>
+          <button className="btn btn-primary">Create organization</button>
         </form>
       </div>
 
@@ -93,8 +93,8 @@ export function TenantsPage({ tenants, members, invites, teams, teamMembers, onC
             {teams.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select></label>
           {invite.teamId && <label>Team role<select value={invite.teamRole} onChange={(event) => setInvite({ ...invite, teamRole: event.target.value as TeamRole })}>{teamRoleOptions()}</select></label>}
-          <button className="success">Invite member</button>
-          {latestInvite && <div className="info invite-url"><span>Invite link</span><code>{latestInvite}</code><button type="button" onClick={() => navigator.clipboard.writeText(latestInvite)}>Copy</button></div>}
+          <button className="btn btn-primary">Invite member</button>
+          {latestInvite && <div className="info invite-url"><span>Invite link</span><code>{latestInvite}</code><button className="btn btn-outline-secondary btn-sm" type="button" onClick={() => navigator.clipboard.writeText(latestInvite)}>Copy</button></div>}
         </form>
         <div className="panel">
           <h3>Organization members</h3>
@@ -111,11 +111,11 @@ export function TenantsPage({ tenants, members, invites, teams, teamMembers, onC
           <label>Description<input value={team.description} onChange={(event) => setTeam({ ...team, description: event.target.value })} /></label>
           <label>Visibility<select value={team.visibility} onChange={(event) => setTeam({ ...team, visibility: event.target.value })}><option value="tenant_visible">Organization visible</option><option value="private">Private</option></select></label>
           {team.id && <label>Status<select value={team.status} onChange={(event) => setTeam({ ...team, status: event.target.value })}><option value="active">Active</option><option value="archived">Archived</option></select></label>}
-          <div className="actions"><button className="success">{team.id ? "Save team" : "Create team"}</button>{team.id && <button className="danger" type="button" onClick={() => setTeam({ name: "", description: "", visibility: "tenant_visible", status: "active" })}>Cancel edit</button>}</div>
+          <div className="actions"><button className="btn btn-primary">{team.id ? "Save team" : "Create team"}</button>{team.id && <button className="btn btn-outline-danger" type="button" onClick={() => setTeam({ name: "", description: "", visibility: "tenant_visible", status: "active" })}>Cancel edit</button>}</div>
         </form>
         <div className="panel">
           <h3>Teams</h3>
-          {teams.map((item) => <div className="access-group-row" key={item.id}><div><strong>{item.name}</strong><span>{item.visibility} - {item.status}</span></div><span className={`role-pill role-${item.status === "active" ? "member" : "viewer"}`}>{item.slug}</span><div className="actions end"><button onClick={() => setTeam({ id: item.id, name: item.name, description: item.description, visibility: item.visibility, status: item.status })}>Edit</button><button className="danger" onClick={() => onArchiveTeam(item.id)}>Archive</button></div></div>)}
+          {teams.map((item) => <div className="access-group-row" key={item.id}><div><strong>{item.name}</strong><span>{item.visibility} - {item.status}</span></div><span className={`role-pill role-${item.status === "active" ? "member" : "viewer"}`}>{item.slug}</span><div className="actions end"><button className="btn btn-outline-secondary btn-sm" onClick={() => setTeam({ id: item.id, name: item.name, description: item.description, visibility: item.visibility, status: item.status })}>Edit</button><button className="btn btn-outline-danger btn-sm" onClick={() => onArchiveTeam(item.id)}>Archive</button></div></div>)}
           {!teams.length && <span className="muted">No teams created.</span>}
         </div>
       </div>
@@ -126,7 +126,7 @@ export function TenantsPage({ tenants, members, invites, teams, teamMembers, onC
           <label>Team<select value={teamMember.teamId || teams[0]?.id || ""} onChange={(event) => setTeamMember({ ...teamMember, teamId: event.target.value })}>{teams.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
           <label>Email<input type="email" value={teamMember.email} onChange={(event) => setTeamMember({ ...teamMember, email: event.target.value })} /></label>
           <label>Team role<select value={teamMember.role} onChange={(event) => setTeamMember({ ...teamMember, role: event.target.value as TeamRole })}>{teamRoleOptions()}</select></label>
-          <button className="success">Add to team</button>
+          <button className="btn btn-primary">Add to team</button>
         </form>
         <div className="panel">
           <h3>Team memberships</h3>
@@ -143,8 +143,8 @@ export function TenantsPage({ tenants, members, invites, teams, teamMembers, onC
             <span>{item.role}</span>
             {item.teamId && <span>{teams.find((teamItem) => teamItem.id === item.teamId)?.name ?? "Team"} / {item.teamRole}</span>}
             <code>{item.inviteUrl || "Link only visible when the invite is created"}</code>
-            {item.inviteUrl && <button onClick={() => navigator.clipboard.writeText(item.inviteUrl)}>Copy</button>}
-            <button className="danger" onClick={() => onDeleteInvite(item.id)}>Revoke</button>
+            {item.inviteUrl && <button className="btn btn-outline-secondary btn-sm" onClick={() => navigator.clipboard.writeText(item.inviteUrl)}>Copy</button>}
+            <button className="btn btn-outline-danger" onClick={() => onDeleteInvite(item.id)}>Revoke</button>
           </div>
         ))}
         {!invites.length && <span className="muted">No pending invites.</span>}
@@ -159,7 +159,7 @@ function MemberRow({ member, onSave, onRemove }: { member: { userId: string; ema
     <div className="member-row">
       <div><strong>{member.email}</strong><span>Status: {member.status ?? "active"}</span></div>
       <label>Organization role<select value={role} onChange={(event) => setRole(event.target.value as TenantRole)}>{tenantRoleOptions()}</select></label>
-      <div className="actions end"><button className="success" onClick={() => onSave(member.userId, { role })}>Save</button><button className="danger" onClick={() => onRemove(member.userId)}>Remove</button></div>
+      <div className="actions end"><button className="btn btn-primary" onClick={() => onSave(member.userId, { role })}>Save</button><button className="btn btn-outline-danger" onClick={() => onRemove(member.userId)}>Remove</button></div>
     </div>
   );
 }
@@ -173,7 +173,7 @@ function TeamMemberRow({ member, teams, onSave, onRemove }: { member: TeamMember
       <div><strong>{member.userEmail ?? member.userId}</strong><span>{team?.name ?? member.teamId}</span></div>
       <label>Role<select value={role} onChange={(event) => setRole(event.target.value as TeamRole)}>{teamRoleOptions()}</select></label>
       <label>Status<select value={status} onChange={(event) => setStatus(event.target.value as TeamMembership["status"])}><option value="active">Active</option><option value="disabled">Disabled</option></select></label>
-      <div className="actions end"><button className="success" onClick={() => onSave(member.teamId, member.userId, { role, status })}>Save</button><button className="danger" onClick={() => onRemove(member.teamId, member.userId)}>Remove</button></div>
+      <div className="actions end"><button className="btn btn-primary" onClick={() => onSave(member.teamId, member.userId, { role, status })}>Save</button><button className="btn btn-outline-danger" onClick={() => onRemove(member.teamId, member.userId)}>Remove</button></div>
     </div>
   );
 }

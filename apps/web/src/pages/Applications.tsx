@@ -36,7 +36,7 @@ export function Applications({ monitors, onSelect }: { monitors: Monitor[]; onSe
               </div>
               <EmbedRow label="Status" value={statusUrl} />
               <EmbedRow label="Badge" value={badgeUrl} />
-              <EmbedRow label="Alias Badge" value={aliasBadgeUrl} />
+              <EmbedRow label="Alias badge" value={aliasBadgeUrl} />
             </div>
           );
         })}
@@ -53,7 +53,7 @@ export function Applications({ monitors, onSelect }: { monitors: Monitor[]; onSe
             const aliasBadge = `${badge}?label=${encodeURIComponent(label)}`;
             const iframe = `<iframe src="${html}" title="crt.watch ${label}" loading="lazy"></iframe>`;
             const markdown = `[![${label}](${aliasBadge})](${html})`;
-            return <div className="embed-card" key={key}><strong>{label}</strong><code>{html}</code><div className="actions"><button onClick={() => navigator.clipboard?.writeText(html)}>URL</button><button onClick={() => navigator.clipboard?.writeText(iframe)}>iframe</button><button onClick={() => navigator.clipboard?.writeText(markdown)}>Badge</button></div></div>;
+            return <div className="embed-card" key={key}><strong>{label}</strong><code>{html}</code><div className="actions"><button className="btn btn-outline-secondary btn-sm" onClick={() => navigator.clipboard?.writeText(html)}>URL</button><button className="btn btn-outline-secondary btn-sm" onClick={() => navigator.clipboard?.writeText(iframe)}>iframe</button><button className="btn btn-outline-secondary btn-sm" onClick={() => navigator.clipboard?.writeText(markdown)}>Badge</button></div></div>;
           })}
         </div>
       </div>}
@@ -62,7 +62,7 @@ export function Applications({ monitors, onSelect }: { monitors: Monitor[]; onSe
 }
 
 function EmbedRow({ label, value }: { label: string; value: string }) {
-  return <div className="info"><span>{label}</span><code>{value}</code><button type="button" onClick={() => navigator.clipboard?.writeText(value)}>Copy</button></div>;
+  return <div className="info"><span>{label}</span><code>{value}</code><button className="btn btn-outline-secondary btn-sm" type="button" onClick={() => navigator.clipboard?.writeText(value)}>Copy</button></div>;
 }
 
 const rollup = (monitors: Monitor[]) =>

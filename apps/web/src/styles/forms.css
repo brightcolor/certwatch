@@ -1,37 +1,34 @@
+/* ---------------------------------------------------------------------------
+   Forms: sections, wizard steps, tag input, access rows.
+   --------------------------------------------------------------------------*/
+
 .form-section {
   display: grid;
-  gap: 1rem;
-}
-
-.modal-head + .form-section {
-  border-top: 0;
-  padding-top: 0;
+  gap: .85rem;
 }
 
 .form-section h3 {
   display: flex;
   align-items: center;
-  gap: .5rem;
-  color: var(--bs-body-color);
-  font-size: .95rem;
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
+  gap: .45rem;
+  color: var(--bs-emphasis-color);
+  font-size: var(--text-md);
+  font-weight: 700;
 }
 
-.form-section .grid.two,
-.panel > .grid.two {
-  grid-template-columns: 1fr;
-}
-
+.modal-head + .form-section,
 .modal-panel > .form-section {
   border-top: 0;
+  padding-top: 0;
 }
 
-.modal-panel .soft-section {
-  padding: 1rem;
+.modal-head p {
+  margin-top: .15rem;
+  color: var(--bs-secondary-color);
+  font-size: var(--text-sm);
 }
 
+/* Labelled fields are a single column: label above, control below. */
 .form-section .grid > label:not(:has(input[type="checkbox"])),
 .panel > label:not(:has(input[type="checkbox"])),
 .panel > .grid > label:not(:has(input[type="checkbox"])),
@@ -39,123 +36,156 @@
   display: grid;
   grid-template-columns: 1fr;
   align-items: stretch;
-  gap: .45rem;
+  gap: .35rem;
 }
 
-.panel.compact > label:not(:has(input[type="checkbox"])) {
-  grid-template-columns: 1fr;
-  gap: .45rem;
+.form-section .grid.two,
+.panel > .grid.two {
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
 }
+
+.field-hint {
+  color: var(--bs-secondary-color);
+  font-size: var(--text-sm);
+  font-weight: 400;
+}
+
+/* --- Checkbox groups ----------------------------------------------------- */
 
 .checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: .5rem .9rem;
+}
+
+.compact-checks {
+  padding: .5rem .6rem;
+}
+
+/* A single checkbox is not a group, so it does not get a group's frame. */
+.checks:has(> label:only-child) {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  align-content: center;
+}
+
+/* --- Wizard steps -------------------------------------------------------- */
+
+.form-steps {
   display: flex;
+  gap: .3rem;
+  overflow-x: auto;
+  padding: .3rem;
+}
+
+.form-step {
+  display: inline-flex;
+  min-height: 2.2rem;
+  align-items: center;
+  gap: .45rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--bs-secondary-color);
+  padding: .35rem .7rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s var(--ease), color .15s var(--ease);
+}
+
+.form-step:hover {
+  background: rgba(var(--bs-secondary-color-rgb), var(--tint-faint));
+  color: var(--bs-emphasis-color);
+}
+
+.form-step.active {
+  background: rgba(var(--bs-primary-rgb), var(--tint-surface));
+  color: var(--bs-emphasis-color);
+}
+
+.form-step span {
+  display: grid;
+  width: 1.3rem;
+  height: 1.3rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: rgba(var(--bs-secondary-color-rgb), var(--tint-solid));
+  color: inherit;
+  font-size: var(--text-xs);
+}
+
+.form-step.active span {
+  background: rgba(var(--bs-primary-rgb), var(--tint-active));
+  color: var(--accent-text);
+}
+
+/* Summary of what the form currently describes. Chips size to their content. */
+.step-summary {
+  display: flex;
+  gap: .35rem;
   flex-wrap: wrap;
-  gap: .65rem 1rem;
-  border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius);
-  background: var(--bs-tertiary-bg);
-  padding: .8rem;
-}
-
-.form-steps + .step-summary {
-  margin-top: -.3rem;
-}
-
-.datetime-builder {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: .75rem;
-  border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius);
-  background: var(--bs-tertiary-bg);
-  padding: .85rem;
-}
-
-.datetime-preview {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: minmax(90px, auto) minmax(0, 1fr) auto;
-  gap: .7rem;
   align-items: center;
 }
 
-.datetime-preview code {
-  border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius);
-  background: var(--bs-body-bg);
-  padding: .45rem .6rem;
+.step-summary > * {
+  flex: 0 0 auto;
 }
+
+/* --- Tag input ----------------------------------------------------------- */
 
 .tag-field {
   display: grid;
-  gap: .45rem;
+  gap: .35rem;
 }
 
 .tag-input {
-  display: flex;
-  min-height: 42px;
-  width: 100%;
-  align-items: center;
-  gap: .5rem;
+  min-height: var(--control-h);
   flex-wrap: wrap;
-  border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius);
   background: var(--bs-body-bg);
-  padding: .4rem;
-  transition: border-color .15s ease, box-shadow .15s ease;
-}
-
-.tag-input:focus-within {
-  border-color: rgba(var(--bs-primary-rgb), .7);
-  box-shadow: 0 0 0 .18rem rgba(var(--bs-primary-rgb), .18);
-  outline: 0;
+  padding: .25rem .35rem;
+  row-gap: .25rem;
 }
 
 .tag-input input {
-  min-width: 120px;
+  min-width: 110px;
   flex: 1;
-  border: 0;
-  background: transparent;
-  padding: .35rem;
 }
 
 .tag-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: .35rem;
-  min-height: 1.75rem !important;
-  border-radius: 999px;
-  font-size: .75rem;
-  font-weight: 600;
-  border: 1px solid rgba(var(--bs-primary-rgb), .35) !important;
-  background: rgba(var(--bs-primary-rgb), .12) !important;
-  color: var(--bs-emphasis-color) !important;
-  padding: .25rem .65rem !important;
-  box-shadow: none !important;
+  --tone: var(--bs-primary);
+  --tone-rgb: var(--bs-primary-rgb);
+  min-height: 1.5rem;
+  cursor: pointer;
 }
 
 .tag-chip:hover {
-  border-color: rgba(var(--bs-danger-rgb), .5) !important;
-  background: rgba(var(--bs-danger-rgb), .1) !important;
-  filter: none !important;
+  --tone: var(--bs-danger);
+  --tone-rgb: var(--bs-danger-rgb);
 }
 
 .tag-chip span {
   opacity: .7;
 }
 
-button.tag-suggestion {
-  background: var(--bs-tertiary-bg) !important;
-  border: 1px solid var(--bs-border-color) !important;
-  color: var(--bs-body-color) !important;
-  box-shadow: none !important;
+.tag-suggestion {
+  --tone: var(--bs-secondary-color);
+  --tone-rgb: var(--bs-secondary-color-rgb);
+  min-height: 1.45rem;
+  border-color: var(--bs-border-color);
+  background: transparent;
+  cursor: pointer;
+  transition: background .15s var(--ease), border-color .15s var(--ease), color .15s var(--ease);
 }
 
-button.tag-suggestion:hover {
-  border-color: rgba(var(--bs-primary-rgb), .5) !important;
-  background: rgba(var(--bs-primary-rgb), .1) !important;
-  filter: none !important;
+.tag-suggestion:hover {
+  --tone: var(--bs-primary);
+  --tone-rgb: var(--bs-primary-rgb);
+  border-color: rgba(var(--tone-rgb), var(--tint-border));
+  background: rgba(var(--tone-rgb), var(--tint-surface));
 }
 
 .tag-actions,
@@ -164,7 +194,7 @@ button.tag-suggestion:hover {
 .member-picker {
   display: flex;
   align-items: center;
-  gap: .5rem;
+  gap: .4rem;
   flex-wrap: wrap;
 }
 
@@ -172,39 +202,28 @@ button.tag-suggestion:hover {
   justify-content: space-between;
 }
 
-.tag-suggestion {
-  min-height: 1.55rem;
-  border: 1px solid var(--bs-border-color);
-  border-radius: 999px;
-  background: var(--bs-tertiary-bg);
-  color: var(--bs-body-color);
-  padding: .15rem .55rem;
-  font-size: .74rem;
+/* --- Maintenance window builder ------------------------------------------ */
+
+.datetime-builder {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: .6rem;
 }
 
-.danger-link {
-  color: var(--bs-danger);
+.datetime-preview {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(80px, auto) minmax(0, 1fr) auto;
+  gap: .6rem;
+  align-items: center;
 }
 
-.sticky-actions {
-  position: sticky;
-  right: 0;
-  bottom: -1.25rem;
-  z-index: 5;
-  margin: 0 -1.25rem -1.25rem;
-  border-top: 1px solid var(--bs-border-color);
-  background: color-mix(in srgb, var(--bs-body-bg) 94%, transparent);
-  padding: .8rem 1.25rem;
-  backdrop-filter: blur(10px);
-}
+/* --- Access and roles ---------------------------------------------------- */
 
 .member-picker {
   grid-column: 1 / -1;
   justify-content: flex-start;
-  border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius);
-  background: var(--bs-tertiary-bg);
-  padding: .7rem;
 }
 
 .member-picker > div {
@@ -212,33 +231,26 @@ button.tag-suggestion:hover {
   margin-right: auto;
 }
 
-.access-group-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: .8rem;
-  align-items: center;
-  border-top: 1px solid var(--bs-border-color);
-  padding: .75rem 0;
-}
-
-.access-group-row > div:first-child {
-  display: grid;
-  min-width: 0;
-}
-
-.role-pill {
-  border-radius: 999px;
-  padding: .18rem .65rem;
-  font-size: .78rem;
-  font-weight: 600;
-}
-
-.role-viewer { background: rgba(var(--bs-secondary-rgb), .25); color: var(--bs-secondary-color); }
-.role-member { background: rgba(var(--bs-info-rgb), .22); color: var(--bs-info); }
-.role-admin { background: rgba(var(--bs-warning-rgb), .24); color: var(--bs-warning); }
-.role-owner { background: rgba(var(--bs-danger-rgb), .2); color: var(--bs-danger); }
-
 .role-hint {
   grid-column: 1 / -1;
-  margin: -.2rem 0 0;
+  margin-top: -.15rem;
+  font-size: var(--text-sm);
+}
+
+/* --- Sticky form footer -------------------------------------------------- */
+
+.sticky-actions {
+  position: sticky;
+  right: 0;
+  bottom: -1.1rem;
+  z-index: 5;
+  display: flex;
+  gap: .4rem;
+  justify-content: flex-end;
+  align-items: center;
+  margin: 0 -1.1rem -1.1rem;
+  border-top: 1px solid var(--bs-border-color);
+  background: rgba(var(--bs-body-bg-rgb), .94);
+  padding: .7rem 1.1rem;
+  backdrop-filter: blur(10px);
 }

@@ -36,7 +36,7 @@ export function Profile({ user, tenants, onChangePassword, onLogout, onMfaChange
           <label>New password<input type="password" autoComplete="new-password" minLength={12} value={form.newPassword} onChange={(event) => setForm({ ...form, newPassword: event.target.value })} required /></label>
           <label>Repeat new password<input type="password" autoComplete="new-password" minLength={12} value={form.confirmPassword} onChange={(event) => setForm({ ...form, confirmPassword: event.target.value })} required /></label>
           {message && <p className={message === "Password changed." ? "success" : "error"}>{message}</p>}
-          <button className="btn btn-success success" type="submit">Save password</button>
+          <button className="btn btn-primary" type="submit">Save password</button>
         </form>
       </div>
       <MfaPanel user={user} onMfaChanged={onMfaChanged} />
@@ -99,7 +99,7 @@ function MfaPanel({ user, onMfaChanged }: any) {
           <p className="muted">Two-factor authentication is currently enabled for your account.</p>
           <label>Current password<input type="password" autoComplete="current-password" value={disablePassword} onChange={(e) => setDisablePassword(e.target.value)} required /></label>
           {error && <p className="error">{error}</p>}
-          {message && <p className="success">{message}</p>}
+          {message && <p className="form-note success">{message}</p>}
           <button className="btn btn-outline-danger danger" type="submit">Disable two-factor authentication</button>
         </form>
       ) : setup ? (
@@ -110,14 +110,14 @@ function MfaPanel({ user, onMfaChanged }: any) {
           <label>6-digit code<input autoFocus value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" required /></label>
           {error && <p className="error">{error}</p>}
           <div className="actions">
-            <button className="btn btn-success success" type="submit">Confirm and enable</button>
-            <button className="ghost" type="button" onClick={() => setSetup(null)}>Cancel</button>
+            <button className="btn btn-primary" type="submit">Confirm and enable</button>
+            <button className="btn btn-outline-secondary" type="button" onClick={() => setSetup(null)}>Cancel</button>
           </div>
         </form>
       ) : (
         <>
           <p className="muted">Add an authenticator app as a second sign-in factor.</p>
-          <button className="btn btn-success success" type="button" onClick={startSetup}>Enable two-factor authentication</button>
+          <button className="btn btn-primary" type="button" onClick={startSetup}>Enable two-factor authentication</button>
         </>
       )}
     </div>

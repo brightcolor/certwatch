@@ -1,0 +1,193 @@
+/* ---------------------------------------------------------------------------
+   crt.watch design tokens
+
+   The single source for radii, tints, control sizes and type scale. Every other
+   stylesheet reads from here and never invents its own value. Colours are
+   always built as rgba(var(--bs-*-rgb), <tint>) so light and dark mode, and a
+   rebrand via --accent, work without a second definition.
+   --------------------------------------------------------------------------*/
+
+:root,
+[data-bs-theme="light"],
+[data-bs-theme="dark"] {
+  /* Brand accent. Change these two values to rebrand the whole interface. */
+  --accent: #6366f1;
+  --accent-rgb: 99, 102, 241;
+
+  /* The accent plays three roles that need different luminance to stay legible:
+     a tint and border colour, a text colour, and a filled surface carrying
+     white text. In light mode one value clears all three. */
+  --accent-text: var(--accent);
+  --accent-solid: var(--accent);
+
+  --bs-primary: var(--accent);
+  --bs-primary-rgb: var(--accent-rgb);
+
+  /* Corner radii. Four steps, nothing in between. */
+  --radius-lg: .75rem;   /* cards, panels, modal */
+  --radius: .5rem;       /* buttons, inputs, inner boxes */
+  --radius-sm: .375rem;  /* small buttons, status squares, chips */
+  --radius-pill: 999px;  /* pills */
+
+  /* Status tints. One value per role, used everywhere. */
+  --tint-surface: .1;    /* pill background */
+  --tint-border: .3;     /* pill border */
+  --tint-solid: .12;     /* status square, filled marker */
+  --tint-faint: .06;     /* large tinted areas, hover washes */
+  --tint-active: .16;    /* selected chip, active filter */
+
+  /* Control sizing. Buttons and inputs share a height so rows line up. */
+  --control-h: 34px;
+  --control-h-sm: 28px;
+  --control-px: .7rem;
+
+  /* Surfaces */
+  --shadow-sm: 0 1px 2px rgba(var(--bs-body-color-rgb), .05);
+  --shadow: 0 1px 2px rgba(var(--bs-body-color-rgb), .04), 0 .4rem 1rem rgba(var(--bs-body-color-rgb), .06);
+  --shadow-lg: var(--bs-box-shadow-lg);
+
+  /* Type scale */
+  --text-xs: .7rem;
+  --text-sm: .78rem;
+  --text-body: .875rem;
+  --text-md: .95rem;
+  --text-lg: 1.15rem;
+  --text-xl: 1.35rem;
+  --text-stat: 1.45rem;
+
+  --font-sans: InterVariable, Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Cascadia Code", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --ease: cubic-bezier(.22, .8, .36, 1);
+
+  /* Bootstrap radii follow the same scale so stray .rounded-* utilities match. */
+  --bs-border-radius: var(--radius);
+  --bs-border-radius-sm: var(--radius-sm);
+  --bs-border-radius-lg: var(--radius-lg);
+  --bs-border-radius-xl: var(--radius-lg);
+  --bs-card-border-radius: var(--radius-lg);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bs-body-color: #dbdee1;
+  --bs-body-color-rgb: 219, 222, 225;
+  --bs-body-bg: #313338;
+  --bs-body-bg-rgb: 49, 51, 56;
+  --bs-secondary-color: #b5bac1;
+  --bs-secondary-color-rgb: 181, 186, 193;
+  --bs-secondary: #b5bac1;
+  --bs-secondary-rgb: 181, 186, 193;
+  --bs-secondary-bg: #2b2d31;
+  --bs-secondary-bg-rgb: 43, 45, 49;
+  --bs-tertiary-bg: #1e1f22;
+  --bs-tertiary-bg-rgb: 30, 31, 34;
+  --bs-emphasis-color: #f2f3f5;
+  --bs-emphasis-color-rgb: 242, 243, 245;
+  --bs-border-color: #3f4147;
+  --bs-border-color-translucent: rgba(181, 186, 193, .22);
+  --bs-link-color: #f2f3f5;
+  --bs-link-color-rgb: 242, 243, 245;
+  --bs-success: #55bc76;
+  --bs-success-rgb: 85, 188, 118;
+  --bs-warning: #e0a63a;
+  --bs-warning-rgb: 224, 166, 58;
+  --bs-danger: #f38b8b;
+  --bs-danger-rgb: 243, 139, 139;
+  --bs-info: #4cc4dd;
+  --bs-info-rgb: 76, 196, 221;
+  --bs-light: #e4e7ec;
+  --bs-light-rgb: 228, 231, 236;
+  --bs-dark: #1e1f22;
+  --bs-dark-rgb: 30, 31, 34;
+  --bs-card-bg: #2b2d31;
+  --bs-card-color: #dbdee1;
+  --bs-dropdown-bg: #2b2d31;
+  --bs-dropdown-link-color: #dbdee1;
+  --bs-list-group-bg: #2b2d31;
+  --bs-list-group-color: #dbdee1;
+  --bs-box-shadow-sm: 0 .2rem .6rem rgba(0, 0, 0, .24);
+  --bs-box-shadow: 0 .5rem 1.4rem rgba(0, 0, 0, .3);
+  --bs-box-shadow-lg: 0 1rem 2.4rem rgba(0, 0, 0, .44);
+
+  --accent-text: #a0a2f7;
+  --accent-solid: #5257db;
+
+  /* Dark surfaces need a slightly stronger tint to read at the same weight. */
+  --tint-surface: .14;
+  --tint-solid: .16;
+  --tint-faint: .08;
+  --tint-active: .2;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bs-body-bg: #ffffff;
+  --bs-body-bg-rgb: 255, 255, 255;
+  --bs-body-color: #2e3338;
+  --bs-body-color-rgb: 46, 51, 56;
+  --bs-secondary-color: #5f626a;
+  --bs-secondary-color-rgb: 95, 98, 106;
+  --bs-secondary: #5f626a;
+  --bs-secondary-rgb: 95, 98, 106;
+  --bs-secondary-bg: #f5f6f8;
+  --bs-secondary-bg-rgb: 245, 246, 248;
+  --bs-tertiary-bg: #eceef1;
+  --bs-tertiary-bg-rgb: 236, 238, 241;
+  --bs-emphasis-color: #14161a;
+  --bs-emphasis-color-rgb: 20, 22, 26;
+  --accent: #4f46e5;
+  --accent-rgb: 79, 70, 229;
+  --bs-success: #147c3b;
+  --bs-success-rgb: 20, 124, 59;
+  --bs-warning: #af5109;
+  --bs-warning-rgb: 175, 81, 9;
+  --bs-danger: #b91c1c;
+  --bs-danger-rgb: 185, 28, 28;
+  --bs-info: #0e7490;
+  --bs-info-rgb: 14, 116, 144;
+  --bs-border-color: #d9dce1;
+  --bs-border-color-translucent: rgba(95, 98, 106, .2);
+  --bs-link-color: #2e3338;
+  --bs-link-color-rgb: 46, 51, 56;
+  --bs-card-bg: #ffffff;
+  --bs-card-color: #2e3338;
+  --bs-dropdown-bg: #ffffff;
+  --bs-dropdown-link-color: #2e3338;
+  --bs-list-group-bg: #ffffff;
+  --bs-list-group-color: #2e3338;
+  --bs-box-shadow-sm: 0 1px 2px rgba(16, 24, 40, .06);
+  --bs-box-shadow: 0 .4rem 1rem rgba(16, 24, 40, .08);
+  --bs-box-shadow-lg: 0 1rem 2.4rem rgba(16, 24, 40, .14);
+}
+
+/* ---------------------------------------------------------------------------
+   Status tone carriers
+
+   Any element that needs a status colour sets --tone-rgb and --tone once, then
+   reads them. This is what keeps a pill, a row accent, a chip and a metric in
+   the same colour without repeating the palette in every component.
+   --------------------------------------------------------------------------*/
+
+.tone-ok,
+.tone-pass,
+.tone-success { --tone: var(--bs-success); --tone-rgb: var(--bs-success-rgb); }
+
+.tone-warning,
+.tone-warn { --tone: var(--bs-warning); --tone-rgb: var(--bs-warning-rgb); }
+
+.tone-critical,
+.tone-down,
+.tone-danger,
+.tone-fail { --tone: var(--bs-danger); --tone-rgb: var(--bs-danger-rgb); }
+
+.tone-paused,
+.tone-unknown,
+.tone-info { --tone: var(--bs-info); --tone-rgb: var(--bs-info-rgb); }
+
+.tone-muted,
+.tone-secondary,
+.tone-na { --tone: var(--bs-secondary-color); --tone-rgb: var(--bs-secondary-color-rgb); }
+
+.tone-accent,
+.tone-primary { --tone: var(--bs-primary); --tone-rgb: var(--bs-primary-rgb); }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
+import { X } from "lucide-react";
 import type { Monitor } from "../api/client";
 import { TagInput } from "../components/TagInput";
 import { MaintenanceWindowBuilder } from "../components/MaintenanceWindowBuilder";
@@ -103,13 +104,13 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
             <h2>{monitor ? "Edit monitor" : "New monitor"}</h2>
             <p className="muted">Configure the target, schedule, validation, login checks, and alert routing.</p>
           </div>
-          <button type="button" className="danger" onClick={onCancel}>Close</button>
+          <button type="button" className="btn btn-outline-secondary btn-sm btn-icon" aria-label="Close" onClick={onCancel}><X size={16} /></button>
         </div>
         <FormSteps active={activeStep} onChange={setActiveStep} />
         <div className="step-summary">
-          <span className={`soft-pill ${form.enabled ? "success" : "info"}`}><i className={`bi ${form.enabled ? "bi-play-fill" : "bi-pause-fill"}`}></i>{form.enabled ? "Active" : "Paused"}</span>
-          <span className="soft-pill info"><i className="bi bi-hdd-network"></i>{form.host || "No host"}:{form.port}</span>
-          <span className="soft-pill info"><i className="bi bi-tags"></i>{(form.tags ?? []).length || 0} labels</span>
+          <span className={`pill ${form.enabled ? "pass" : "na"}`}><i className={`bi ${form.enabled ? "bi-play-fill" : "bi-pause-fill"}`}></i>{form.enabled ? "Active" : "Paused"}</span>
+          <span className="pill na"><i className="bi bi-hdd-network"></i>{form.host || "No host"}:{form.port}</span>
+          <span className="pill na"><i className="bi bi-tags"></i>{(form.tags ?? []).length || 0} labels</span>
         </div>
         {activeStep === "basics" && <>
           <FormSection title="Target">
@@ -222,7 +223,7 @@ export function MonitorForm({ monitor, channels = [], onCancel, onSave, onSaveAn
           </FormSection>
           <label>Notes<textarea value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value)} /></label>
         </>}
-        <div className="actions end sticky-actions"><button type="button" className="danger" onClick={onCancel}>Cancel</button><button type="button" className="success" onClick={() => onSaveAndCheck(data())}>Save and check</button><button className="success" type="submit">Save</button></div>
+        <div className="actions end sticky-actions"><button type="button" className="btn btn-outline-secondary" onClick={onCancel}>Cancel</button><button type="button" className="btn btn-outline-secondary" onClick={() => onSaveAndCheck(data())}>Save and check now</button><button className="btn btn-primary" type="submit">Save monitor</button></div>
       </form>
     </div>
   );

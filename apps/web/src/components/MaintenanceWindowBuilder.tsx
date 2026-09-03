@@ -18,7 +18,7 @@ export function MaintenanceWindowBuilder({ onUse, buttonLabel = "Use datetime ra
       <div className="datetime-preview">
         <span className="muted">Window</span>
         <code>{value}</code>
-        <button type="button" className="ghost" disabled={!valid} onClick={() => onUse(value)}>{buttonLabel}</button>
+        <button type="button" className="btn btn-outline-secondary" disabled={!valid} onClick={() => onUse(value)}>{buttonLabel}</button>
       </div>
       {!valid && <span className="error">End must be after start.</span>}
     </div>

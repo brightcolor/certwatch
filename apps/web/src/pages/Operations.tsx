@@ -87,14 +87,14 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
 
   return (
     <section className="content">
-      <div className="grid two">
+      <div className="flow">
         <div className="panel">
           <h3>Maintenance windows</h3>
           <label>Name<input value={route.name} onChange={(e) => setRoute((current) => ({ ...current, name: e.target.value }))} /></label>
           <TagInput value={route.tags} onChange={(tags) => setRoute((current) => ({ ...current, tags }))} />
           <MaintenanceWindowBuilder onUse={(value) => setRoute((current) => ({ ...current, window: value }))} buttonLabel="Use as window" />
           <label>Window<input value={route.window} onChange={(e) => setRoute((current) => ({ ...current, window: e.target.value }))} placeholder="daily 22:00-23:00" /></label>
-          <button className="success" onClick={addMaintenance}>Add window</button>
+          <button className="btn btn-primary" onClick={addMaintenance}>Add window</button>
           {maintenance.windows.map((item: any) => <Row key={item.id} title={item.name} detail={`${item.tags.join(", ")} - ${item.window}`} onDelete={() => save("/settings/maintenance", { windows: maintenance.windows.filter((entry: any) => entry.id !== item.id) })} />)}
         </div>
         <div className="panel">
@@ -104,7 +104,7 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
           <label>Weak cipher penalty<input type="number" min="0" max="80" value={tlsPolicy.weakCipherPenalty} onChange={(e) => setTlsPolicy({ ...tlsPolicy, weakCipherPenalty: Number(e.target.value) })} /></label>
           <label><input type="checkbox" checked={tlsPolicy.requireSan} onChange={(e) => setTlsPolicy({ ...tlsPolicy, requireSan: e.target.checked })} /> Require SAN extension</label>
           <label><input type="checkbox" checked={tlsPolicy.intensiveScan ?? true} onChange={(e) => setTlsPolicy({ ...tlsPolicy, intensiveScan: e.target.checked })} /> Probe supported TLS versions</label>
-          <button className="success" onClick={() => save("/settings/tls-policy", tlsPolicy)}>Save TLS policy</button>
+          <button className="btn btn-primary" onClick={() => save("/settings/tls-policy", tlsPolicy)}>Save TLS policy</button>
         </div>
         <div className="panel">
           <h3>SSL Labs assessment</h3>
@@ -116,7 +116,7 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
           <label>Timeout seconds<input type="number" min="15" max="300" value={sslLabs.timeoutSeconds} onChange={(e) => setSslLabs({ ...sslLabs, timeoutSeconds: Number(e.target.value) })} /></label>
           <label><input type="checkbox" checked={sslLabs.startNewScans} onChange={(e) => setSslLabs({ ...sslLabs, startNewScans: e.target.checked })} /> Start fresh scans when due</label>
           <label><input type="checkbox" checked={sslLabs.publishResults} onChange={(e) => setSslLabs({ ...sslLabs, publishResults: e.target.checked })} /> Publish on SSL Labs boards</label>
-          <button className="success" onClick={() => save("/settings/ssl-labs", sslLabs)}>Save SSL Labs</button>
+          <button className="btn btn-primary" onClick={() => save("/settings/ssl-labs", sslLabs)}>Save SSL Labs</button>
           <div className="form-section">
             <h3>Register SSL Labs API email</h3>
             <p className="muted">Submit the one-time SSL Labs v4 registration and save the returned email for assessments.</p>
@@ -126,7 +126,7 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
               <label>Email<input type="email" value={sslLabsRegistration.email} onChange={(e) => setSslLabsRegistration({ ...sslLabsRegistration, email: e.target.value })} /></label>
               <label>Organization<input value={sslLabsRegistration.organization} onChange={(e) => setSslLabsRegistration({ ...sslLabsRegistration, organization: e.target.value })} /></label>
             </div>
-            <button className="ghost" onClick={registerSslLabs}>Register and use email</button>
+            <button className="btn btn-outline-secondary" onClick={registerSslLabs}>Register and use email</button>
             {sslLabsStatus && <p className="muted">{sslLabsStatus}</p>}
           </div>
           <div className="form-section">
@@ -134,7 +134,7 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
             <p className="muted">Run an external SSL Labs assessment now for a public HTTPS host on port 443.</p>
             <label>Hostname<input value={sslLabsTrigger.host} onChange={(e) => setSslLabsTrigger({ ...sslLabsTrigger, host: e.target.value })} placeholder="example.com" /></label>
             <label><input type="checkbox" checked={sslLabsTrigger.startNewScan} onChange={(e) => setSslLabsTrigger({ ...sslLabsTrigger, startNewScan: e.target.checked })} /> Start a fresh scan</label>
-            <button className="ghost" onClick={triggerSslLabs}>Trigger SSL Labs</button>
+            <button className="btn btn-outline-secondary" onClick={triggerSslLabs}>Trigger SSL Labs</button>
             {sslLabsTriggerResult?.assessment && <div className="callout callout-info"><strong>{sslLabsSummary(sslLabsTriggerResult.assessment)}</strong><p>{(sslLabsTriggerResult.assessment.sslLabsFindings ?? []).join(" ") || "No SSL Labs findings returned."}</p></div>}
           </div>
         </div>
@@ -148,7 +148,7 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
           <label>Logo URL<input value={page.logoUrl} onChange={(e) => setPage((current) => ({ ...current, logoUrl: e.target.value }))} /></label>
           <TagInput value={page.tags} onChange={(tags) => setPage((current) => ({ ...current, tags }))} />
           <label><input type="checkbox" checked={page.hideHostnames} onChange={(e) => setPage((current) => ({ ...current, hideHostnames: e.target.checked }))} /> Hide hostnames</label>
-          <button className="success" onClick={addStatusPage}>Add status page</button>
+          <button className="btn btn-primary" onClick={addStatusPage}>Add status page</button>
           {statusPages.pages.map((item: any) => <Row key={item.id} title={item.title} detail={`/public/status/${item.slug}.html - ${item.tags.join(", ")}`} onDelete={() => save("/settings/status-pages", { pages: statusPages.pages.filter((entry: any) => entry.id !== item.id) })} />)}
         </div>
         <div className="panel">
@@ -156,9 +156,9 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
           <label><input type="checkbox" checked={discovery.enabled} onChange={(e) => setDiscovery({ ...discovery, enabled: e.target.checked })} /> Enabled</label>
           <label>Interval hours<input type="number" min="1" value={discovery.intervalHours} onChange={(e) => setDiscovery({ ...discovery, intervalHours: Number(e.target.value) })} /></label>
           <label>Domains<textarea value={(discovery.domains ?? []).join("\n")} onChange={(e) => setDiscovery({ ...discovery, domains: e.target.value.split(/\s+/).filter(Boolean) })} /></label>
-          <div className="actions"><button className="success" onClick={() => save("/settings/discovery", discovery)}>Save discovery</button><button className="ghost" onClick={async () => { await api.request("/discovery/run", { method: "POST", body: "{}" }); await load(); }}>Run now</button></div>
-          {!!(discovery.suggestions ?? []).length && <button className="ghost" onClick={() => importDiscovery()}>Accept all found monitors</button>}
-          <div className="stack-list">{(discovery.suggestions ?? []).slice(0, 12).map((item: any) => <div key={`${item.host}-${item.port}-${item.type}`}><strong>{item.name}</strong><span>{item.host}:{item.port}</span><small>{item.type} - {item.tags.join(", ")}</small><button onClick={() => importDiscovery([item])}>Accept</button></div>)}</div>
+          <div className="actions"><button className="btn btn-primary" onClick={() => save("/settings/discovery", discovery)}>Save discovery</button><button className="btn btn-outline-secondary" onClick={async () => { await api.request("/discovery/run", { method: "POST", body: "{}" }); await load(); }}>Run now</button></div>
+          {!!(discovery.suggestions ?? []).length && <button className="btn btn-outline-secondary" onClick={() => importDiscovery()}>Accept all found monitors</button>}
+          <div className="stack-list">{(discovery.suggestions ?? []).slice(0, 12).map((item: any) => <div key={`${item.host}-${item.port}-${item.type}`}><strong>{item.name}</strong><span>{item.host}:{item.port}</span><small>{item.type} - {item.tags.join(", ")}</small><button className="btn btn-outline-secondary btn-sm" onClick={() => importDiscovery([item])}>Accept</button></div>)}</div>
         </div>
       </div>
       <div className="grid two">
@@ -167,14 +167,14 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
           <label><input type="checkbox" checked={backupSettings.enabled} onChange={(e) => setBackupSettings({ ...backupSettings, enabled: e.target.checked })} /> Scheduled backups</label>
           <label>Interval hours<input type="number" min="1" value={backupSettings.intervalHours} onChange={(e) => setBackupSettings({ ...backupSettings, intervalHours: Number(e.target.value) })} /></label>
           <label>Keep backups<input type="number" min="1" max="100" value={backupSettings.keep} onChange={(e) => setBackupSettings({ ...backupSettings, keep: Number(e.target.value) })} /></label>
-          <div className="actions"><button className="success" onClick={() => save("/settings/backups", backupSettings)}>Save backups</button><button className="ghost" onClick={async () => { await api.request("/backups/run", { method: "POST", body: "{}" }); await load(); }}>Run backup</button></div>
-          {backups.map((item) => <div className="channel" key={item.name}><strong>{item.name}</strong><span>{Math.round(item.size / 1024)} KB</span><div className="actions"><a className="button-link" href={`/api/backups/${item.name}`}>Download</a><button className="danger" onClick={async () => { await api.request(`/backups/${item.name}`, { method: "DELETE" }); await load(); }}>Delete</button></div></div>)}
+          <div className="actions"><button className="btn btn-primary" onClick={() => save("/settings/backups", backupSettings)}>Save backups</button><button className="btn btn-outline-secondary" onClick={async () => { await api.request("/backups/run", { method: "POST", body: "{}" }); await load(); }}>Run backup</button></div>
+          {backups.map((item) => <div className="channel" key={item.name}><strong>{item.name}</strong><span>{Math.round(item.size / 1024)} KB</span><div className="actions"><a className="btn btn-outline-secondary" href={`/api/backups/${item.name}`}>Download</a><button className="btn btn-outline-danger" onClick={async () => { await api.request(`/backups/${item.name}`, { method: "DELETE" }); await load(); }}>Delete</button></div></div>)}
         </div>
         <div className="panel">
           <h3>API tokens</h3>
           <label>Name<input value={tokenName} onChange={(e) => setTokenName(e.target.value)} /></label>
           <label>Scope<select value={tokenScope} onChange={(e) => setTokenScope(e.target.value)}><option value="read">Read only</option><option value="write">Read and write</option></select></label>
-          <button className="success" onClick={createToken}>Create token</button>
+          <button className="btn btn-primary" onClick={createToken}>Create token</button>
           {tokenResult && <label>New token<input readOnly value={tokenResult} onFocus={(e) => e.currentTarget.select()} /></label>}
           {tokens.map((item) => <Row key={item.id} title={item.name} detail={`created ${dateTime(item.createdAt)}${item.lastUsedAt ? ` - used ${dateTime(item.lastUsedAt)}` : ""}`} onDelete={async () => { await api.request(`/api-tokens/${item.id}`, { method: "DELETE" }); await load(); }} />)}
         </div>
@@ -198,7 +198,7 @@ export function Operations({ liveRefreshKey = 0 }: { liveRefreshKey?: number }) 
 }
 
 function Row({ title, detail, onDelete }: { title: string; detail: string; onDelete: () => void | Promise<void> }) {
-  return <div className="channel"><strong>{title}</strong><span>{detail}</span><button className="danger" onClick={onDelete}>Delete</button></div>;
+  return <div className="channel"><strong>{title}</strong><span>{detail}</span><button className="btn btn-outline-danger" onClick={onDelete}>Delete</button></div>;
 }
 
 const dateTime = formatDateTime;

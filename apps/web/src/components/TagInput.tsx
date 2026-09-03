@@ -36,7 +36,7 @@ export function TagInput({ value, onChange, label = "Labels", placeholder = "Add
       <label className="tag-field">{label}
         <textarea value={text} onChange={(event) => onChange(parseTags(event.target.value))} />
         {hint && <small className="muted">{hint}</small>}
-        <div className="tag-actions"><button type="button" className="ghost" onClick={() => setTextMode(false)}>Use chips</button></div>
+        <div className="tag-actions"><button type="button" className="btn btn-outline-secondary" onClick={() => setTextMode(false)}>Use chips</button></div>
       </label>
     );
   }
@@ -69,8 +69,8 @@ export function TagInput({ value, onChange, label = "Labels", placeholder = "Add
         {!!availableSuggestions.length && <div className="tag-suggestions">{availableSuggestions.map((tag) => <button type="button" className="tag-suggestion" key={tag} onClick={() => addTags(tag)}>{tag}</button>)}</div>}
       </div>}
       <div className="tag-actions">
-        <button type="button" className="ghost" onClick={() => setTextMode(true)}>Use text</button>
-        {!!value.length && <button type="button" className="ghost danger-link" onClick={() => { valueRef.current = []; onChange([]); }}>Clear labels</button>}
+        <button type="button" className="btn btn-outline-secondary" onClick={() => setTextMode(true)}>Use text</button>
+        {!!value.length && <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => { valueRef.current = []; onChange([]); }}>Clear labels</button>}
       </div>
     </label>
   );

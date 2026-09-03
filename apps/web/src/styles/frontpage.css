@@ -1,7 +1,7 @@
 .frontpage {
   min-height: 100vh;
   background:
-    linear-gradient(180deg, rgba(34, 197, 94, .08), transparent 22rem),
+    linear-gradient(180deg, rgba(var(--bs-primary-rgb), .07), transparent 22rem),
     var(--bs-tertiary-bg);
   color: var(--bs-body-color);
 }
@@ -60,11 +60,6 @@
 
 .frontpage-nav a:hover {
   color: var(--bs-emphasis-color);
-}
-
-.frontpage-nav button {
-  min-height: 34px !important;
-  padding: .35rem .75rem !important;
 }
 
 .frontpage-hero {

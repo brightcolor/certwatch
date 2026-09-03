@@ -1,13 +1,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
 @import "admin-lte/dist/css/adminlte.css";
 @import "bootstrap-icons/font/bootstrap-icons.css";
+
+/* Design tokens first, then the layers that read from them. Each layer owns a
+   distinct area, so nothing here has to override what came before. */
+@import "./theme.css";
 @import "./base.css";
-@import "./soft-ui.css";
 @import "./adminlte-shell.css";
 @import "./components.css";
-@import "./frontpage.css";
 @import "./dashboard.css";
-@import "./status.css";
 @import "./forms.css";
+@import "./frontpage.css";
 @import "./responsive.css";
-@import "./polish.css";

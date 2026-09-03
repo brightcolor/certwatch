@@ -57,8 +57,8 @@ export function Login({ setupRequired, registrationEnabled, onLogin, onBack, onR
           <p className="muted">Enter the 6-digit code from your authenticator app, or a backup code.</p>
           <label>Code<input autoFocus value={mfaCode} onChange={(e) => setMfaCode(e.target.value)} placeholder="123456" /></label>
           {error && <p className="error">{error}</p>}
-          <button type="submit">Verify</button>
-          <button className="ghost" type="button" onClick={() => { setMfaToken(""); setMfaCode(""); setError(""); }}>Back to sign in</button>
+          <button className="btn btn-primary" type="submit">Verify</button>
+          <button className="btn btn-outline-secondary" type="button" onClick={() => { setMfaToken(""); setMfaCode(""); setError(""); }}>Back to sign in</button>
         </form>
       </main>
     );
@@ -75,9 +75,9 @@ export function Login({ setupRequired, registrationEnabled, onLogin, onBack, onR
         <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
         {setupRequired && <label>Confirm password<input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} /></label>}
         {error && <p className="error">{error}</p>}
-        <button type="submit">{setupRequired ? "Create admin" : "Sign in"}</button>
-        {!setupRequired && registrationEnabled && onRegister && <button className="ghost" type="button" onClick={onRegister}>Create organization</button>}
-        {onBack && <button className="ghost" type="button" onClick={onBack}>Back to overview</button>}
+        <button className="btn btn-primary" type="submit">{setupRequired ? "Create admin" : "Sign in"}</button>
+        {!setupRequired && registrationEnabled && onRegister && <button className="btn btn-outline-secondary" type="button" onClick={onRegister}>Create organization</button>}
+        {onBack && <button className="btn btn-outline-secondary" type="button" onClick={onBack}>Back to overview</button>}
       </form>
     </main>
   );

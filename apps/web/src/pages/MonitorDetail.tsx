@@ -48,7 +48,7 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
 
   return (
     <section className="content">
-      <div className="detail-hero">
+      <div className={`detail-hero tone-${monitor.lastStatus.toLowerCase()}`}>
         <div className="detail-head">
           <div className="detail-identity">
             <button className="btn btn-outline-secondary btn-sm detail-back" onClick={onBack}>Back</button>
@@ -58,10 +58,17 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
               <small>{monitor.tags.join(", ") || "unlabeled"}</small>
             </div>
           </div>
+          {latest?.daysRemaining !== null && latest?.daysRemaining !== undefined && (
+            <div className="detail-lifetime">
+              <span className="section-label">Certificate</span>
+              <strong>{latest.daysRemaining} {Math.abs(latest.daysRemaining) === 1 ? "day" : "days"}</strong>
+              <small>{latest.daysRemaining < 0 ? "past expiry" : "until expiry"} · {dateTime(latest.validUntil)}</small>
+            </div>
+          )}
           <div className="actions detail-actions">
             <button className="btn btn-primary" disabled={!monitor.enabled} onClick={onCheck}>Check now</button>
             {canTriggerSslLabs && <button className="btn btn-outline-secondary" disabled={sslLabsState.busy} onClick={triggerSslLabs}>SSL Labs</button>}
-            <button className={`btn ${monitor.enabled ? "btn-outline-warning warning" : "btn-success success"}`} onClick={onToggleEnabled}>{monitor.enabled ? "Pause" : "Resume"}</button>
+            <button className="btn btn-outline-secondary" onClick={onToggleEnabled}>{monitor.enabled ? "Pause" : "Resume"}</button>
             <button className="btn btn-outline-secondary" onClick={onClone}><Copy size={16} /> Clone</button>
             <button className="btn btn-outline-secondary" onClick={onEdit}>Edit</button>
             <span className="action-divider" aria-hidden="true" />
@@ -73,13 +80,12 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
       {hasCertificateDetails ? <div className="grid two">
           <Panel title="Certificate">
             <CertificateAuthorityMark issuer={latest?.issuer} />
-            <Info label="Common Name" value={latest?.commonName} />
+            <Info label="Common name" value={latest?.commonName} />
             <Info label="Issuer" value={latest?.issuer} />
-            <Info label="Serial Number" value={latest?.serialNumber} />
-            <Info label="SHA256 Fingerprint" value={latest?.fingerprintSha256} />
-            <Info label="Valid From" value={dateTime(latest?.validFrom)} />
-            <Info label="Valid Until" value={dateTime(latest?.validUntil)} />
-            <Info label="Days Remaining" value={latest?.daysRemaining?.toString()} />
+            <Info label="Serial number" value={latest?.serialNumber} />
+            <Info label="SHA256 fingerprint" value={latest?.fingerprintSha256} />
+            <Info label="Valid from" value={dateTime(latest?.validFrom)} />
+            <Info label="Valid until" value={dateTime(latest?.validUntil)} />
             <Info label="SANs" value={latest?.subjectAltNames.join(", ")} />
           </Panel>
           <ResultPanel latest={latest} title="TLS" />
@@ -89,17 +95,17 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
           </Panel>
           <ResultPanel latest={latest} title="Latest result" />
         </div>}
-      {hasCertificateDetails && <Panel title="Certificate Chain">
+      {hasCertificateDetails && <Panel title="Certificate chain">
         {(latest?.chain ?? []).length ? (latest?.chain ?? []).map((item, index) => <div className="chain" key={item.fingerprintSha256 ?? index}><strong>{index + 1}. {item.subject}</strong><span>{item.issuer}</span><small>{dateTime(item.validUntil)}</small></div>) : <span className="muted">No certificate chain was returned by the target.</span>}
       </Panel>}
       <DnsPanel result={latest} />
       <Panel title="Embed">
         <EmbedRow label="Badge URL" value={badgeUrl} />
-        <EmbedRow label="Alias Badge URL" value={aliasBadgeUrl} />
+        <EmbedRow label="Alias badge URL" value={aliasBadgeUrl} />
         <EmbedRow label="Markdown" value={markdownBadge} />
         <EmbedRow label="HTML" value={htmlBadge} />
       </Panel>
-      <Panel title="Incident Timeline">
+      <Panel title="Incident timeline">
         <div className="stack-list">
           {incidents.map((incident) => <div key={incident.id}><StatusPill status={incident.status} /><span>{incident.message}</span><small>{dateTime(incident.startedAt)} - {incident.resolvedAt ? dateTime(incident.resolvedAt) : "open"}{incident.acknowledgedAt ? ` - ack ${dateTime(incident.acknowledgedAt)}` : ""}</small></div>)}
           {!incidents.length && <span className="muted">No incidents recorded for this monitor.</span>}
@@ -107,12 +113,12 @@ export function MonitorDetail({ monitor, results, incidents, onBack, onEdit, onC
         {incidents[0] && !incidents[0].resolvedAt && <div className="grid two">
           <label>Assignee<input value={assignee} onChange={(e) => setAssignee(e.target.value)} placeholder="Team or person" /></label>
           <label>Required comment<input required value={note} onChange={(e) => setNote(e.target.value)} placeholder="What happened and what was checked?" /></label>
-          <button disabled={!note.trim()} onClick={async () => { await onAck(incidents[0].id, assignee, note); setNote(""); }}>Acknowledge with comment</button>
-          <button disabled={!note.trim()} onClick={async () => { await onNote(incidents[0].id, note); setNote(""); }}>Add note</button>
+          <div className="actions"><button className="btn btn-primary" disabled={!note.trim()} onClick={async () => { await onAck(incidents[0].id, assignee, note); setNote(""); }}>Acknowledge with comment</button>
+          <button className="btn btn-outline-secondary" disabled={!note.trim()} onClick={async () => { await onNote(incidents[0].id, note); setNote(""); }}>Add note</button></div>
         </div>}
         {incidents[0]?.notes?.length > 0 && <div className="stack-list">{incidents[0].notes.map((item) => <div key={item.id}><strong>{item.author}</strong><span>{item.text}</span><small>{dateTime(item.createdAt)}</small></div>)}</div>}
       </Panel>
-      <Panel title="Check History">
+      <Panel title="Check history">
         <div className="stack-list">{results.map((result) => <div key={result.id}><StatusPill status={result.status} /><span>{dateTime(result.checkedAt)}</span><span>{result.message}</span></div>)}</div>
       </Panel>
     </section>
@@ -125,25 +131,25 @@ function Panel({ title, children }: any) {
 
 function ResultPanel({ latest, title }: { latest?: CheckResult | null; title: string }) {
   return <Panel title={title}>
-    <Info label="Status Reason" value={resultReason(latest)} />
-    <Info label="Security Grade" value={latest?.tlsGrade ? `${latest.tlsGrade} (${latest.tlsScore ?? 0}/100)` : "-"} />
+    <Info label="Status reason" value={resultReason(latest)} />
+    <Info label="Security grade" value={latest?.tlsGrade ? `${latest.tlsGrade} (${latest.tlsScore ?? 0}/100)` : "-"} />
     <GradeReasons reasons={latest?.tlsGradeReasons ?? []} />
-    <Info label="SSL Labs Grade" value={latest?.sslLabsGrade ? `${latest.sslLabsGrade} (${latest.sslLabsStatus ?? "ready"})` : latest?.sslLabsStatus} />
-    <Info label="SSL Labs Check" value={dateTime(latest?.sslLabsCheckedAt)} />
+    <Info label="SSL Labs grade" value={latest?.sslLabsGrade ? `${latest.sslLabsGrade} (${latest.sslLabsStatus ?? "ready"})` : latest?.sslLabsStatus} />
+    <Info label="SSL Labs check" value={dateTime(latest?.sslLabsCheckedAt)} />
     {latest?.sslLabsUrl && <Info label="SSL Labs URL" value={latest.sslLabsUrl} />}
     <Info label="Version" value={latest?.tlsVersion} />
-    <Info label="Supported Versions" value={(latest?.tlsSupportedVersions ?? []).join(", ")} />
-    <Info label="Cipher Suite" value={latest?.cipherSuite} />
+    <Info label="Supported versions" value={(latest?.tlsSupportedVersions ?? []).join(", ")} />
+    <Info label="Cipher suite" value={latest?.cipherSuite} />
     <Info label="Flapping" value={latest?.flapping ? "Detected" : "No"} />
-    <Info label="Last Check" value={dateTime(latest?.checkedAt)} />
+    <Info label="Last check" value={dateTime(latest?.checkedAt)} />
     <Info label="Duration" value={latest ? `${latest.durationMs} ms` : ""} />
     <Info label="Problems" value={[...(latest?.problems ?? []), ...(latest?.sslLabsFindings ?? [])].join("; ") || "None"} />
   </Panel>;
 }
 
 function GradeReasons({ reasons }: { reasons: Array<{ reason: string; points: number }> }) {
-  if (!reasons.length) return <Info label="TLS Grade Reasons" value="No deductions recorded." />;
-  return <div className="info stacked-info"><span>TLS Grade Reasons</span><strong>{reasons.map((item) => `${item.reason} (-${item.points})`).join(" ")}</strong></div>;
+  if (!reasons.length) return <Info label="TLS grade reasons" value="No deductions recorded." />;
+  return <div className="info stacked-info"><span>TLS grade reasons</span><span className="reason-list">{reasons.map((item) => <span className="pill warn" key={item.reason}>{item.reason}<b>-{item.points}</b></span>)}</span></div>;
 }
 
 function resultReason(latest?: CheckResult | null) {

@@ -13,7 +13,7 @@ const navItems = [
   { page: "users", label: "Users", icon: Users }
 ];
 
-export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, onPage, version, stats = {}, monitors = [], onSelectMonitor, tenants = [], tenantId, onTenant, teams = [], teamId, onTeam, user, impersonator, onStopImpersonation, onProfile, onLogout }: any) {
+export function Layout({ children, page, pageTitle, onNew, theme, themeMode, setThemeMode, onPage, version, stats = {}, monitors = [], onSelectMonitor, tenants = [], tenantId, onTenant, teams = [], teamId, onTeam, user, impersonator, onStopImpersonation, onProfile, onLogout }: any) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
@@ -86,7 +86,7 @@ export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, 
             <select className="form-select form-select-sm theme-select" value={themeMode ?? "dark"} onChange={(event) => setThemeMode?.(event.target.value)} aria-label="Color mode" title="Color mode">
               <option value="dark">Dark</option>
               <option value="bright">Bright</option>
-              <option value="auto">Auto</option>
+              <option value="auto">System</option>
             </select>
             <button className="btn btn-primary btn-sm" type="button" onClick={onNew}><Plus size={16} /> Monitor</button>
             <div className="nav-item profile-dropdown">
@@ -107,7 +107,7 @@ export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, 
           </div>
         </div>
       </nav>
-      <aside className="app-sidebar bg-body-secondary shadow" data-bs-theme={theme === "dark" ? "dark" : "light"}>
+      <aside className="app-sidebar">
         <div className="sidebar-brand">
           <button className="brand-link" type="button" onClick={() => navigate("dashboard")} title="crt.watch">
             <span className="brand-image"><Activity size={18} /></span>
@@ -128,18 +128,18 @@ export function Layout({ children, page, onNew, theme, themeMode, setThemeMode, 
           <div className="container-fluid">
             <div className="adminlte-titlebar">
               <div>
-                <h1>{titleFor(page)}</h1>
+                <h1>{pageTitle || titleFor(page)}</h1>
               </div>
-              <ol className="breadcrumb mb-0">
-                <li className="breadcrumb-item"><button className="btn btn-link p-0" type="button" onClick={() => navigate("dashboard")}>Home</button></li>
-                <li className="breadcrumb-item active" aria-current="page">{titleFor(page)}</li>
-              </ol>
+              {pageTitle && <ol className="breadcrumb mb-0">
+                <li className="breadcrumb-item"><button className="btn btn-link p-0" type="button" onClick={() => navigate(page)}>{titleFor(page)}</button></li>
+                <li className="breadcrumb-item active" aria-current="page">{pageTitle}</li>
+              </ol>}
             </div>
           </div>
         </div>
         <div className="app-content"><div className="container-fluid">{children}</div></div>
       </main>
-      <footer className="app-footer"><span>crt.watch v{version || "0.0.0"}</span><span className="ms-auto">Vibecoded with human review.</span></footer>
+      <footer className="app-footer"><span>crt.watch v{version || "0.0.0"}</span><span className="ms-auto">Certificate and service monitoring</span></footer>
     </div>
   );
 }
@@ -191,7 +191,7 @@ const navBadge = (page: string, stats: any) => {
 
 const titleFor = (page: string) => ({
   dashboard: "Dashboard",
-  settings: "Notification Channels",
+  settings: "Alerts",
   operations: "Operations",
   reports: "Reports",
   users: "Users",

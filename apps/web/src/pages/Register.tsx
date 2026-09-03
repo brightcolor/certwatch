@@ -40,8 +40,8 @@ export function Register({ inviteToken, onLogin, onBack }: { inviteToken?: strin
         <label>Password<input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required /></label>
         <label>Confirm password<input type="password" value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} required /></label>
         {error && <p className="error">{error}</p>}
-        <button type="submit">{invited ? "Accept invite" : "Create organization"}</button>
-        <button className="ghost" type="button" onClick={onBack}>Back to sign in</button>
+        <button className="btn btn-primary" type="submit">{invited ? "Accept invite" : "Create organization"}</button>
+        <button className="btn btn-outline-secondary" type="button" onClick={onBack}>Back to sign in</button>
       </form>
     </main>
   );

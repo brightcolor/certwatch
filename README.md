@@ -11,7 +11,7 @@ The codebase is deliberately simple and compact. It also shows the signs of a fa
 ## Stack Decision
 
 - Backend: Node.js with TypeScript and Express
-- Frontend: React with Vite, Bootstrap 5.3/AdminLTE, Bootstrap Icons, and a small custom soft-UI layer
+- Frontend: React with Vite, Bootstrap 5.3/AdminLTE, Bootstrap Icons, and a design token layer that defines every radius, tint, control size and type step in one place
 - Database: SQLite via better-sqlite3 (WAL mode, incremental page writes) through a small repository layer, with a structure that can later be adapted for PostgreSQL
 - Worker: in-process scheduler with bounded concurrent checks
 - Deployment: one Docker image served on port `8080`
@@ -297,7 +297,7 @@ The Operations page contains production controls that are intentionally kept out
 
 Monitor labels are entered as chips in the monitor form. Press Enter or comma to add a label, move to another field to commit the current label on blur, click a label to remove it, or switch to text mode when labels need to be copied or pasted in bulk.
 
-The Settings page includes the remaining interface preference for dark or light mode. AdminLTE 4 is the single frontend shell, so operators get one consistent navigation, status center, global monitor search, card layout, and form system.
+Dark and light mode are switched from the header and apply to the whole interface. Both modes are built from the same tokens, and every status colour is chosen so that text in that colour clears WCAG AA contrast against its own tinted background.
 
 ## SaaS Readiness
 

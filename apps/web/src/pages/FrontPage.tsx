@@ -22,8 +22,8 @@ export function FrontPage({ setupRequired, registrationEnabled, onAuth, onRegist
           <a href="#features">Features</a>
           <a href="#operations">Operations</a>
           <a href={githubUrl} target="_blank" rel="noreferrer"><Github size={16} /> GitHub</a>
-          {!setupRequired && registrationEnabled && <button type="button" onClick={onRegister}>Register</button>}
-          <button type="button" onClick={onAuth}>{setupRequired ? "Set up" : "Sign in"}</button>
+          {!setupRequired && registrationEnabled && <button className="btn btn-outline-secondary" type="button" onClick={onRegister}>Register</button>}
+          <button className="btn btn-primary" type="button" onClick={onAuth}>{setupRequired ? "Set up" : "Sign in"}</button>
         </nav>
       </header>
 
@@ -36,8 +36,8 @@ export function FrontPage({ setupRequired, registrationEnabled, onAuth, onRegist
             public status pages, and notifications from one self-hosted operator interface.
           </p>
           <div className="frontpage-actions">
-            <button type="button" onClick={primaryAction}>{primaryLabel} <ArrowRight size={16} /></button>
-            <a className="button-link ghost-link" href={githubUrl} target="_blank" rel="noreferrer"><Github size={16} /> View on GitHub</a>
+            <button className="btn btn-primary btn-lg" type="button" onClick={primaryAction}>{primaryLabel} <ArrowRight size={16} /></button>
+            <a className="btn btn-outline-secondary" href={githubUrl} target="_blank" rel="noreferrer"><Github size={16} /> View on GitHub</a>
           </div>
         </div>
         <div className="frontpage-visual" aria-label="crt.watch monitoring overview">

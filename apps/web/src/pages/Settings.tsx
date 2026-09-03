@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bell, Mail, PlugZap, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { TagInput } from "../components/TagInput";
 
 const providerFields: Record<string, Array<{ key: string; label: string; type?: string; placeholder?: string }>> = {
@@ -60,21 +60,9 @@ export function Settings(props: any) {
 
   return (
     <section className="content">
-      <div className="grid two">
+      <div className="flow">
         <div className="panel">
-          <h3>Interface</h3>
-          <label>Color mode<select value={props.theme ?? "dark"} onChange={(e) => props.setTheme(e.target.value)}>
-            <option value="dark">Dark mode</option>
-            <option value="bright">Bright mode</option>
-            <option value="auto">Auto</option>
-          </select></label>
-          <div className="callout callout-info mb-0">
-            <strong>AdminLTE 4 is the active interface.</strong>
-            <p className="mb-0">The previous native shell was removed so navigation, cards, alerts, and forms follow one consistent admin UI.</p>
-          </div>
-        </div>
-        <div className="panel">
-          <h3><Bell size={18} /> My alert preferences</h3>
+          <h3>My alert preferences</h3>
           <p className="muted">Personal alerts can subscribe to info, warning, and recovery events. Critical delivery always follows the organization admin routes.</p>
           {personalForm && <>
             <label><input type="checkbox" checked={personalForm.enabled} onChange={(e) => setPersonalForm({ ...personalForm, enabled: e.target.checked })} /> Enable personal alerts</label>
@@ -82,14 +70,14 @@ export function Settings(props: any) {
             <div className="checks">
               {["warning", "recovery", "info"].map((severity) => <label key={severity}><input type="checkbox" checked={(personalForm.severities ?? []).includes(severity)} onChange={() => setPersonalForm((current: any) => ({ ...current, severities: toggle(current.severities ?? [], severity) }))} /> {severity}</label>)}
             </div>
-            <div className="grid two">{channels.map((item: any) => <div className="panel compact" key={item.id}><label><input type="checkbox" checked={(personalForm.channelIds ?? []).includes(item.id)} onChange={() => setPersonalForm((current: any) => ({ ...current, channelIds: toggle(current.channelIds ?? [], item.id) }))} /> {item.name}</label>{(personalForm.channelIds ?? []).includes(item.id) && <label>{recipientLabel(item.type)}<input value={personalForm.recipients?.[item.id] ?? ""} onChange={(e) => setPersonalForm((current: any) => ({ ...current, recipients: { ...(current.recipients ?? {}), [item.id]: e.target.value } }))} /></label>}</div>)}</div>
-            <button className="success" onClick={() => props.onSavePersonalAlerts(personalForm)}>Save my alerts</button>
+            <div className="grid two">{channels.map((item: any) => <div className="inset stack" key={item.id}><label><input type="checkbox" checked={(personalForm.channelIds ?? []).includes(item.id)} onChange={() => setPersonalForm((current: any) => ({ ...current, channelIds: toggle(current.channelIds ?? [], item.id) }))} /> {item.name}</label>{(personalForm.channelIds ?? []).includes(item.id) && <label>{recipientLabel(item.type)}<input value={personalForm.recipients?.[item.id] ?? ""} onChange={(e) => setPersonalForm((current: any) => ({ ...current, recipients: { ...(current.recipients ?? {}), [item.id]: e.target.value } }))} /></label>}</div>)}</div>
+            <button className="btn btn-primary" onClick={() => props.onSavePersonalAlerts(personalForm)}>Save my alerts</button>
           </>}
         </div>
       </div>
       <div className="grid two">
         <div className="panel">
-          <h3><Bell size={18} /> Alert policy</h3>
+          <h3>Alert policy</h3>
           {alertForm && <>
             <label>Repeat unresolved alerts after hours<input type="number" min="1" max="720" value={alertForm.resendAfterHours} onChange={(e) => setAlertForm({ ...alertForm, resendAfterHours: Number(e.target.value) })} /></label>
             <label>Flapping threshold<input type="number" min="2" max="20" value={alertForm.flappingThreshold ?? 4} onChange={(e) => setAlertForm({ ...alertForm, flappingThreshold: Number(e.target.value) })} /></label>
@@ -106,11 +94,11 @@ export function Settings(props: any) {
               <label>Quiet start<input type="time" value={alertForm.quietStart} onChange={(e) => setAlertForm({ ...alertForm, quietStart: e.target.value })} /></label>
               <label>Quiet end<input type="time" value={alertForm.quietEnd} onChange={(e) => setAlertForm({ ...alertForm, quietEnd: e.target.value })} /></label>
             </div>
-            <button className="success" onClick={() => props.onSaveAlerting(alertForm)}>Save alert policy</button>
+            <button className="btn btn-primary" onClick={() => props.onSaveAlerting(alertForm)}>Save alert policy</button>
           </>}
         </div>
         <div className="panel">
-          <h3><Mail size={18} /> Global SMTP</h3>
+          <h3>Global SMTP</h3>
           {smtpForm && <>
             <div className="grid two">
               <label>SMTP host<input value={smtpForm.host} onChange={(e) => setSmtpForm({ ...smtpForm, host: e.target.value })} /></label>
@@ -123,7 +111,7 @@ export function Settings(props: any) {
               <label><input type="checkbox" checked={smtpForm.starttls} onChange={(e) => setSmtpForm({ ...smtpForm, starttls: e.target.checked })} /> Require STARTTLS</label>
               <label><input type="checkbox" checked={smtpForm.secure} onChange={(e) => setSmtpForm({ ...smtpForm, secure: e.target.checked })} /> Direct TLS</label>
             </div>
-            <button className="success" onClick={() => props.onSaveSmtp(smtpForm)}>Save SMTP settings</button>
+            <button className="btn btn-primary" onClick={() => props.onSaveSmtp(smtpForm)}>Save SMTP settings</button>
           </>}
         </div>
       </div>
@@ -133,15 +121,15 @@ export function Settings(props: any) {
           {retentionForm && <>
             <label>Check history days<input type="number" min="1" max="3650" value={retentionForm.checkResultsDays} onChange={(e) => setRetentionForm({ ...retentionForm, checkResultsDays: Number(e.target.value) })} /></label>
             <label>Alert history days<input type="number" min="1" max="3650" value={retentionForm.alertHistoryDays} onChange={(e) => setRetentionForm({ ...retentionForm, alertHistoryDays: Number(e.target.value) })} /></label>
-            <button className="success" onClick={() => props.onSaveRetention(retentionForm)}>Save retention</button>
+            <button className="btn btn-primary" onClick={() => props.onSaveRetention(retentionForm)}>Save retention</button>
           </>}
         </div>
         <div className="panel">
-          <h3>Certificate Transparency Watch</h3>
+          <h3>Certificate transparency watch</h3>
           {ctForm && <>
             <label className="inline"><input type="checkbox" checked={ctForm.enabled} onChange={(e) => setCtForm({ ...ctForm, enabled: e.target.checked })} /> Enabled</label>
             <label>Watched domains<textarea value={(ctForm.domains ?? []).join("\n")} placeholder="example.com" onChange={(e) => setCtForm({ ...ctForm, domains: e.target.value.split(/\s+/).map((value) => value.trim()).filter(Boolean) })} /></label>
-            <div className="actions"><button className="success" onClick={() => props.onSaveCtWatch(ctForm)}>Save CT watch</button><button className="ghost" onClick={async () => setCtResult(await props.onCheckCtWatch())}>Check now</button></div>
+            <div className="actions"><button className="btn btn-primary" onClick={() => props.onSaveCtWatch(ctForm)}>Save CT watch</button><button className="btn btn-outline-secondary" onClick={async () => setCtResult(await props.onCheckCtWatch())}>Check now</button></div>
             {ctResult && <p className="muted">{ctResult.changes?.length ? `${ctResult.changes.length} CT changes found.` : "No CT changes found."}</p>}
           </>}
         </div>
@@ -153,19 +141,19 @@ export function Settings(props: any) {
           <TagInput label="Labels" value={routeForm.tags} onChange={(tags) => setRouteForm({ ...routeForm, tags })} placeholder="empty means all labels" hint="Routes match monitors that have any selected label. Leave empty for a global route." suggestions={["prod", "mail", "web", "api", "internal"]} />
           <label>Severity<select value={routeForm.severities[0] ?? "critical"} onChange={(e) => setRouteForm({ ...routeForm, severities: [e.target.value] })}><option value="warning">Warning</option><option value="critical">Critical</option><option value="recovery">Recovery</option></select></label>
           <label>Escalation delay minutes<input type="number" min="0" max="10080" value={routeForm.delayMinutes} onChange={(e) => setRouteForm({ ...routeForm, delayMinutes: Number(e.target.value) })} /></label>
-          <div className="grid two">{channels.map((item: any) => <div className="panel compact" key={item.id}><label><input type="checkbox" checked={routeForm.channelIds.includes(item.id)} onChange={() => setRouteForm((current) => ({ ...current, channelIds: current.channelIds.includes(item.id) ? current.channelIds.filter((id) => id !== item.id) : [...current.channelIds, item.id] }))} /> {item.name}</label>{routeForm.channelIds.includes(item.id) && <label>{recipientLabel(item.type)}<input value={routeForm.recipients[item.id] ?? ""} onChange={(e) => setRouteForm((current) => ({ ...current, recipients: { ...current.recipients, [item.id]: e.target.value } }))} /></label>}</div>)}</div>
-          <button className="success" onClick={addRoute}>Add route</button>
-          {(routes ?? []).map((route: any) => <div className="channel" key={route.id}><strong>{route.name}</strong><span>{route.tags.join(", ") || "all tags"} - {route.severities.join(", ")} - delay {route.delayMinutes ?? 0} min</span><button className="danger" onClick={() => props.onSaveRoutes(routes.filter((item: any) => item.id !== route.id))}>Delete</button></div>)}
+          <div className="grid two">{channels.map((item: any) => <div className="inset stack" key={item.id}><label><input type="checkbox" checked={routeForm.channelIds.includes(item.id)} onChange={() => setRouteForm((current) => ({ ...current, channelIds: current.channelIds.includes(item.id) ? current.channelIds.filter((id) => id !== item.id) : [...current.channelIds, item.id] }))} /> {item.name}</label>{routeForm.channelIds.includes(item.id) && <label>{recipientLabel(item.type)}<input value={routeForm.recipients[item.id] ?? ""} onChange={(e) => setRouteForm((current) => ({ ...current, recipients: { ...current.recipients, [item.id]: e.target.value } }))} /></label>}</div>)}</div>
+          <button className="btn btn-primary" onClick={addRoute}>Add route</button>
+          {(routes ?? []).map((route: any) => <div className="channel" key={route.id}><strong>{route.name}</strong><span>{route.tags.join(", ") || "all tags"} - {route.severities.join(", ")} - delay {route.delayMinutes ?? 0} min</span><button className="btn btn-outline-danger" onClick={() => props.onSaveRoutes(routes.filter((item: any) => item.id !== route.id))}>Delete</button></div>)}
         </div>
         <div className="panel">
           <h3>Status page subscriptions</h3>
-          {(subscriptions ?? []).map((item: any) => <div className="channel" key={item.id}><strong>{item.tags.join(" + ") || "all"}</strong><span>{item.type} - {item.enabled ? "active" : "pending opt-in"} - {item.target}</span><button className="danger" onClick={() => props.onDeleteSubscription(item.id)}>Delete</button></div>)}
+          {(subscriptions ?? []).map((item: any) => <div className="channel" key={item.id}><strong>{item.tags.join(" + ") || "all"}</strong><span>{item.type} - {item.enabled ? "active" : "pending opt-in"} - {item.target}</span><button className="btn btn-outline-danger" onClick={() => props.onDeleteSubscription(item.id)}>Delete</button></div>)}
           {!(subscriptions ?? []).length && <span className="muted">No public status page subscriptions yet.</span>}
         </div>
       </div>
       <div className="grid two">
         <div className="panel">
-          <h3><PlugZap size={18} /> Add notification provider</h3>
+          <h3>Add notification provider</h3>
           <label>Name<input value={channel.name} onChange={(e) => setChannel({ ...channel, name: e.target.value })} /></label>
           <label>Provider<select value={channel.type} onChange={(e) => setChannel({ name: channel.name, type: e.target.value, enabled: true, config: {} })}>
             {Object.keys(providerFields).map((type) => <option value={type} key={type}>{labelFor(type)}</option>)}
@@ -173,7 +161,7 @@ export function Settings(props: any) {
           {!fields.length && <p className="muted">Recipients are configured on each monitor or notification route.</p>}
           {fields.map((field) => <label key={field.key}>{field.label}<input type={field.type ?? "text"} value={channel.config[field.key] ?? ""} placeholder={field.placeholder} onChange={(e) => setConfig(field.key, e.target.value)} /></label>)}
           <label className="inline"><input type="checkbox" checked={channel.enabled} onChange={(e) => setChannel({ ...channel, enabled: e.target.checked })} /> Enabled</label>
-          <button className="success" onClick={saveChannel}>Save provider</button>
+          <button className="btn btn-primary" onClick={saveChannel}>Save provider</button>
         </div>
         <div className="panel">
           <h3>Configured providers</h3>
@@ -181,7 +169,7 @@ export function Settings(props: any) {
             <div className="channel" key={item.id}>
               <strong>{item.name}</strong>
               <span>{labelFor(item.type)} - {item.enabled ? "enabled" : "disabled"}</span>
-              <div className="actions end"><button onClick={() => props.onTest(item.id)}>Test</button><button className="icon danger" title="Delete provider" onClick={() => props.onDeleteChannel(item.id)}><Trash2 size={16} /></button></div>
+              <div className="actions end"><button className="btn btn-outline-secondary btn-sm" onClick={() => props.onTest(item.id)}>Test</button><button className="btn btn-outline-danger btn-sm btn-icon" title="Delete provider" onClick={() => props.onDeleteChannel(item.id)}><Trash2 size={16} /></button></div>
             </div>
           ))}
           {!channels.length && <span className="muted">No notification providers configured.</span>}
