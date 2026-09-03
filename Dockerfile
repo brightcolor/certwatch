@@ -21,6 +21,7 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY --from=build /app/apps/web/dist ./apps/web/dist
+COPY --from=build /app/apps/web/dist-server ./apps/web/dist-server
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD curl -fsS http://localhost:${PORT:-8080}/api/health || exit 1
 CMD ["npm", "start"]

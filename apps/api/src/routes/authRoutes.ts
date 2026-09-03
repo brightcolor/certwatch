@@ -180,7 +180,7 @@ const organizationHasRoom = (tenantId: string) => {
   return !tenant || tenant.userLimit <= 0 || tenants.members(tenant.id).length < tenant.userLimit;
 };
 
-const publicRegistrationEnabled = () =>
+export const publicRegistrationEnabled = () =>
   env.publicRegistrationEnabled && appSettingPublicRegistration();
 
 const generateBackupCode = () => randomToken(4).match(/.{1,4}/g)!.join("-");

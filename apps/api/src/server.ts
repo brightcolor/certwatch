@@ -12,6 +12,7 @@ import { apiRoutes } from "./routes/index.js";
 import { publicRoutes } from "./routes/publicRoutes.js";
 import { metricsHandler } from "./routes/metrics.js";
 import { startScheduler } from "./scheduler/scheduler.js";
+import { loadFrontPageRenderer, renderFrontPageDocument } from "./render/frontPage.js";
 
 migrate();
 
@@ -31,13 +32,26 @@ app.use("/public", publicRoutes);
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const webDist = path.resolve(currentDir, "../../web/dist");
-app.use(express.static(webDist));
-app.get("*", (_req, res) => res.sendFile(path.join(webDist, "index.html")));
+app.use(express.static(webDist, { index: false }));
+
+/* Visitors without a session get the front page rendered into the document, so
+   crawlers and first-time readers see the content instead of an empty div.
+   Signed-in visitors get the plain shell as before. */
+app.get("*", (req, res) => {
+  // Only the root is rendered: it is the address that gets shared and indexed.
+  // Every other path is the same single-page app and would otherwise offer
+  // search engines the same content under any URL.
+  const document = req.path === "/" ? renderFrontPageDocument(Boolean(req.user)) : null;
+  if (document) return res.type("html").send(document);
+  res.sendFile(path.join(webDist, "index.html"));
+});
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);
   res.status(500).json({ error: "Internal server error." });
 });
+
+await loadFrontPageRenderer(webDist);
 
 app.listen(env.port, () => {
   console.log(`crt.watch listening on ${env.port}`);

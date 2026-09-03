@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { createRoot } from "react-dom/client";
+import { createRoot, hydrateRoot } from "react-dom/client";
 import { api, Monitor, CheckResult, Incident, StatusSubscription, Team, TeamMembership, TenantInvite, TenantMembership, UserAlertSettings } from "./api/client";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./pages/Dashboard";
@@ -21,6 +21,13 @@ import { useLiveRefresh } from "./hooks/useLiveRefresh";
 import { applyStatusFavicon } from "./utils/favicon";
 import "./styles/app.css";
 
+/* When the server rendered the front page, it inlines the same configuration
+   it rendered with. Starting from it means the client's first render matches
+   the markup already on the page, so React hydrates it instead of throwing it
+   away and rebuilding after a round trip. */
+type BootConfig = { setupRequired: boolean; frontPageEnabled: boolean; publicRegistrationEnabled: boolean };
+const boot: BootConfig | null = (window as any).__CRTWATCH_BOOT__ ?? null;
+
 const initialThemeMode = (() => {
   const stored = localStorage.getItem("themeMode") ?? localStorage.getItem("theme");
   if (stored === "auto" || stored === "dark" || stored === "bright") return stored;
@@ -35,8 +42,8 @@ const resolveTheme = (mode: string) => {
 
 function App() {
   const [user, setUser] = useState<any>(null);
-  const [setupRequired, setSetupRequired] = useState(false);
-  const [booted, setBooted] = useState(false);
+  const [setupRequired, setSetupRequired] = useState(boot?.setupRequired ?? false);
+  const [booted, setBooted] = useState(Boolean(boot));
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   const [monitorsLoaded, setMonitorsLoaded] = useState(false);
   const [stats, setStats] = useState<any>({});
@@ -69,9 +76,12 @@ function App() {
   const [resolvedTheme, setResolvedTheme] = useState(resolveTheme(initialThemeMode));
   const [liveRefreshKey, setLiveRefreshKey] = useState(0);
   const [toast, setToast] = useState("");
-  const [publicConfig, setPublicConfig] = useState({ frontPageEnabled: true, publicRegistrationEnabled: true });
+  const [publicConfig, setPublicConfig] = useState({
+    frontPageEnabled: boot?.frontPageEnabled ?? true,
+    publicRegistrationEnabled: boot?.publicRegistrationEnabled ?? true
+  });
   const [inviteToken] = useState(() => new URLSearchParams(window.location.search).get("invite"));
-  const [authMode, setAuthMode] = useState<"front" | "login" | "register">(() => inviteToken ? "register" : "front");
+  const [authMode, setAuthMode] = useState<"front" | "login" | "register">(() => inviteToken ? "register" : boot?.setupRequired ? "login" : "front");
 
   useEffect(() => {
     const apply = () => {
@@ -470,4 +480,7 @@ function App() {
   );
 }
 
-createRoot(document.getElementById("root")!).render(<React.StrictMode><App /></React.StrictMode>);
+const container = document.getElementById("root")!;
+const tree = <React.StrictMode><App /></React.StrictMode>;
+if (boot && container.firstElementChild) hydrateRoot(container, tree);
+else createRoot(container).render(tree);

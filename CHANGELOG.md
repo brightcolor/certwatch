@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.18.0 - 2026-09-03
+
+- The public front page is now rendered on the server. A crawler that does not execute JavaScript — and a visitor on a slow connection — receives the page itself rather than an empty div, and the response carries the configuration the client would otherwise have fetched, so its first render matches the markup and React hydrates instead of rebuilding.
+- Rendering is deliberately narrow. Only the root path, only visitors without a session, and only on an instance that already has an administrator: everything else needs a session, no crawler reaches it, and rendering it would add latency for nothing. Any other path still gets the plain shell, so search engines are not offered the same content under every URL.
+- The server bundle is optional at every step. A missing or broken `dist-server` logs once and falls back to the shell, so a partial build can never take the application down. In development the client renders as before.
+- Fixed `express.static` answering `/` with the index file before the renderer was reached, which is why the first attempt served the empty shell either way.
+
 ## 0.17.0 - 2026-09-03
 
 - Made the project findable. The repository had no description, no homepage and no topics — the three fields GitHub search ranks on. It now carries all three, along with a README opening that says what the tool does in one sentence, badges for release, CI, container image and licence, and a line naming every protocol and check it covers.
